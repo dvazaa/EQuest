@@ -3,6 +3,7 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import multer from 'multer'
 import { GoogleGenAI } from '@google/genai'
+import { testDbConnection } from './config/database.js'
 
 dotenv.config()
 
@@ -21,7 +22,21 @@ const ai = new GoogleGenAI({
 app.use(cors())
 app.use(express.json())
 
-app.get('/api/health', (req, res) => {
+app.get('/api/health', async (req, res) => {
+    const dbStatus = await testDbConnection()
+    res.json({
+        status: 'ok',
+        message: 'Backend EQuest berjalan!',
+        database: dbStatus,
+    })
+})
+
+app.get('/api/database/status', async (req, res) => {
+    const dbStatus = await testDbConnection()
+    res.json(dbStatus)
+})
+
+app.get('/api/health-simple', (req, res) => {
     res.json({
         status: 'ok',
         message: 'Backend EQuest berjalan!',
