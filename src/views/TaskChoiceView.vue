@@ -1,28 +1,25 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import Navbar from '../components/Navbar.vue'
+import { getCurrentUser, getUserTasks } from '../utils/equestState'
 
 const router = useRouter()
 const route = useRoute()
-
-function readStorage(key, fallback) {
-  try {
-    const value = localStorage.getItem(key)
-    return value ? JSON.parse(value) : fallback
-  } catch {
-    return fallback
-  }
-}
-
-const currentUser = ref(readStorage('equestUser', null))
-const isLoggedIn = computed(() => !!currentUser.value)
+const currentUser = ref(null)
 const taskId = route.query.id
+const currentTask = ref(null)
 
-function logout() {
-  localStorage.removeItem('equestUser')
-  currentUser.value = null
-  router.push('/')
-}
+onMounted(() => {
+  currentUser.value = getCurrentUser()
+  if (!currentUser.value?.email) {
+    router.push('/login')
+    return
+  }
+
+  const tasks = getUserTasks(currentUser.value.email)
+  currentTask.value = tasks.find((t) => String(t.id) === String(taskId)) || null
+})
 
 function viewAnswers() {
   router.push({
@@ -41,138 +38,104 @@ function solveYourself() {
 
 <template>
   <div class="min-h-screen bg-sky-100 text-blue-950">
-    <!-- Navbar mengikuti HomeView.vue -->
-    <header class="bg-sky-100 px-6 py-5">
-      <nav class="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
-        <RouterLink to="/" class="flex items-center gap-3">
-          <span class="text-5xl">📚</span>
-          <span class="text-4xl font-extrabold text-black">EQuest</span>
-        </RouterLink>
+    <!-- Navbar -->
+    <Navbar />
 
-        <div class="flex flex-wrap items-center gap-x-6 gap-y-3 text-lg font-bold">
-          <RouterLink to="/" class="text-blue-900/50 hover:text-blue-600">
-            Beranda
-          </RouterLink>
-
-          <RouterLink to="/tasks" class="text-blue-900/50 hover:text-blue-600">
-            Tugas Saya
-          </RouterLink>
-
-          <RouterLink to="/upload" class="text-blue-900/50 hover:text-blue-600">
-            Upload Soal
-          </RouterLink>
-
-          <span class="cursor-not-allowed text-blue-900/40">Blind Box</span>
-          <span class="cursor-not-allowed text-blue-900/40">Progress</span>
-          <span class="cursor-not-allowed text-blue-900/40">Riwayat</span>
-        </div>
-
-        <div v-if="isLoggedIn" class="flex items-center gap-3">
-          <span class="font-semibold text-blue-900">
-            {{ currentUser.name || currentUser.email || 'Pengguna' }}
-          </span>
-
-          <button
-            type="button"
-            @click="logout"
-            class="rounded-xl border border-blue-300 px-4 py-2 font-semibold hover:bg-white"
-          >
-            Logout
-          </button>
-        </div>
-
-        <RouterLink
-          v-else
-          to="/login"
-          class="rounded-xl bg-blue-600 px-5 py-2 font-semibold text-white hover:bg-blue-700"
-        >
-          Login
-        </RouterLink>
-      </nav>
-    </header>
-
-    <main class="px-6 pb-10 pt-5">
+    <main class="mx-auto max-w-5xl px-6 pb-12 pt-4">
       <button
         type="button"
         @click="router.push('/tasks')"
-        class="mb-6 rounded-xl border border-blue-300 bg-white px-5 py-3 font-semibold hover:bg-sky-50"
+        class="mb-6 inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-white px-4 py-2 text-sm font-bold text-blue-900 shadow-xs hover:bg-sky-50 transition"
       >
-        ← Kembali ke Tugas Saya
+        <span>←</span>
+        <span>Kembali ke Tugas Saya</span>
       </button>
 
-      <section class="mx-auto max-w-5xl">
-        <div class="text-center">
-          <h1 class="text-3xl font-extrabold sm:text-4xl">
-            Soal Berhasil Dianalisis!
-          </h1>
+      <section class="text-center">
+        <span class="rounded-full bg-blue-100 px-4 py-1.5 text-xs font-black uppercase tracking-wider text-blue-700">
+          Metode Pembelajaran
+        </span>
 
-          <p class="mt-3 text-lg text-blue-900/70 sm:text-xl">
-            Sekarang, bagaimana kamu ingin belajar?
-          </p>
-        </div>
+        <h1 class="mt-3 text-3xl font-black text-blue-950 sm:text-4xl">
+          Soal Berhasil Diproses!
+        </h1>
 
-        <div class="mt-8 grid gap-6 md:grid-cols-2">
-          <!-- Pilihan melihat jawaban -->
-          <article
-            class="flex flex-col rounded-3xl border border-blue-300 bg-white p-6 sm:p-8"
-          >
-            <div class="flex h-24 items-center justify-center text-7xl">
+        <p class="mt-2 text-base text-blue-900/70 sm:text-lg">
+          {{ currentTask ? `Materi: "${currentTask.name}"` : 'Pilih bagaimana kamu ingin mempelajari soal ini' }}
+        </p>
+      </section>
+
+      <!-- 2 Options: Study Mode vs Self-Solve Mode -->
+      <div class="mt-10 grid gap-6 md:grid-cols-2">
+        <!-- Pilihan 1: Melihat Jawaban -->
+        <article
+          class="flex flex-col justify-between rounded-3xl border border-blue-200 bg-white p-6 sm:p-8 shadow-xs transition hover:border-blue-400 hover:shadow-lg hover:scale-[1.01]"
+        >
+          <div>
+            <div class="flex h-20 w-20 items-center justify-center rounded-3xl bg-blue-50 text-5xl mb-4">
               📖
             </div>
 
-            <h2 class="mt-5 text-2xl font-extrabold">
-              Lihat Jawaban
+            <h2 class="text-2xl font-black text-blue-950">
+              Lihat Jawaban & Pembahasan
             </h2>
 
-            <p class="mt-3 flex-1 leading-relaxed text-blue-900/70">
-              Langsung lihat jawaban yang benar beserta penjelasannya
-              tanpa perlu mengerjakan sendiri.
+            <p class="mt-3 leading-relaxed text-sm text-blue-900/70">
+              Langsung pelajari pembahasan lengkap langkah demi langkah dari AI tanpa perlu mengunggah jawaban. Cocok untuk materi baru!
             </p>
 
-            <div class="mt-5 rounded-xl bg-sky-100 px-4 py-3 text-center font-semibold text-blue-700">
-              Mode belajar · Tanpa poin
+            <div class="mt-6 rounded-2xl bg-sky-50 p-3.5 text-center text-xs font-bold text-blue-700 border border-sky-100">
+              💡 Mode Belajar Cepat &bull; +20 XP Pembelajaran
             </div>
+          </div>
 
-            <button
-              type="button"
-              @click="viewAnswers"
-              class="mt-5 rounded-xl border border-blue-500 px-5 py-4 font-bold text-blue-600 transition hover:bg-sky-50"
-            >
-              Lihat Jawaban
-            </button>
-          </article>
-
-          <!-- Pilihan mengerjakan sendiri -->
-          <article
-            class="flex flex-col rounded-3xl border border-blue-500 bg-white p-6 sm:p-8"
+          <button
+            type="button"
+            @click="viewAnswers"
+            class="mt-8 w-full rounded-2xl border-2 border-blue-600 bg-white py-3.5 text-base font-bold text-blue-600 transition hover:bg-blue-50 cursor-pointer"
           >
-            <div class="flex h-24 items-center justify-center text-7xl">
+            Buka Pembahasan Langsung →
+          </button>
+        </article>
+
+        <!-- Pilihan 2: Kerjakan Sendiri & Dapat Hadiah -->
+        <article
+          class="flex flex-col justify-between rounded-3xl border-2 border-blue-600 bg-gradient-to-b from-white to-sky-50/50 p-6 sm:p-8 shadow-md transition hover:shadow-xl hover:scale-[1.01] relative overflow-hidden"
+        >
+          <div class="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-blue-200/40 blur-xl"></div>
+
+          <div>
+            <div class="flex h-20 w-20 items-center justify-center rounded-3xl bg-amber-100 text-5xl mb-4 shadow-xs">
               ✍️
             </div>
 
-            <h2 class="mt-5 text-2xl font-extrabold">
-              Kerjakan Sendiri
-            </h2>
-
-            <p class="mt-3 flex-1 leading-relaxed text-blue-900/70">
-              Coba jawab soal terlebih dahulu, lalu unggah jawabanmu
-              untuk diperiksa AI dan berkesempatan mendapatkan poin.
-            </p>
-
-            <div class="mt-5 rounded-xl bg-green-100 px-4 py-3 text-center font-semibold text-green-800">
-              Kesempatan koreksi: 5 kali
+            <div class="flex items-center gap-2">
+              <h2 class="text-2xl font-black text-blue-950">
+                Kerjakan Sendiri
+              </h2>
+              <span class="rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-black uppercase text-amber-950">
+                Reward
+              </span>
             </div>
 
-            <button
-              type="button"
-              @click="solveYourself"
-              class="mt-5 rounded-xl bg-blue-600 px-5 py-4 font-bold text-white transition hover:bg-blue-700"
-            >
-              Kerjakan Sendiri
-            </button>
-          </article>
-        </div>
-      </section>
+            <p class="mt-3 leading-relaxed text-sm text-blue-900/70">
+              Uji pemahamanmu! Kerjakan soal ini, upload foto atau ketik jawabanmu, lalu AI akan menilai kebenaran jawabanmu.
+            </p>
+
+            <div class="mt-6 rounded-2xl bg-green-50 p-3.5 text-center text-xs font-bold text-green-800 border border-green-200">
+              🎁 Hadiah: +50 XP &bull; +1 Tiket Blind Box Misteri!
+            </div>
+          </div>
+
+          <button
+            type="button"
+            @click="solveYourself"
+            class="mt-8 w-full rounded-2xl bg-blue-600 py-3.5 text-base font-bold text-white shadow-lg shadow-blue-500/25 transition hover:bg-blue-700 cursor-pointer"
+          >
+            Kerjakan & Dapatkan Tiket →
+          </button>
+        </article>
+      </div>
     </main>
   </div>
 </template>

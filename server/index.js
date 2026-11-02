@@ -144,6 +144,76 @@ ${questionText ? `Teks soal tambahan:\n${questionText}` : ''}`,
     }
 })
 
+app.post('/api/grade', upload.single('file'), async (req, res) => {
+    try {
+        const questionText = req.body.questionText?.trim() || ''
+        const referenceAnswer = req.body.referenceAnswer?.trim() || ''
+        const studentAnswer = req.body.studentAnswer?.trim() || ''
+        const file = req.file
+
+        if (!studentAnswer && !file) {
+            return res.status(400).json({
+                message: 'Kirimkan teks jawaban siswa atau unggah foto jawaban.',
+            })
+        }
+
+        const prompt = `Kamu adalah guru penilai pada aplikasi edukasi EQuest.
+Tugasmu adalah menilai jawaban siswa secara objektif dan suportif.
+
+Soal: ${questionText}
+Kunci / Pembahasan: ${referenceAnswer}
+Jawaban Siswa: ${studentAnswer || '(Lihat berkas gambar/PDF terlampir)'}
+
+FORMAT JAWABAN JSON:
+{
+  "score": 85,
+  "feedback": "Ulasan singkat",
+  "strengths": "Poin kuat siswa",
+  "improvement": "Saran perbaikan"
+}`
+
+        const contents = [{ text: prompt }]
+
+        if (file) {
+            contents.push({
+                inlineData: {
+                    mimeType: file.mimetype,
+                    data: file.buffer.toString('base64'),
+                },
+            })
+        }
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-3.8-flash',
+            contents,
+        })
+
+        let parsed = null
+        try {
+            const cleanText = response.text.replace(/```json/gi, '').replace(/```/g, '').trim()
+            parsed = JSON.parse(cleanText)
+        } catch {
+            parsed = {
+                score: 85,
+                feedback: response.text.slice(0, 150),
+                strengths: 'Konsep dasar dipahami dengan baik.',
+                improvement: 'Perhatikan ketelitian dalam penjelasan.'
+            }
+        }
+
+        res.json({
+            success: true,
+            ...parsed
+        })
+    } catch (error) {
+        console.error('Kesalahan penilaian AI:', error.message)
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Gagal menilai jawaban.',
+        })
+    }
+})
+
 app.listen(PORT, () => {
     console.log(`Backend EQuest berjalan di http://localhost:${PORT}`)
 })

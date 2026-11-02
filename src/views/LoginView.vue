@@ -1,44 +1,56 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import GoogleAuthModal from '../components/GoogleAuthModal.vue'
+import ForgotPasswordModal from '../components/ForgotPasswordModal.vue'
+import { getAllUsers, setCurrentUser, initUserStats } from '../utils/equestState'
 
 const router = useRouter()
 const email = ref('')
 const password = ref('')
 const errorMessage = ref('')
+const successNotice = ref('')
+
+const isGoogleModalOpen = ref(false)
+const isForgotModalOpen = ref(false)
 
 function handleLogin() {
   errorMessage.value = ''
+  successNotice.value = ''
 
-  let users = []
-
-  try {
-    users = JSON.parse(localStorage.getItem('equestUsers') || '[]')
-  } catch {
-    errorMessage.value = 'Data akun bermasalah. Silakan coba lagi.'
-    return
-  }
+  const users = getAllUsers()
+  const normalizedEmail = email.value.trim().toLowerCase()
 
   const user = users.find(
     (item) =>
-      item.email?.toLowerCase() === email.value.trim().toLowerCase() &&
+      item.email?.trim().toLowerCase() === normalizedEmail &&
       item.password === password.value
   )
 
   if (!user) {
-    errorMessage.value = 'Email atau kata sandi salah. Periksa kembali atau daftar akun terlebih dahulu.'
+    errorMessage.value =
+      'Email atau kata sandi salah. Periksa kembali atau daftar akun terlebih dahulu.'
     return
   }
 
-  localStorage.setItem(
-    'equestUser',
-    JSON.stringify({
-      email: user.email,
-      name: user.name,
-    })
-  )
+  const sessionUser = {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    avatar: user.avatar || '👤',
+    provider: user.provider || 'email',
+  }
 
+  setCurrentUser(sessionUser)
+  initUserStats(sessionUser.email)
   router.push('/')
+}
+
+function handlePasswordResetSuccess(data) {
+  email.value = data.email
+  password.value = data.password
+  successNotice.value =
+    'Kata sandi berhasil direset! Kamu bisa langsung klik "Masuk".'
 }
 </script>
 
@@ -47,7 +59,7 @@ function handleLogin() {
     <!-- Panah kembali -->
     <RouterLink
       to="/"
-      class="mb-8 inline-flex items-center gap-2 text-blue-900/50 transition hover:text-blue-600"
+      class="mb-8 inline-flex items-center gap-2 text-blue-900/50 transition hover:text-blue-600 font-semibold"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -70,7 +82,7 @@ function handleLogin() {
     <div class="mb-8">
       <RouterLink to="/" class="inline-flex items-center gap-3">
         <span class="text-5xl">📚</span>
-        <span class="text-4xl font-extrabold text-black">EQuest</span>
+        <span class="text-4xl font-extrabold text-blue-950">EQuest</span>
       </RouterLink>
     </div>
 
@@ -86,26 +98,35 @@ function handleLogin() {
           dan mengumpulkan reward.
         </p>
 
-        <div class="mt-10 space-y-10">
-          <div>
-            <h2 class="text-xl font-bold">Lanjutkan Belajarmu</h2>
-            <p class="mt-1 text-sm text-blue-900/70">
-              Soal terakhir masih menunggu.
-            </p>
+        <div class="mt-10 space-y-8">
+          <div class="flex items-start gap-4">
+            <span class="text-3xl">📖</span>
+            <div>
+              <h2 class="text-xl font-bold">Lanjutkan Belajarmu</h2>
+              <p class="mt-0.5 text-sm text-blue-900/70">
+                Soal dan latihan terakhir masih menunggumu.
+              </p>
+            </div>
           </div>
 
-          <div>
-            <h2 class="text-xl font-bold">Jaga streak-mu</h2>
-            <p class="mt-1 text-sm text-blue-900/70">
-              Tukar tiketmu dengan hadiah menarik.
-            </p>
+          <div class="flex items-start gap-4">
+            <span class="text-3xl">🔥</span>
+            <div>
+              <h2 class="text-xl font-bold">Jaga Streak-mu</h2>
+              <p class="mt-0.5 text-sm text-blue-900/70">
+                Masuk tiap hari untuk melipatgandakan poin & lencana.
+              </p>
+            </div>
           </div>
 
-          <div>
-            <h2 class="text-xl font-bold">Tukar tiket</h2>
-            <p class="mt-1 text-sm text-blue-900/70">
-              Buka Blind Box dan dapatkan hadiah.
-            </p>
+          <div class="flex items-start gap-4">
+            <span class="text-3xl">🎁</span>
+            <div>
+              <h2 class="text-xl font-bold">Tukar Tiket Blind Box</h2>
+              <p class="mt-0.5 text-sm text-blue-900/70">
+                Buka kotak misteri dan dapatkan reward menarik.
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -118,19 +139,23 @@ function handleLogin() {
             to="/register"
             class="font-bold text-blue-600 hover:underline"
           >
-            Daftar
+            Daftar Sekarang
           </RouterLink>
         </p>
 
-        <div class="rounded-2xl border border-blue-300 bg-white">
+        <div class="rounded-3xl border border-blue-200 bg-white shadow-xl shadow-blue-500/5">
           <form class="p-6 sm:p-8" @submit.prevent="handleLogin">
-            <h2 class="text-2xl font-extrabold">Masuk</h2>
+            <h2 class="text-2xl font-extrabold text-blue-950">Masuk Akun</h2>
             <p class="mt-1 text-sm text-blue-900/70">
-              Masukkan email dan kata sandimu.
+              Masukkan email dan kata sandimu yang sudah terdaftar.
             </p>
 
-            <div class="mt-9">
-              <label for="login-email" class="text-sm font-semibold">
+            <div v-if="successNotice" class="mt-4 rounded-xl bg-green-50 p-3 text-xs font-semibold text-green-800 border border-green-200">
+              {{ successNotice }}
+            </div>
+
+            <div class="mt-6">
+              <label for="login-email" class="text-xs font-bold text-blue-950 uppercase tracking-wider">
                 Email
               </label>
               <input
@@ -139,18 +164,20 @@ function handleLogin() {
                 type="email"
                 placeholder="nama@email.com"
                 required
-                class="mt-2 w-full rounded-xl border border-blue-200 bg-sky-50/70 px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                class="mt-1.5 w-full rounded-xl border border-blue-200 bg-sky-50/50 px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
               />
             </div>
 
-            <div class="mt-9">
+            <div class="mt-5">
               <div class="flex items-center justify-between gap-3">
-                <label for="login-password" class="text-sm font-semibold">
+                <label for="login-password" class="text-xs font-bold text-blue-950 uppercase tracking-wider">
                   Kata Sandi
                 </label>
+                <!-- Tombol Lupa Kata Sandi Aktif! -->
                 <button
                   type="button"
-                  class="text-sm font-semibold text-blue-600 hover:underline"
+                  @click="isForgotModalOpen = true"
+                  class="text-xs font-bold text-blue-600 hover:underline cursor-pointer"
                 >
                   Lupa kata sandi?
                 </button>
@@ -163,41 +190,76 @@ function handleLogin() {
                 placeholder="Minimal 8 karakter"
                 minlength="8"
                 required
-                class="mt-2 w-full rounded-xl border border-blue-200 bg-sky-50/70 px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                class="mt-1.5 w-full rounded-xl border border-blue-200 bg-sky-50/50 px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
               />
             </div>
 
-            <label class="mt-6 flex items-center gap-3 text-sm text-blue-900/75">
-              <input type="checkbox" class="h-4 w-4 accent-blue-600" />
+            <label class="mt-5 flex items-center gap-2.5 text-xs font-medium text-blue-900/75 cursor-pointer">
+              <input type="checkbox" class="h-4 w-4 rounded accent-blue-600" />
               Ingat saya di perangkat ini
             </label>
 
-            <p v-if="errorMessage" class="mt-4 text-sm text-red-600">
+            <p v-if="errorMessage" class="mt-4 text-xs font-bold text-red-600">
               {{ errorMessage }}
             </p>
 
             <button
               type="submit"
-              class="mt-12 w-full rounded-xl bg-blue-600 px-5 py-3 text-sm text-white transition hover:bg-blue-700 sm:mx-auto sm:block sm:w-2/3"
+              class="mt-8 w-full rounded-xl bg-blue-600 py-3.5 text-sm font-bold text-white shadow-md shadow-blue-500/20 transition hover:bg-blue-700 cursor-pointer"
             >
               Masuk
             </button>
           </form>
 
           <div class="relative border-t border-blue-100 px-6 pb-8 pt-7 sm:px-8">
-            <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-white px-3 text-xs text-blue-900/70">
-              atau
+            <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-white px-3 text-xs font-semibold text-blue-900/60">
+              atau lanjutkan dengan
             </span>
 
+            <!-- Tombol Masuk dengan Google Aktif! -->
             <button
               type="button"
-              class="mx-auto block w-full rounded-xl border border-blue-200 px-4 py-4 text-sm hover:bg-sky-50 sm:w-2/3"
+              @click="isGoogleModalOpen = true"
+              class="flex w-full items-center justify-center gap-3 rounded-xl border border-blue-200 bg-white py-3.5 text-sm font-bold text-blue-950 shadow-xs transition hover:bg-sky-50/60 cursor-pointer"
             >
-              Masuk dengan Google
+              <svg class="h-5 w-5" viewBox="0 0 24 24">
+                <path
+                  fill="#4285F4"
+                  d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.27v3.15C3.32 21.41 7.37 24 12 24z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.27C.46 8.2 0 10.04 0 12s.46 3.8 1.27 5.42l4.01-3.15z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.37 0 3.32 2.59 1.27 6.58l4.01 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+                />
+              </svg>
+              <span>Masuk dengan Google</span>
             </button>
           </div>
         </div>
       </section>
     </main>
+
+    <!-- Google Sign In Modal -->
+    <GoogleAuthModal
+      :is-open="isGoogleModalOpen"
+      mode="login"
+      @close="isGoogleModalOpen = false"
+    />
+
+    <!-- Forgot Password Modal -->
+    <ForgotPasswordModal
+      :is-open="isForgotModalOpen"
+      :initial-email="email"
+      @close="isForgotModalOpen = false"
+      @success="handlePasswordResetSuccess"
+    />
   </div>
 </template>

@@ -1,24 +1,18 @@
 <script setup>
 import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import Navbar from '../components/Navbar.vue'
+import {
+  getCurrentUser,
+  getUserTasks,
+  deleteTask,
+} from '../utils/equestState'
 
 const router = useRouter()
-
-function readStorage(key, fallback) {
-  try {
-    const value = localStorage.getItem(key)
-    return value ? JSON.parse(value) : fallback
-  } catch {
-    return fallback
-  }
-}
-
-const currentUser = ref(readStorage('equestUser', null))
+const currentUser = ref(null)
 const tasks = ref([])
 const searchQuery = ref('')
 const selectedStatus = ref('Semua Status')
-
-const isLoggedIn = computed(() => !!currentUser.value)
 
 const statusOptions = [
   { label: 'Semua Status', value: 'Semua Status' },
@@ -26,41 +20,22 @@ const statusOptions = [
   { label: 'Selesai', value: 'Selesai' },
 ]
 
-function getTaskStorageKey() {
-  const email = currentUser.value?.email?.trim().toLowerCase()
-
-  return email
-    ? `equestTasks_${encodeURIComponent(email)}`
-    : 'equestTasks_guest'
-}
-
-function loadUserTasks() {
-  const key = getTaskStorageKey()
-  let saved = localStorage.getItem(key)
-
-  // Pindahkan data tugas lama ke akun yang sedang digunakan,
-  // jika akun tersebut belum memiliki daftar tugas tersendiri.
-  if (saved === null && localStorage.getItem('equestTasks') !== null) {
-    saved = localStorage.getItem('equestTasks')
-    localStorage.setItem(key, saved)
-    localStorage.removeItem('equestTasks')
+function loadTasks() {
+  currentUser.value = getCurrentUser()
+  if (!currentUser.value?.email) {
+    router.push('/login')
+    return
   }
-
-  try {
-    const parsedTasks = JSON.parse(saved || '[]')
-    tasks.value = Array.isArray(parsedTasks) ? parsedTasks : []
-  } catch {
-    tasks.value = []
-  }
+  tasks.value = getUserTasks(currentUser.value.email)
 }
 
 onMounted(() => {
-  loadUserTasks()
+  loadTasks()
 })
 
 const filteredTasks = computed(() => {
   return tasks.value.filter((task) => {
-    const matchesSearch = (task.name || '')
+    const matchesSearch = (task.name || task.fileName || '')
       .toLowerCase()
       .includes(searchQuery.value.toLowerCase())
 
@@ -83,122 +58,54 @@ function openTask(task) {
   })
 }
 
-function logout() {
-  localStorage.removeItem('equestUser')
-  currentUser.value = null
-  router.push('/')
+function handleDelete(taskId) {
+  if (confirm('Apakah kamu yakin ingin menghapus tugas ini?')) {
+    tasks.value = deleteTask(currentUser.value.email, taskId)
+  }
 }
 </script>
 
 <template>
   <div class="min-h-screen bg-sky-100 text-blue-950">
-    <!-- Navbar mengikuti HomeView.vue -->
-    <header class="bg-sky-100 px-6 py-5">
-      <nav class="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
-        <RouterLink to="/" class="flex items-center gap-3">
-          <span class="text-5xl">📚</span>
-          <span class="text-4xl font-extrabold text-black">EQuest</span>
-        </RouterLink>
+    <!-- Navbar -->
+    <Navbar />
 
-        <div class="flex flex-wrap items-center gap-x-6 gap-y-3 text-lg font-bold">
-          <RouterLink
-            to="/"
-            class="text-blue-900/50 hover:text-blue-600"
-          >
-            Beranda
-          </RouterLink>
-
-          <RouterLink
-            to="/tasks"
-            class="text-blue-600"
-          >
-            Tugas Saya
-          </RouterLink>
-
-          <RouterLink
-            to="/upload"
-            class="text-blue-900/50 hover:text-blue-600"
-          >
-            Upload Soal
-          </RouterLink>
-
-          <span class="cursor-not-allowed text-blue-900/40">
-            Blind Box
-          </span>
-
-          <span class="cursor-not-allowed text-blue-900/40">
-            Progress
-          </span>
-
-          <span class="cursor-not-allowed text-blue-900/40">
-            Riwayat
-          </span>
-        </div>
-
-        <div v-if="isLoggedIn" class="flex items-center gap-3">
-          <span class="font-semibold text-blue-900">
-            {{ currentUser.name || currentUser.email || 'Pengguna' }}
-          </span>
-
-          <button
-            type="button"
-            @click="logout"
-            class="rounded-xl border border-blue-300 px-4 py-2 font-semibold hover:bg-white"
-          >
-            Logout
-          </button>
-        </div>
-
-        <RouterLink
-          v-else
-          to="/login"
-          class="rounded-xl bg-blue-600 px-5 py-2 font-semibold text-white hover:bg-blue-700"
-        >
-          Login
-        </RouterLink>
-      </nav>
-    </header>
-
-    <main class="space-y-5 px-6 pb-8">
+    <main class="mx-auto max-w-7xl px-6 pb-12 pt-4">
       <!-- Judul dan kontrol pencarian -->
-      <section class="mb-4 flex flex-wrap items-start justify-between gap-5">
+      <section class="mb-6 flex flex-wrap items-start justify-between gap-5">
         <div>
-          <h1 class="text-3xl font-extrabold sm:text-4xl">
+          <h1 class="text-3xl font-extrabold sm:text-4xl text-blue-950">
             Tugas Saya
           </h1>
 
-          <p class="mt-3 text-lg text-blue-900/70 sm:text-2xl">
+          <p class="mt-2 text-base text-blue-900/70 sm:text-xl">
             Lihat dan lanjutkan tugas yang sedang atau pernah kamu kerjakan
           </p>
         </div>
 
-        <div v-if="tasks.length > 0" class="flex flex-wrap gap-4">
-          <label class="flex items-center gap-3 rounded-2xl bg-white px-4 py-3">
+        <div class="flex flex-wrap items-center gap-3">
+          <!-- Search Box -->
+          <label class="flex items-center gap-2 rounded-2xl border border-blue-200 bg-white px-4 py-2.5 shadow-xs">
             <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="25"
-              height="25"
-              viewBox="0 0 24 24"
+              class="h-5 w-5 text-gray-400"
               fill="none"
+              viewBox="0 0 24 24"
               stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
             >
-              <circle cx="11" cy="11" r="7" />
-              <path d="m20 20-4-4" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-
             <input
               v-model="searchQuery"
               type="search"
               placeholder="Cari tugas..."
-              class="w-48 outline-none"
+              class="w-40 sm:w-52 text-sm outline-none"
             />
           </label>
 
+          <!-- Status Dropdown -->
           <select
             v-model="selectedStatus"
-            class="rounded-2xl bg-white px-4 py-3 font-semibold outline-none"
+            class="rounded-2xl border border-blue-200 bg-white px-4 py-2.5 text-sm font-bold text-blue-950 shadow-xs outline-none cursor-pointer"
           >
             <option
               v-for="option in statusOptions"
@@ -208,95 +115,125 @@ function logout() {
               {{ option.label }}
             </option>
           </select>
+
+          <!-- Upload Button -->
+          <button
+            type="button"
+            @click="uploadTask"
+            class="rounded-2xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-blue-500/20 transition hover:bg-blue-700"
+          >
+            + Upload Baru
+          </button>
         </div>
       </section>
 
-      <!-- Tampilan jika belum ada tugas -->
+      <!-- Tampilan jika belum ada tugas sama sekali -->
       <section
         v-if="tasks.length === 0"
-        class="grid min-h-[520px] items-center gap-8 rounded-2xl border border-blue-500 bg-white p-8 lg:grid-cols-2 lg:px-16"
+        class="grid min-h-[480px] items-center gap-8 rounded-3xl border border-blue-200 bg-white p-8 lg:grid-cols-2 lg:px-16 shadow-sm"
       >
         <div class="flex items-center justify-center">
           <img
             src="../assets/images/robot_bingung.png"
             alt="Robot EQuest sedang bingung karena belum ada tugas"
-            class="max-h-[380px] w-full object-contain"
+            class="max-h-[340px] w-full object-contain"
           />
         </div>
 
-        <div class="flex flex-col gap-8">
+        <div class="flex flex-col gap-6">
           <div>
-            <h2 class="text-3xl font-extrabold sm:text-4xl">
-              Belum ada tugas
+            <span class="rounded-full bg-blue-100 px-3.5 py-1 text-xs font-bold text-blue-700 uppercase">
+              Mulai Langkah Pertama
+            </span>
+            <h2 class="mt-3 text-3xl font-extrabold sm:text-4xl text-blue-950">
+              Belum ada tugas tersimpan
             </h2>
 
-            <p class="mt-4 text-lg text-blue-900/70 sm:text-xl">
+            <p class="mt-3 text-base text-blue-900/70 sm:text-lg leading-relaxed">
               Mulai dengan mengunggah soal atau tugas untuk mendapatkan
-              bantuan AI dan mulai belajar.
+              bantuan AI, belajar dengan cepat, dan kumpulkan tiket hadiah.
             </p>
           </div>
 
           <button
             type="button"
             @click="uploadTask"
-            class="w-full rounded-2xl bg-blue-600 px-6 py-5 text-xl text-white transition hover:bg-blue-700 sm:text-2xl"
+            class="w-full sm:w-fit rounded-2xl bg-blue-600 px-8 py-4 text-base sm:text-lg font-bold text-white shadow-lg shadow-blue-500/20 transition hover:bg-blue-700 hover:scale-[1.02]"
           >
-            Upload Soal Sekarang
+            Upload Soal Sekarang →
           </button>
         </div>
       </section>
 
       <!-- Daftar tugas -->
-      <section v-else class="space-y-0">
+      <section v-else class="space-y-3.5">
         <div
           v-for="task in filteredTasks"
           :key="task.id"
-          class="grid items-center gap-4 rounded-2xl border border-blue-500 bg-white px-6 py-4 sm:grid-cols-[minmax(0,1fr)_150px_188px]"
+          class="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-blue-200 bg-white p-5 shadow-xs transition hover:border-blue-400 hover:shadow-md"
         >
-          <div class="min-w-0">
-            <h2 class="break-words text-xl font-bold sm:text-2xl">
-              {{ task.name || task.fileName || 'Tugas tanpa nama' }}
-            </h2>
+          <div class="flex items-center gap-4 min-w-0 flex-1">
+            <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-sky-100 text-3xl shadow-xs">
+              {{ task.fileName?.endsWith('.pdf') ? '📕' : '📄' }}
+            </div>
 
-            <p class="mt-1 text-base text-blue-900/70 sm:text-xl">
-              {{ task.questionCount }} soal
-              &nbsp; | &nbsp;
-              Diunggah {{ task.uploadDate }}
-            </p>
+            <div class="min-w-0">
+              <h2 class="truncate text-lg font-extrabold text-blue-950 sm:text-xl">
+                {{ task.name || task.fileName || 'Tugas tanpa nama' }}
+              </h2>
+
+              <p class="mt-0.5 text-xs text-blue-900/60 font-medium sm:text-sm">
+                {{ task.questionCount || 1 }} soal
+                &nbsp; | &nbsp;
+                Diunggah {{ task.uploadDate || 'Baru saja' }}
+                <span v-if="task.userScore !== undefined" class="ml-2 font-bold text-green-700">
+                  (Nilai: {{ task.userScore }}/100)
+                </span>
+              </p>
+            </div>
           </div>
 
-          <div class="flex justify-start sm:justify-center">
+          <div class="flex items-center gap-3">
             <span
-              class="rounded-full px-3 py-1 text-center text-sm"
+              class="rounded-full px-3 py-1 text-xs font-bold"
               :class="
                 task.status === 'Selesai'
-                  ? 'bg-green-200 text-green-800'
-                  : 'bg-blue-100 text-blue-600'
+                  ? 'bg-green-100 text-green-800 border border-green-200'
+                  : 'bg-blue-100 text-blue-700 border border-blue-200'
               "
             >
-              {{ task.status }}
+              {{ task.status === 'Selesai' ? '✓ Selesai' : 'Sedang Dikerjakan' }}
             </span>
-          </div>
 
-          <button
-            type="button"
-            @click="openTask(task)"
-            class="rounded-xl px-5 py-3 text-lg transition sm:text-2xl"
-            :class="
-              task.status === 'Selesai'
-                ? 'bg-sky-100 text-blue-600 hover:bg-sky-200'
-                : 'bg-blue-600 text-white hover:bg-blue-700'
-            "
-          >
-            {{ task.status === 'Selesai' ? 'Lihat Hasil' : 'Periksa' }}
-          </button>
+            <button
+              type="button"
+              @click="openTask(task)"
+              class="rounded-xl px-5 py-2.5 text-sm font-bold transition shadow-xs"
+              :class="
+                task.status === 'Selesai'
+                  ? 'bg-sky-100 text-blue-700 hover:bg-sky-200'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              "
+            >
+              {{ task.status === 'Selesai' ? 'Lihat Hasil' : 'Periksa Soal' }}
+            </button>
+
+            <button
+              type="button"
+              @click="handleDelete(task.id)"
+              title="Hapus tugas"
+              class="rounded-xl border border-gray-200 p-2 text-xs text-red-500 hover:bg-red-50 hover:border-red-200"
+            >
+              🗑️
+            </button>
+          </div>
         </div>
 
         <p
           v-if="filteredTasks.length === 0"
-          class="rounded-2xl border border-blue-500 bg-white p-8 text-center text-lg text-blue-900/70"
+          class="rounded-3xl border border-blue-200 bg-white p-8 text-center text-sm font-semibold text-blue-900/70"
         >
-          Tidak ada tugas yang cocok dengan pencarian atau status tersebut.
+          Tidak ada tugas yang cocok dengan pencarian atau filter status tersebut.
         </p>
       </section>
     </main>

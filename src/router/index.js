@@ -2,67 +2,93 @@ import { createRouter, createWebHistory } from 'vue-router'
 import TaskChoiceView from '../views/TaskChoiceView.vue'
 
 const routes = [
-    {
-        path: '/',
-        component: () => import('../views/HomeView.vue'),
-    },
-    {
-        path: '/login',
-        component: () => import('../views/LoginView.vue'),
-    },
-    {
-        path: '/register',
-        component: () => import('../views/RegisterView.vue'),
-    },
-    {
-        path: '/upload',
-        component: () => import('../views/UploadView.vue'),
-    },
-    {
-        path: '/tasks',
-        component: () => import('../views/TasksView.vue'),
-    },
-    {
-        path: '/answer-upload',
-        component: () => import('../views/AnswerUploadView.vue'),
-    },
-    {
-        path: '/answer',
-        component: () => import('../views/AnswerView.vue'),
-    },
-    {
-        path: '/task-choice',
-        component: TaskChoiceView,
-    }
+  {
+    path: '/',
+    name: 'Home',
+    component: () => import('../views/HomeView.vue'),
+  },
+  {
+    path: '/login',
+    name: 'Login',
+    component: () => import('../views/LoginView.vue'),
+  },
+  {
+    path: '/register',
+    name: 'Register',
+    component: () => import('../views/RegisterView.vue'),
+  },
+  {
+    path: '/upload',
+    name: 'Upload',
+    component: () => import('../views/UploadView.vue'),
+  },
+  {
+    path: '/tasks',
+    name: 'Tasks',
+    component: () => import('../views/TasksView.vue'),
+  },
+  {
+    path: '/answer-upload',
+    name: 'AnswerUpload',
+    component: () => import('../views/AnswerUploadView.vue'),
+  },
+  {
+    path: '/answer',
+    name: 'Answer',
+    component: () => import('../views/AnswerView.vue'),
+  },
+  {
+    path: '/task-choice',
+    name: 'TaskChoice',
+    component: TaskChoiceView,
+  },
+  {
+    path: '/blind-box',
+    name: 'BlindBox',
+    component: () => import('../views/BlindBoxView.vue'),
+  },
+  {
+    path: '/progress',
+    name: 'Progress',
+    component: () => import('../views/ProgressView.vue'),
+  },
+  {
+    path: '/riwayat',
+    name: 'Riwayat',
+    component: () => import('../views/HistoryView.vue'),
+  },
+  {
+    path: '/history',
+    redirect: '/riwayat',
+  },
 ]
 
-console.log('DAFTAR ROUTE:', routes.map(route => route.path))
-
 const router = createRouter({
-    history: createWebHistory(),
-    routes,
+  history: createWebHistory(),
+  routes,
 })
 
 router.beforeEach((to) => {
-    const isLoggedIn = localStorage.getItem('equestUser')
+  const isLoggedIn = localStorage.getItem('equestUser')
 
-    const protectedPages = [
-        '/upload',
-        '/tasks',
-        '/answer-upload',
-        '/answer',
-    ]
+  const protectedPages = [
+    '/upload',
+    '/tasks',
+    '/answer-upload',
+    '/answer',
+    '/task-choice',
+    '/blind-box',
+    '/progress',
+    '/riwayat',
+  ]
 
-    if (protectedPages.includes(to.path) && !isLoggedIn) {
-        return '/login'
-    }
+  if (protectedPages.includes(to.path) && !isLoggedIn) {
+    return '/login'
+  }
 
-    if (
-        (to.path === '/login' || to.path === '/register') &&
-        isLoggedIn
-    ) {
-        return '/'
-    }
+  if ((to.path === '/login' || to.path === '/register') && isLoggedIn) {
+    return '/'
+  }
 })
 
 export default router

@@ -1,36 +1,35 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import Navbar from '../components/Navbar.vue'
+import {
+  getCurrentUser,
+  getUserTasks,
+  updateTask,
+  addXp,
+  unlockBadge,
+} from '../utils/equestState'
 
 const router = useRouter()
 const route = useRoute()
-
-function readStorage(key, fallback) {
-  try {
-    const value = localStorage.getItem(key)
-    return value ? JSON.parse(value) : fallback
-  } catch {
-    return fallback
-  }
-}
-
-const currentUser = ref(readStorage('equestUser', null))
-const isLoggedIn = computed(() => !!currentUser.value)
-
-const taskStorageKey = currentUser.value?.email
-  ? `equestTasks_${encodeURIComponent(
-      currentUser.value.email.trim().toLowerCase()
-    )}`
-  : 'equestTasks_guest'
-
-const tasks = ref(readStorage(taskStorageKey, []))
 const taskId = route.query.id
+
+const currentUser = ref(null)
+const tasks = ref([])
+const showExplanations = ref([])
+
+onMounted(() => {
+  currentUser.value = getCurrentUser()
+  if (!currentUser.value?.email) {
+    router.push('/login')
+    return
+  }
+  tasks.value = getUserTasks(currentUser.value.email)
+})
 
 const task = computed(() =>
   tasks.value.find((item) => String(item.id) === String(taskId))
 )
-
-const showExplanations = ref([])
 
 function getAnswerItems(text) {
   if (!text) return []
@@ -61,7 +60,7 @@ function getAnswerItems(text) {
 
     if (!current) {
       current = {
-        question: task.value?.questionText || 'Jawaban AI',
+        question: task.value?.questionText || task.value?.name || 'Jawaban AI',
         answer: '',
         explanation: '',
       }
@@ -84,15 +83,13 @@ function getAnswerItems(text) {
 
   return items.map((item, index) => ({
     ...item,
-    question: item.question || `Jawaban ${index + 1}`,
-    answer: item.answer || 'Jawaban belum tersedia.',
-    explanation: item.explanation || item.answer,
+    question: item.question || `Pertanyaan ${index + 1}`,
+    answer: item.answer || 'Jawaban lengkap tersedia pada penjelasan.',
+    explanation: item.explanation || item.answer || 'Pelajari konsep utama pada pembahasan.',
   }))
 }
 
-const answerItems = computed(() =>
-  getAnswerItems(task.value?.answer)
-)
+const answerItems = computed(() => getAnswerItems(task.value?.answer))
 
 function toggleExplanation(index) {
   if (showExplanations.value.includes(index)) {
@@ -105,191 +102,161 @@ function toggleExplanation(index) {
 }
 
 function finishViewing() {
-  if (task.value && !task.value.answerViewed) {
-    const updatedTasks = tasks.value.map((item) =>
-      String(item.id) === String(taskId)
-        ? { ...item, answerViewed: true, mode: 'study' }
-        : item
-    )
+  const email = currentUser.value?.email
+  if (task.value && email) {
+    updateTask(email, taskId, {
+      status: 'Selesai',
+      answerViewed: true,
+      mode: 'study',
+      completedAt: new Date().toLocaleDateString('id-ID'),
+    })
 
-    localStorage.setItem(taskStorageKey, JSON.stringify(updatedTasks))
+    // Award study XP
+    addXp(email, 20)
+    unlockBadge(email, 'first_task')
   }
 
   router.push('/tasks')
-}
-
-function logout() {
-  localStorage.removeItem('equestUser')
-  currentUser.value = null
-  router.push('/')
 }
 </script>
 
 <template>
   <div class="min-h-screen bg-sky-100 text-blue-950">
-    <!-- Navbar mengikuti HomeView.vue -->
-    <header class="bg-sky-100 px-6 py-5">
-      <nav class="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
-        <RouterLink to="/" class="flex items-center gap-3">
-          <span class="text-5xl">📚</span>
-          <span class="text-4xl font-extrabold text-black">EQuest</span>
-        </RouterLink>
+    <Navbar />
 
-        <div class="flex flex-wrap items-center gap-x-6 gap-y-3 text-lg font-bold">
-          <RouterLink to="/" class="text-blue-900/50 hover:text-blue-600">
-            Beranda
-          </RouterLink>
-
-          <RouterLink to="/tasks" class="text-blue-900/50 hover:text-blue-600">
-            Tugas Saya
-          </RouterLink>
-
-          <RouterLink to="/upload" class="text-blue-900/50 hover:text-blue-600">
-            Upload Soal
-          </RouterLink>
-
-          <span class="cursor-not-allowed text-blue-900/40">Blind Box</span>
-          <span class="cursor-not-allowed text-blue-900/40">Progress</span>
-          <span class="cursor-not-allowed text-blue-900/40">Riwayat</span>
-        </div>
-
-        <div v-if="isLoggedIn" class="flex items-center gap-3">
-          <span class="font-semibold text-blue-900">
-            {{ currentUser.name || currentUser.email || 'Pengguna' }}
-          </span>
-
-          <button
-            type="button"
-            @click="logout"
-            class="rounded-xl border border-blue-300 px-4 py-2 font-semibold hover:bg-white"
-          >
-            Logout
-          </button>
-        </div>
-
-        <RouterLink
-          v-else
-          to="/login"
-          class="rounded-xl bg-blue-600 px-5 py-2 font-semibold text-white hover:bg-blue-700"
-        >
-          Login
-        </RouterLink>
-      </nav>
-    </header>
-
-    <main class="space-y-6 px-6 pb-10">
-      <!-- Judul dan file -->
+    <main class="mx-auto max-w-5xl px-6 pb-12 pt-4 space-y-6">
+      <!-- Judul dan info berkas -->
       <section class="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 class="text-3xl font-extrabold sm:text-4xl">
-            Daftar Jawaban
+          <button
+            type="button"
+            @click="router.push('/tasks')"
+            class="mb-3 inline-flex items-center gap-1.5 text-xs font-bold text-blue-900/70 hover:text-blue-900 transition"
+          >
+            ← Kembali ke Tugas
+          </button>
+          <h1 class="text-3xl font-black text-blue-950 sm:text-4xl">
+            Daftar Jawaban &amp; Pembahasan AI
           </h1>
-
-          <p class="mt-3 text-lg text-blue-900/70 sm:text-xl">
-            Jawaban dari soal yang kamu unggah
+          <p class="mt-1 text-sm text-blue-900/70 sm:text-base">
+            Pelajari konsep dan cara penyelesaian yang telah dianalisis oleh AI EQuest
           </p>
         </div>
 
         <div
           v-if="task"
-          class="flex items-center gap-3 rounded-xl bg-white px-5 py-3"
+          class="flex items-center gap-3 rounded-2xl border border-blue-200 bg-white px-5 py-3 shadow-xs"
         >
-          <span class="text-2xl">📄</span>
-          <div class="max-w-56">
-            <p class="break-words text-sm font-bold">
+          <span class="text-3xl">📄</span>
+          <div class="max-w-64">
+            <p class="truncate text-sm font-black text-blue-950">
               {{ task.fileName || task.name || 'Soal tanpa nama' }}
             </p>
-            <p class="text-xs text-blue-900/60">
-              Mode belajar · Tanpa poin
+            <p class="text-xs text-blue-900/60 font-semibold">
+              Mode Belajar &bull; +20 XP Pembelajaran
             </p>
           </div>
         </div>
       </section>
 
-      <!-- Jawaban -->
+      <!-- Jawaban list -->
       <section
         v-if="task && answerItems.length"
-        class="rounded-xl border border-blue-300 bg-white p-4 sm:p-5"
+        class="rounded-3xl border border-blue-200 bg-white p-6 sm:p-8 shadow-sm space-y-4"
       >
-        <p class="mb-4 text-sm font-bold">
-          {{ answerItems.length }} Jawaban
-        </p>
+        <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+          <p class="text-sm font-black text-blue-950">
+            Ditemukan {{ answerItems.length }} Butir Soal
+          </p>
+          <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-700">
+            Kunci Jawaban Resmi AI
+          </span>
+        </div>
 
         <article
           v-for="(item, index) in answerItems"
           :key="index"
-          class="grid gap-4 rounded-xl border border-blue-200 p-4 sm:grid-cols-[minmax(0,1fr)_140px]"
+          class="rounded-2xl border border-blue-100 bg-sky-50/30 p-5 transition hover:border-blue-300"
         >
-          <div class="flex min-w-0 items-start gap-3">
+          <div class="flex items-start gap-4">
             <span
-              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-600"
+              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-sm font-black text-white shadow-xs"
             >
               {{ index + 1 }}
             </span>
 
             <div class="min-w-0 flex-1">
-              <h2 class="font-bold leading-relaxed">
+              <h2 class="font-extrabold text-blue-950 text-base leading-relaxed">
                 {{ item.question }}
               </h2>
 
+              <!-- Jawaban Singkat -->
               <div
-                class="mt-2 inline-flex max-w-full flex-wrap items-center gap-2 rounded-lg border border-green-300 bg-green-100 px-3 py-1.5 text-sm text-green-900"
+                class="mt-3 rounded-xl border border-green-300 bg-green-50 p-3.5 text-sm text-green-950"
               >
-                <span class="font-bold">Jawaban</span>
-                <span class="whitespace-pre-wrap break-words">{{ item.answer }}</span>
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="font-black text-xs uppercase tracking-wider text-green-800">Jawaban Tepat:</span>
+                </div>
+                <div class="whitespace-pre-wrap font-bold">{{ item.answer }}</div>
               </div>
 
+              <!-- Penjelasan Lengkap (Collapsible) -->
               <div
                 v-if="showExplanations.includes(index)"
-                class="mt-3 rounded-lg bg-sky-50 p-3 text-sm leading-relaxed text-blue-950"
+                class="mt-3 rounded-xl bg-white p-4 text-sm leading-relaxed text-blue-950 border border-blue-200 shadow-xs"
               >
-                <p class="mb-1 font-bold">Penjelasan</p>
-                <p class="whitespace-pre-wrap">{{ item.explanation }}</p>
+                <p class="mb-1 text-xs font-bold uppercase tracking-wider text-blue-700">Penjelasan &amp; Langkah Pengerjaan:</p>
+                <p class="whitespace-pre-wrap text-gray-700">{{ item.explanation }}</p>
+              </div>
+
+              <div class="mt-3 flex justify-end">
+                <button
+                  type="button"
+                  @click="toggleExplanation(index)"
+                  class="rounded-xl border border-blue-200 bg-white px-4 py-2 text-xs font-bold text-blue-600 transition hover:bg-sky-50 cursor-pointer"
+                >
+                  {{
+                    showExplanations.includes(index)
+                      ? '▲ Tutup Pembahasan'
+                      : '▼ Buka Pembahasan Detail'
+                  }}
+                </button>
               </div>
             </div>
           </div>
-
-          <div class="sm:pl-2">
-            <button
-              type="button"
-              @click="toggleExplanation(index)"
-              class="w-full rounded-lg border border-blue-200 px-3 py-2 text-sm text-blue-600 transition hover:bg-sky-50"
-            >
-              {{
-                showExplanations.includes(index)
-                  ? 'Tutup Penjelasan'
-                  : 'Penjelasan'
-              }}
-            </button>
-          </div>
         </article>
 
-        <p class="mt-4 rounded-lg bg-sky-50 p-3 text-sm text-blue-800">
-          Kamu melihat jawaban langsung. Mode ini tidak memberikan poin.
-        </p>
+        <div class="rounded-2xl bg-amber-50 p-4 text-xs font-semibold text-amber-900 border border-amber-200">
+          💡 Catatan: Mode belajar langsung ini membuka kunci pembahasan secara instan dan memberikanmu 20 XP. Jika ingin mendapatkan Tiket Blind Box misteri, kamu bisa mencoba "Kerjakan Sendiri" pada tugas lainnya.
+        </div>
       </section>
 
       <!-- Jika jawaban belum tersedia -->
       <section
         v-else
-        class="rounded-xl border border-blue-300 bg-white p-8 text-center"
+        class="rounded-3xl border border-blue-200 bg-white p-12 text-center shadow-xs"
       >
-        <p class="text-4xl">📄</p>
-        <h2 class="mt-3 text-xl font-bold">Jawaban belum tersedia</h2>
-        <p class="mt-2 text-blue-900/70">
-          Tugas tidak ditemukan atau jawaban AI belum tersimpan.
-          Coba kembali ke Tugas Saya.
+        <span class="text-5xl">📄</span>
+        <h2 class="mt-4 text-xl font-black text-blue-950">Jawaban belum tersedia</h2>
+        <p class="mt-2 text-sm text-blue-900/70">
+          Tugas tidak ditemukan atau jawaban belum tersimpan di memori peramban.
         </p>
+        <RouterLink
+          to="/tasks"
+          class="mt-6 inline-block rounded-xl bg-blue-600 px-6 py-2.5 text-xs font-bold text-white hover:bg-blue-700"
+        >
+          Kembali ke Tugas Saya
+        </RouterLink>
       </section>
 
-      <!-- Selesai -->
-      <div class="flex justify-end">
+      <!-- Tombol Selesai Belajar -->
+      <div class="flex justify-end gap-3 pt-4">
         <button
           type="button"
           @click="finishViewing"
-          class="min-w-40 rounded-xl bg-blue-600 px-8 py-3 text-lg font-semibold text-white transition hover:bg-blue-700"
+          class="rounded-2xl bg-blue-600 px-8 py-3.5 text-sm font-black text-white shadow-lg shadow-blue-500/25 transition hover:bg-blue-700 cursor-pointer"
         >
-          Selesai
+          Selesai Membaca &amp; Simpan Progres (+20 XP) ✓
         </button>
       </div>
     </main>
