@@ -62,10 +62,10 @@ function handleTaskAction(task) {
       query: { id: task.id, mode: 'score' },
     })
   } else {
-    // Mode Periksa sesuai Desktop - 13
+    // Arahkan ke halaman Upload / Ketik Jawaban terlebih dahulu sebelum masuk ke halaman koreksi
     router.push({
-      path: '/answer',
-      query: { id: task.id, mode: 'eval' },
+      path: '/answer-upload',
+      query: { taskId: task.id },
     })
   }
 }

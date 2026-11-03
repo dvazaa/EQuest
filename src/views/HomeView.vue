@@ -154,10 +154,20 @@ const currentTask = computed(() => {
             <div class="mt-4 flex justify-end">
               <RouterLink
                 v-if="currentTask"
-                :to="{ path: '/answer', query: { id: currentTask.id, mode: 'eval' } }"
+                :to="
+                  currentTask.status === 'Selesai'
+                    ? {
+                        path: '/answer',
+                        query: {
+                          id: currentTask.id,
+                          mode: currentTask.directStudy && !currentTask.hasSubmittedAnswer ? 'study' : 'score',
+                        },
+                      }
+                    : { path: '/answer-upload', query: { taskId: currentTask.id } }
+                "
                 class="rounded-xl bg-[#2D6BE4] px-6 py-2.5 text-sm font-bold text-white shadow-xs transition hover:bg-blue-700"
               >
-                Lanjutkan
+                {{ currentTask.status === 'Selesai' ? 'Lihat Hasil' : 'Lanjutkan' }}
               </RouterLink>
               <RouterLink
                 v-else
