@@ -1,8 +1,8 @@
 -- =====================================================================
 -- PERANCANGAN BASIS DATA FISIK (PHYSICAL DATABASE DESIGN / PDM)
 -- APLIKASI: EQuest (Sistem Pendamping Pengerjaan Tugas Berbasis AI)
--- Dokumen Acuan: Software Requirements Specification (SRS) v1.0
--- Penyusun SRS: 11241026 - Diva Novaliza Fitriyani
+-- Dokumen Acuan: Software Design Document (SDD) Bab 4.4 Entity Relationship Diagram
+-- Mahasiswa: 11241026 - Diva Novaliza Fitriyani
 -- Database Engine: MySQL / MariaDB (InnoDB, utf8mb4)
 -- =====================================================================
 
@@ -12,269 +12,328 @@ COLLATE utf8mb4_unicode_ci;
 
 USE `equest_db`;
 
--- Nonaktifkan pengecekan foreign key sementara untuk inisialisasi tabel
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- =====================================================================
--- 1. TABEL PENGGUNA (USERS)
--- Referensi SRS: FR-01 (Registrasi), FR-02 (Login), NFR-01, NFR-02 (Password Hash)
+-- 1. TABEL PENGGUNA
 -- =====================================================================
-DROP TABLE IF EXISTS `users`;
-CREATE TABLE `users` (
-  `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `name` VARCHAR(100) NOT NULL,
+DROP TABLE IF EXISTS `Pengguna`;
+CREATE TABLE `Pengguna` (
+  `id_pengguna` INT AUTO_INCREMENT PRIMARY KEY,
+  `nama` VARCHAR(100) NOT NULL,
   `email` VARCHAR(150) NOT NULL UNIQUE,
-  `password_hash` VARCHAR(255) NOT NULL COMMENT 'Password disimpan dalam bentuk hash bcrypt (NFR-02)',
-  `avatar` VARCHAR(50) DEFAULT '👤',
-  `role` ENUM('student', 'general') DEFAULT 'student',
-  `provider` ENUM('local', 'google') DEFAULT 'local',
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX `idx_users_email` (`email`)
+  `password_hash` VARCHAR(255) NOT NULL,
+  `role` VARCHAR(50) DEFAULT 'Pengguna',
+  `foto_profil` VARCHAR(255) DEFAULT '👤',
+  `tanggal_daftar` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `xp_total` INT DEFAULT 0,
+  `tiket_total` INT DEFAULT 0,
+  `status_akun` ENUM('aktif', 'nonaktif') DEFAULT 'aktif',
+  INDEX `idx_pengguna_email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- =====================================================================
--- 2. TABEL STATISTIK & GAMIFIKASI PENGGUNA (USER_STATS)
--- Referensi SRS: FR-10 (Kesempatan Perbaikan), FR-12 (XP & Tiket), FR-14 (Progress), FR-15 (Streak)
+-- 2. TABEL STREAK
 -- =====================================================================
-DROP TABLE IF EXISTS `user_stats`;
-CREATE TABLE `user_stats` (
-  `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `user_id` INT NOT NULL UNIQUE,
-  `xp` INT DEFAULT 0 COMMENT 'Total akumulasi Experience Point pengguna',
-  `tickets` INT DEFAULT 0 COMMENT 'Tiket yang dimiliki untuk membuka Mystery Blind Box',
-  `streak` INT DEFAULT 0 COMMENT 'Jumlah hari konsistensi belajar berturut-turut',
-  `repair_chances_left` INT DEFAULT 3 COMMENT 'Kesempatan perbaikan kesalahan aktif yang dimiliki (FR-10)',
-  `last_active_date` DATE DEFAULT NULL COMMENT 'Mencatat tanggal aktivitas terakhir untuk validasi streak',
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  CONSTRAINT `fk_userstats_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+DROP TABLE IF EXISTS `Streak`;
+CREATE TABLE `Streak` (
+  `id_streak` INT AUTO_INCREMENT PRIMARY KEY,
+  `id_pengguna` INT NOT NULL,
+  `jumlah_hari` INT DEFAULT 0,
+  `tanggal_terakhir` DATE DEFAULT NULL,
+  `status` ENUM('aktif', 'freeze', 'putus') DEFAULT 'aktif',
+  INDEX `idx_streak_pengguna` (`id_pengguna`),
+  CONSTRAINT `fk_streak_pengguna` FOREIGN KEY (`id_pengguna`) REFERENCES `Pengguna` (`id_pengguna`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- =====================================================================
--- 3. TABEL TUGAS & SOAL (TASKS)
--- Referensi SRS: FR-03 (Mengunggah Tugas), FR-04 (Menganalisis Soal), NFR-03
+-- 3. TABEL PROGRES_PENGGUNA
 -- =====================================================================
-DROP TABLE IF EXISTS `tasks`;
-CREATE TABLE `tasks` (
-  `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `user_id` INT NOT NULL,
-  `title` VARCHAR(255) NOT NULL COMMENT 'Judul tugas atau nama berkas asli',
-  `file_url` VARCHAR(255) DEFAULT NULL COMMENT 'Lokasi file foto atau PDF tugas yang diunggah (Cloudinary/Lokal)',
-  `file_type` VARCHAR(20) DEFAULT NULL COMMENT 'Format file: jpg, png, pdf',
-  `question_text` TEXT DEFAULT NULL COMMENT 'Teks hasil ekstraksi soal oleh sistem',
-  `status` ENUM('uploaded', 'analyzed', 'in_progress', 'completed') DEFAULT 'uploaded',
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX `idx_tasks_user` (`user_id`),
-  CONSTRAINT `fk_tasks_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+DROP TABLE IF EXISTS `Progres_Pengguna`;
+CREATE TABLE `Progres_Pengguna` (
+  `id_progres` INT AUTO_INCREMENT PRIMARY KEY,
+  `id_pengguna` INT NOT NULL,
+  `total_tugas` INT DEFAULT 0,
+  `total_benar` INT DEFAULT 0,
+  `total_salah` INT DEFAULT 0,
+  `tanggal_diperbarui` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX `idx_progres_pengguna` (`id_pengguna`),
+  CONSTRAINT `fk_progres_pengguna` FOREIGN KEY (`id_pengguna`) REFERENCES `Pengguna` (`id_pengguna`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- =====================================================================
--- 4. TABEL BANTUAN & PENJELASAN AI (TASK_AI_ASSISTANCE)
--- Referensi SRS: FR-05 (Penjelasan Soal), FR-06 (Petunjuk Pengerjaan), FR-11 (Bantuan Berdasarkan Kemampuan)
+-- 4. TABEL REWARD
 -- =====================================================================
-DROP TABLE IF EXISTS `task_ai_assistance`;
-CREATE TABLE `task_ai_assistance` (
-  `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `task_id` INT NOT NULL UNIQUE,
-  `concept_explanation` TEXT DEFAULT NULL COMMENT 'Penjelasan maksud atau konsep dasar soal (FR-05)',
-  `hints` TEXT DEFAULT NULL COMMENT 'Petunjuk atau langkah pengerjaan tanpa jawaban akhir (FR-06)',
-  `difficulty_level` ENUM('easy', 'medium', 'hard') DEFAULT 'medium' COMMENT 'Tingkat bantuan sesuai kemampuan (FR-11)',
-  `reference_solution` TEXT DEFAULT NULL COMMENT 'Solusi rujukan internal untuk pemeriksaan jawaban',
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT `fk_ai_task` FOREIGN KEY (`task_id`) REFERENCES `tasks` (`id`) ON DELETE CASCADE
+DROP TABLE IF EXISTS `Reward`;
+CREATE TABLE `Reward` (
+  `id_reward` INT AUTO_INCREMENT PRIMARY KEY,
+  `nama_reward` VARCHAR(100) NOT NULL,
+  `jenis` VARCHAR(50) NOT NULL COMMENT 'badge, xp, tiket, streak_shield, tema',
+  `deskripsi` TEXT DEFAULT NULL,
+  `tingkat_kelangkaan` VARCHAR(50) DEFAULT 'Common',
+  `gambar_url` VARCHAR(255) DEFAULT NULL,
+  `status` VARCHAR(50) DEFAULT 'aktif'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- =====================================================================
--- 5. TABEL PENGIRIMAN JAWABAN SISWA (TASK_SUBMISSIONS)
--- Referensi SRS: FR-07 (Kirim Jawaban), FR-08 (Periksa Jawaban), FR-09 (Koreksi), FR-10 (Perbaikan Jawaban)
+-- 5. TABEL REWARD_PENGGUNA
 -- =====================================================================
-DROP TABLE IF EXISTS `task_submissions`;
-CREATE TABLE `task_submissions` (
-  `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `task_id` INT NOT NULL,
-  `user_id` INT NOT NULL,
-  `attempt_number` INT DEFAULT 1 COMMENT 'Percobaan ke-n dalam kesempatan perbaikan kesalahan (FR-10)',
-  `submission_file_url` VARCHAR(255) DEFAULT NULL COMMENT 'Foto berkas lembar jawaban siswa',
-  `student_answer_text` TEXT DEFAULT NULL COMMENT 'Teks jawaban yang diketik siswa',
-  `is_correct` BOOLEAN DEFAULT FALSE COMMENT 'Status kebenaran jawaban setelah diperiksa AI (FR-08)',
-  `score` INT DEFAULT NULL COMMENT 'Skor penilaian (0 - 100)',
-  `correction_notes` TEXT DEFAULT NULL COMMENT 'Koreksi dan arahan perbaikan jika terdapat kesalahan (FR-09)',
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX `idx_submissions_task` (`task_id`),
-  INDEX `idx_submissions_user` (`user_id`),
-  CONSTRAINT `fk_submissions_task` FOREIGN KEY (`task_id`) REFERENCES `tasks` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_submissions_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+DROP TABLE IF EXISTS `Reward_Pengguna`;
+CREATE TABLE `Reward_Pengguna` (
+  `id_reward_pengguna` INT AUTO_INCREMENT PRIMARY KEY,
+  `id_pengguna` INT NOT NULL,
+  `id_reward` INT NOT NULL,
+  `jumlah` INT DEFAULT 1,
+  `sumber` VARCHAR(100) DEFAULT 'Blind Box',
+  `tanggal_diperoleh` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX `idx_reward_pengguna` (`id_pengguna`),
+  CONSTRAINT `fk_rewpeng_pengguna` FOREIGN KEY (`id_pengguna`) REFERENCES `Pengguna` (`id_pengguna`) ON DELETE CASCADE,
+  CONSTRAINT `fk_rewpeng_reward` FOREIGN KEY (`id_reward`) REFERENCES `Reward` (`id_reward`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- =====================================================================
--- 6. TABEL RIWAYAT KESALAHAN (MISTAKE_HISTORY)
--- Referensi SRS: FR-16 (Menampilkan Riwayat Kesalahan)
+-- 6. TABEL BLIND_BOX
 -- =====================================================================
-DROP TABLE IF EXISTS `mistake_history`;
-CREATE TABLE `mistake_history` (
-  `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `user_id` INT NOT NULL,
-  `task_id` INT NOT NULL,
-  `submission_id` INT DEFAULT NULL,
-  `topic` VARCHAR(150) DEFAULT NULL COMMENT 'Topik atau materi yang mengalami kesalahan',
-  `mistake_description` TEXT NOT NULL COMMENT 'Deskripsi bagian kesalahan yang dilakukan pengguna',
-  `correction_guidance` TEXT NOT NULL COMMENT 'Arahan konsep yang perlu dipelajari kembali',
-  `is_resolved` BOOLEAN DEFAULT FALSE COMMENT 'Apakah kesalahan sudah berhasil diperbaiki',
-  `resolved_at` TIMESTAMP NULL DEFAULT NULL,
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX `idx_mistakes_user` (`user_id`),
-  CONSTRAINT `fk_mistakes_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_mistakes_task` FOREIGN KEY (`task_id`) REFERENCES `tasks` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_mistakes_sub` FOREIGN KEY (`submission_id`) REFERENCES `task_submissions` (`id`) ON DELETE SET NULL
+DROP TABLE IF EXISTS `Blind_Box`;
+CREATE TABLE `Blind_Box` (
+  `id_blind_box` INT AUTO_INCREMENT PRIMARY KEY,
+  `nama_blind_box` VARCHAR(100) NOT NULL,
+  `deskripsi` TEXT DEFAULT NULL,
+  `biaya_tiket` INT DEFAULT 1,
+  `gambar_url` VARCHAR(255) DEFAULT NULL,
+  `status` VARCHAR(50) DEFAULT 'aktif'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- =====================================================================
--- 7. TABEL RIWAYAT PENGERJAAN TUGAS (TASK_HISTORY)
--- Referensi SRS: FR-17 (Riwayat Pengerjaan), FR-12 (XP & Tiket), FR-18 (Melihat Jawaban Benar)
+-- 7. TABEL BLIND_BOX_REWARD
 -- =====================================================================
-DROP TABLE IF EXISTS `task_history`;
-CREATE TABLE `task_history` (
-  `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `user_id` INT NOT NULL,
-  `task_id` INT NOT NULL,
-  `mode` ENUM('study_view', 'self_solve') DEFAULT 'self_solve' COMMENT 'study_view = langsung lihat kunci (tanpa reward), self_solve = mandiri (FR-18)',
-  `final_score` INT DEFAULT NULL,
-  `xp_earned` INT DEFAULT 0 COMMENT 'Jumlah XP yang didapat dari tugas ini (FR-12)',
-  `tickets_earned` INT DEFAULT 0 COMMENT 'Jumlah Tiket yang didapat dari tugas ini (FR-12)',
-  `attempts_used` INT DEFAULT 1 COMMENT 'Berapa kali perbaikan yang digunakan',
-  `completed_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX `idx_history_user` (`user_id`),
-  CONSTRAINT `fk_history_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_history_task` FOREIGN KEY (`task_id`) REFERENCES `tasks` (`id`) ON DELETE CASCADE
+DROP TABLE IF EXISTS `Blind_Box_Reward`;
+CREATE TABLE `Blind_Box_Reward` (
+  `id_blind_box` INT NOT NULL,
+  `id_reward` INT NOT NULL,
+  `probabilitas` DECIMAL(5,2) DEFAULT 1.00,
+  PRIMARY KEY (`id_blind_box`, `id_reward`),
+  CONSTRAINT `fk_bbr_box` FOREIGN KEY (`id_blind_box`) REFERENCES `Blind_Box` (`id_blind_box`) ON DELETE CASCADE,
+  CONSTRAINT `fk_bbr_reward` FOREIGN KEY (`id_reward`) REFERENCES `Reward` (`id_reward`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- =====================================================================
--- 8. TABEL MYSTERY BLIND BOX & REWARD (COLLECTIBLES)
--- Referensi SRS: FR-13 (Mystery Blind Box & Collectible)
+-- 8. TABEL KOLEKSI_PENGGUNA
 -- =====================================================================
-DROP TABLE IF EXISTS `collectibles`;
-CREATE TABLE `collectibles` (
-  `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `name` VARCHAR(100) NOT NULL COMMENT 'Nama item reward / lencana',
-  `type` ENUM('badge', 'title', 'xp_pack', 'streak_shield', 'ticket_booster') NOT NULL,
-  `icon` VARCHAR(50) DEFAULT '🎁',
-  `rarity` ENUM('common', 'rare', 'epic', 'legendary') DEFAULT 'common',
-  `description` TEXT DEFAULT NULL,
-  `value_amount` INT DEFAULT 0 COMMENT 'Nilai bonus (misal: 100 untuk 100 XP)',
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+DROP TABLE IF EXISTS `Koleksi_Pengguna`;
+CREATE TABLE `Koleksi_Pengguna` (
+  `id_koleksi` INT AUTO_INCREMENT PRIMARY KEY,
+  `id_pengguna` INT NOT NULL,
+  `id_reward` INT NOT NULL,
+  `tanggal_diperoleh` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX `idx_koleksi_pengguna` (`id_pengguna`),
+  CONSTRAINT `fk_koleksi_pengguna` FOREIGN KEY (`id_pengguna`) REFERENCES `Pengguna` (`id_pengguna`) ON DELETE CASCADE,
+  CONSTRAINT `fk_koleksi_reward` FOREIGN KEY (`id_reward`) REFERENCES `Reward` (`id_reward`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- =====================================================================
--- 9. TABEL KOLEKSI PENGGUNA (USER_COLLECTIBLES)
--- Referensi SRS: FR-13 (Penyimpanan Collectible Pengguna)
+-- 9. TABEL TUGAS
 -- =====================================================================
-DROP TABLE IF EXISTS `user_collectibles`;
-CREATE TABLE `user_collectibles` (
-  `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `user_id` INT NOT NULL,
-  `collectible_id` INT NOT NULL,
-  `obtained_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX `idx_user_collectibles_user` (`user_id`),
-  CONSTRAINT `fk_usercol_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_usercol_col` FOREIGN KEY (`collectible_id`) REFERENCES `collectibles` (`id`) ON DELETE CASCADE
+DROP TABLE IF EXISTS `Tugas`;
+CREATE TABLE `Tugas` (
+  `id_tugas` INT AUTO_INCREMENT PRIMARY KEY,
+  `id_pengguna` INT NOT NULL,
+  `judul` VARCHAR(255) NOT NULL,
+  `deskripsi` TEXT DEFAULT NULL,
+  `file_url` VARCHAR(255) DEFAULT NULL,
+  `jenis_file` VARCHAR(50) DEFAULT 'pdf',
+  `tanggal_upload` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `tipe` VARCHAR(50) DEFAULT 'Latihan',
+  `batas_waktu` DATETIME DEFAULT NULL,
+  `tingkat_kesulitan` VARCHAR(50) DEFAULT 'Sedang',
+  `poin_xp` INT DEFAULT 10,
+  `status` VARCHAR(50) DEFAULT 'Sedang Dikerjakan',
+  INDEX `idx_tugas_pengguna` (`id_pengguna`),
+  CONSTRAINT `fk_tugas_pengguna` FOREIGN KEY (`id_pengguna`) REFERENCES `Pengguna` (`id_pengguna`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- =====================================================================
--- 10. TABEL LOG TRANSAKSI BLIND BOX (BLIND_BOX_LOGS)
--- Referensi SRS: FR-13 (Buka Mystery Blind Box Menggunakan Tiket)
+-- 10. TABEL JAWABAN
 -- =====================================================================
-DROP TABLE IF EXISTS `blind_box_logs`;
-CREATE TABLE `blind_box_logs` (
-  `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `user_id` INT NOT NULL,
-  `collectible_id` INT NOT NULL,
-  `ticket_cost` INT DEFAULT 1 COMMENT 'Jumlah tiket yang dipakai untuk membuka (default 1)',
-  `opened_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT `fk_boxlogs_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_boxlogs_col` FOREIGN KEY (`collectible_id`) REFERENCES `collectibles` (`id`) ON DELETE CASCADE
+DROP TABLE IF EXISTS `Jawaban`;
+CREATE TABLE `Jawaban` (
+  `id_jawaban` INT AUTO_INCREMENT PRIMARY KEY,
+  `id_tugas` INT NOT NULL,
+  `id_pengguna` INT NOT NULL,
+  `isi_jawaban` TEXT NOT NULL,
+  `versi` INT DEFAULT 1,
+  `tanggal_kirim` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `status` VARCHAR(50) DEFAULT 'Terkirim',
+  INDEX `idx_jawaban_tugas` (`id_tugas`),
+  INDEX `idx_jawaban_pengguna` (`id_pengguna`),
+  CONSTRAINT `fk_jawaban_tugas` FOREIGN KEY (`id_tugas`) REFERENCES `Tugas` (`id_tugas`) ON DELETE CASCADE,
+  CONSTRAINT `fk_jawaban_pengguna` FOREIGN KEY (`id_pengguna`) REFERENCES `Pengguna` (`id_pengguna`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- =====================================================================
--- 11. TABEL PAKET PREMIUM (PREMIUM_PACKAGES)
--- Referensi SRS: FR-19 (Melihat Paket Premium), NFR-15
+-- 11. TABEL KESEMPATAN_PERBAIKAN
 -- =====================================================================
-DROP TABLE IF EXISTS `premium_packages`;
-CREATE TABLE `premium_packages` (
-  `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `name` VARCHAR(100) NOT NULL COMMENT 'Contoh: Paket Bulanan Pelajar, Paket Semester',
-  `price` DECIMAL(10, 2) NOT NULL COMMENT 'Harga berlangganan (Rupiah)',
-  `duration_days` INT NOT NULL COMMENT 'Durasi aktif paket dalam hari',
-  `description` TEXT DEFAULT NULL,
-  `benefits_json` JSON DEFAULT NULL COMMENT 'Daftar manfaat paket dalam format JSON',
-  `is_active` BOOLEAN DEFAULT TRUE,
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+DROP TABLE IF EXISTS `Kesempatan_Perbaikan`;
+CREATE TABLE `Kesempatan_Perbaikan` (
+  `id_kesempatan` INT AUTO_INCREMENT PRIMARY KEY,
+  `id_jawaban` INT NOT NULL,
+  `jumlah_kesempatan` INT DEFAULT 3,
+  `jumlah_terpakai` INT DEFAULT 0,
+  `status` VARCHAR(50) DEFAULT 'Tersedia',
+  INDEX `idx_kesempatan_jawaban` (`id_jawaban`),
+  CONSTRAINT `fk_kesempatan_jawaban` FOREIGN KEY (`id_jawaban`) REFERENCES `Jawaban` (`id_jawaban`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- =====================================================================
--- 12. TABEL LANGGANAN PENGGUNA (USER_SUBSCRIPTIONS)
--- Referensi SRS: FR-20 (Berlangganan Premium), FR-21 (Status Premium), NFR-16, NFR-17, NFR-18
+-- 12. TABEL PEMERIKSAAN
 -- =====================================================================
-DROP TABLE IF EXISTS `user_subscriptions`;
-CREATE TABLE `user_subscriptions` (
-  `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `user_id` INT NOT NULL,
-  `package_id` INT NOT NULL,
-  `status` ENUM('pending', 'active', 'expired', 'cancelled') DEFAULT 'pending',
-  `start_date` DATE DEFAULT NULL,
-  `end_date` DATE DEFAULT NULL,
-  `payment_method` VARCHAR(50) DEFAULT NULL COMMENT 'Metode: QRIS, Transfer Bank, E-Wallet',
-  `transaction_code` VARCHAR(100) DEFAULT NULL COMMENT 'Kode referensi transaksi dari payment gateway',
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX `idx_subscriptions_user` (`user_id`),
-  CONSTRAINT `fk_subs_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_subs_package` FOREIGN KEY (`package_id`) REFERENCES `premium_packages` (`id`) ON DELETE RESTRICT
+DROP TABLE IF EXISTS `Pemeriksaan`;
+CREATE TABLE `Pemeriksaan` (
+  `id_pemeriksaan` INT AUTO_INCREMENT PRIMARY KEY,
+  `id_jawaban` INT NOT NULL,
+  `hasil_awal` TEXT DEFAULT NULL,
+  `tanggal_pemeriksaan` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `status` VARCHAR(50) DEFAULT 'Selesai',
+  INDEX `idx_pemeriksaan_jawaban` (`id_jawaban`),
+  CONSTRAINT `fk_pemeriksaan_jawaban` FOREIGN KEY (`id_jawaban`) REFERENCES `Jawaban` (`id_jawaban`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Aktifkan kembali pengecekan foreign key
+
+-- =====================================================================
+-- 13. TABEL KOREKSI
+-- =====================================================================
+DROP TABLE IF EXISTS `Koreksi`;
+CREATE TABLE `Koreksi` (
+  `id_koreksi` INT AUTO_INCREMENT PRIMARY KEY,
+  `id_pemeriksaan` INT NOT NULL,
+  `bagian_salah` TEXT DEFAULT NULL,
+  `petunjuk_perbaikan` TEXT DEFAULT NULL,
+  `revisi` INT DEFAULT 0,
+  `hasil_akhir` VARCHAR(50) DEFAULT NULL,
+  `tanggal_koreksi` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `status` VARCHAR(50) DEFAULT 'Selesai',
+  INDEX `idx_koreksi_pemeriksaan` (`id_pemeriksaan`),
+  CONSTRAINT `fk_koreksi_pemeriksaan` FOREIGN KEY (`id_pemeriksaan`) REFERENCES `Pemeriksaan` (`id_pemeriksaan`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- =====================================================================
+-- 14. TABEL RIWAYAT_KESALAHAN
+-- =====================================================================
+DROP TABLE IF EXISTS `Riwayat_Kesalahan`;
+CREATE TABLE `Riwayat_Kesalahan` (
+  `id_riwayat` INT AUTO_INCREMENT PRIMARY KEY,
+  `id_pengguna` INT NOT NULL,
+  `id_koreksi` INT DEFAULT NULL,
+  `kategori` VARCHAR(100) DEFAULT NULL,
+  `deskripsi_kesalahan` TEXT NOT NULL,
+  `tanggal_terjadi` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX `idx_riwayat_pengguna` (`id_pengguna`),
+  CONSTRAINT `fk_riwayat_pengguna` FOREIGN KEY (`id_pengguna`) REFERENCES `Pengguna` (`id_pengguna`) ON DELETE CASCADE,
+  CONSTRAINT `fk_riwayat_koreksi` FOREIGN KEY (`id_koreksi`) REFERENCES `Koreksi` (`id_koreksi`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- =====================================================================
+-- 15. TABEL PAKET_PREMIUM
+-- =====================================================================
+DROP TABLE IF EXISTS `Paket_Premium`;
+CREATE TABLE `Paket_Premium` (
+  `id_paket` INT AUTO_INCREMENT PRIMARY KEY,
+  `nama_paket` VARCHAR(100) NOT NULL,
+  `durasi_hari` INT NOT NULL,
+  `harga` DECIMAL(12,2) NOT NULL,
+  `deskripsi` TEXT DEFAULT NULL,
+  `fitur` TEXT DEFAULT NULL,
+  `status` VARCHAR(50) DEFAULT 'aktif'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- =====================================================================
+-- 16. TABEL LANGGANAN_PREMIUM
+-- =====================================================================
+DROP TABLE IF EXISTS `Langganan_Premium`;
+CREATE TABLE `Langganan_Premium` (
+  `id_langganan` INT AUTO_INCREMENT PRIMARY KEY,
+  `id_pengguna` INT NOT NULL,
+  `id_paket` INT NOT NULL,
+  `tanggal_mulai` DATE DEFAULT NULL,
+  `tanggal_berakhir` DATE DEFAULT NULL,
+  `status` VARCHAR(50) DEFAULT 'aktif',
+  INDEX `idx_langganan_pengguna` (`id_pengguna`),
+  CONSTRAINT `fk_langganan_pengguna` FOREIGN KEY (`id_pengguna`) REFERENCES `Pengguna` (`id_pengguna`) ON DELETE CASCADE,
+  CONSTRAINT `fk_langganan_paket` FOREIGN KEY (`id_paket`) REFERENCES `Paket_Premium` (`id_paket`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- =====================================================================
+-- 17. TABEL TRANSAKSI
+-- =====================================================================
+DROP TABLE IF EXISTS `Transaksi`;
+CREATE TABLE `Transaksi` (
+  `id_transaksi` INT AUTO_INCREMENT PRIMARY KEY,
+  `id_langganan` INT NOT NULL,
+  `id_pengguna` INT NOT NULL,
+  `metode_pembayaran` VARCHAR(50) NOT NULL,
+  `jumlah` DECIMAL(12,2) NOT NULL,
+  `status` VARCHAR(50) DEFAULT 'Berhasil',
+  `transaction_reference` VARCHAR(100) DEFAULT NULL,
+  `tanggal_transaksi` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX `idx_transaksi_pengguna` (`id_pengguna`),
+  CONSTRAINT `fk_transaksi_langganan` FOREIGN KEY (`id_langganan`) REFERENCES `Langganan_Premium` (`id_langganan`) ON DELETE CASCADE,
+  CONSTRAINT `fk_transaksi_pengguna` FOREIGN KEY (`id_pengguna`) REFERENCES `Pengguna` (`id_pengguna`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 
 -- =====================================================================
--- SEED DATA AWAL (DEFAULT / DEMO DATA UNTUK PENGUJIAN)
+-- DATA SEED AWAL
 -- =====================================================================
+INSERT INTO `Pengguna` (`id_pengguna`, `nama`, `email`, `password_hash`, `role`, `foto_profil`, `xp_total`, `tiket_total`) VALUES
+(1, 'Diva Novaliza Fitriyani', 'diva@equest.ac.id', '$2a$10$wN7Kk5MvVv8q3R8U4u7n2eP8iM9A8x8u7n2eP8iM9A8x8u7n2eP8i', 'Mahasiswa', '👩‍🎓', 320, 10),
+(2, 'Budi Santoso', 'budi.santoso@gmail.com', '$2a$10$wN7Kk5MvVv8q3R8U4u7n2eP8iM9A8x8u7n2eP8iM9A8x8u7n2eP8i', 'Pengguna', '👨‍🎓', 100, 2)
+ON DUPLICATE KEY UPDATE `nama`=VALUES(`nama`);
 
--- 1. Pengguna Demo (Password hash bcrypt default untuk "password123")
-INSERT INTO `users` (`id`, `name`, `email`, `password_hash`, `avatar`, `role`, `provider`) VALUES
-(1, 'Diva Novaliza Fitriyani', 'diva@equest.ac.id', '$2a$10$wN7Kk5MvVv8q3R8U4u7n2eP8iM9A8x8u7n2eP8iM9A8x8u7n2eP8i', '👩‍🎓', 'student', 'local'),
-(2, 'Budi Santoso', 'budi.santoso@gmail.com', '$2a$10$wN7Kk5MvVv8q3R8U4u7n2eP8iM9A8x8u7n2eP8iM9A8x8u7n2eP8i', '👨‍🎓', 'student', 'local')
-ON DUPLICATE KEY UPDATE `name`=VALUES(`name`);
+INSERT INTO `Streak` (`id_streak`, `id_pengguna`, `jumlah_hari`, `tanggal_terakhir`, `status`) VALUES
+(1, 1, 18, CURDATE(), 'aktif'),
+(2, 2, 3, CURDATE(), 'aktif')
+ON DUPLICATE KEY UPDATE `jumlah_hari`=VALUES(`jumlah_hari`);
 
--- 2. Statistik Pengguna Awal
-INSERT INTO `user_stats` (`user_id`, `xp`, `tickets`, `streak`, `repair_chances_left`, `last_active_date`) VALUES
-(1, 250, 4, 5, 3, CURDATE()),
-(2, 100, 2, 2, 3, CURDATE())
-ON DUPLICATE KEY UPDATE `xp`=VALUES(`xp`);
+INSERT INTO `Progres_Pengguna` (`id_progres`, `id_pengguna`, `total_tugas`, `total_benar`, `total_salah`) VALUES
+(1, 1, 45, 42, 3),
+(2, 2, 5, 4, 1)
+ON DUPLICATE KEY UPDATE `total_tugas`=VALUES(`total_tugas`);
 
--- 3. Daftar Reward Mystery Blind Box
-INSERT INTO `collectibles` (`id`, `name`, `type`, `icon`, `rarity`, `description`, `value_amount`) VALUES
-(1, 'Bonus XP Kilat (+50 XP)', 'xp_pack', '✨', 'common', 'Menambah 50 XP ke profil belajarmu secara instan.', 50),
-(2, 'Bonus XP Jumbo (+150 XP)', 'xp_pack', '⚡', 'epic', 'Ledakan 150 XP untuk mempercepat kenaikan level.', 150),
-(3, 'Tiket Keberuntungan (+2 Tiket)', 'ticket_booster', '🎟️', 'rare', 'Mendapatkan 2 tiket gratis untuk membuka Blind Box lagi.', 2),
-(4, 'Shield Streak Beku', 'streak_shield', '🛡️', 'rare', 'Melindungi streak harianmu agar tidak putus saat terlewat 1 hari.', 1),
-(5, 'Gelar: Pendekar Soal AI', 'title', '⚔️', 'epic', 'Gelar eksklusif bagi siswa yang giat memecahkan soal mandiri.', 0),
-(6, 'Badge Emas: Pemburu Harta', 'badge', '👑', 'legendary', 'Lencana legenda terlangka dari Mystery Blind Box EQuest.', 0)
-ON DUPLICATE KEY UPDATE `name`=VALUES(`name`);
+INSERT INTO `Blind_Box` (`id_blind_box`, `nama_blind_box`, `deskripsi`, `biaya_tiket`, `status`) VALUES
+(1, 'Mystery Blind Box Utama', 'Buka kotak misteri dan dapatkan XP, tiket, badge, dan reward eksklusif!', 1, 'aktif')
+ON DUPLICATE KEY UPDATE `nama_blind_box`=VALUES(`nama_blind_box`);
 
--- 4. Daftar Paket Berlangganan Premium
-INSERT INTO `premium_packages` (`id`, `name`, `price`, `duration_days`, `description`, `benefits_json`) VALUES
-(1, 'Paket Pelajar Bulanan', 29000.00, 30, 'Akses penuh bantuan AI tanpa batas dan ekstra tiket blind box.', '["Unlimited analisis soal AI", "Kesempatan perbaikan kesalahan tak terbatas", "Bonus 5 Tiket Blind Box setiap bulan", "Bantuan adaptif AI tingkat lanjut"]'),
-(2, 'Paket Semester Juara', 129000.00, 180, 'Hemat 30% untuk pendampingan belajar satu semester penuh.', '["Semua fitur Paket Bulanan", "Prioritas kecepatan respons AI", "Bonus 30 Tiket Blind Box", "Laporan analitik belajar komprehensif"]')
-ON DUPLICATE KEY UPDATE `name`=VALUES(`name`);
+INSERT INTO `Reward` (`id_reward`, `nama_reward`, `jenis`, `deskripsi`, `tingkat_kelangkaan`) VALUES
+(1, '+50 XP', 'xp', 'Bonus 50 XP ke profil belajarmu.', 'Common'),
+(2, '+100 XP', 'xp', 'Bonus 100 XP untuk percepatan level.', 'Rare'),
+(3, '+1 Tiket', 'tiket', '1 Tiket ekstra untuk membuka Blind Box lagi.', 'Common'),
+(4, 'First Step Badge', 'badge', 'Selesaikan 1 Latihan soal.', 'Common'),
+(5, '7 Days Streak Badge', 'badge', 'Belajar 7 hari berturut-turut.', 'Rare'),
+(6, 'Problem Solver Badge', 'badge', 'Selesaikan 50 butir soal.', 'Epic'),
+(7, 'Curious Mind Badge', 'badge', 'Unggah 50 file untuk dipelajari.', 'Epic'),
+(8, 'Master Learner Badge', 'badge', 'Selesaikan 100 butir soal.', 'Legendary'),
+(9, 'Tema Spesial', 'tema', 'Tema tampilan antarmuka eksklusif.', 'Epic'),
+(10, 'Figure Collection Robot', 'figure', 'Figur koleksi digital Robot EQuest.', 'Legendary')
+ON DUPLICATE KEY UPDATE `nama_reward`=VALUES(`nama_reward`);
+
+INSERT INTO `Paket_Premium` (`id_paket`, `nama_paket`, `durasi_hari`, `harga`, `deskripsi`, `fitur`, `status`) VALUES
+(1, 'Paket Pelajar Bulanan', 30, 29000.00, 'Akses penuh bantuan AI tanpa batas dan ekstra tiket.', 'Analisis tanpa batas, Kesempatan perbaikan bebas, 5 Tiket Blind Box', 'aktif'),
+(2, 'Paket Semester Juara', 180, 129000.00, 'Hemat 30% untuk pendampingan belajar satu semester penuh.', 'Semua fitur Bulanan, Kecepatan prioritas, 30 Tiket Blind Box', 'aktif')
+ON DUPLICATE KEY UPDATE `nama_paket`=VALUES(`nama_paket`);

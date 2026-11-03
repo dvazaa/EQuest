@@ -38,6 +38,11 @@ const routes = [
     component: () => import('../views/AnswerView.vue'),
   },
   {
+    path: '/explanation',
+    name: 'QuestionExplanation',
+    component: () => import('../views/QuestionExplanationView.vue'),
+  },
+  {
     path: '/task-choice',
     name: 'TaskChoice',
     component: TaskChoiceView,
@@ -76,6 +81,7 @@ router.beforeEach((to) => {
     '/tasks',
     '/answer-upload',
     '/answer',
+    '/explanation',
     '/task-choice',
     '/blind-box',
     '/progress',

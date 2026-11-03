@@ -15,9 +15,9 @@ const searchQuery = ref('')
 const selectedStatus = ref('Semua Status')
 
 const statusOptions = [
-  { label: 'Semua Status', value: 'Semua Status' },
-  { label: 'Sedang Dikerjakan', value: 'Sedang Dikerjakan' },
-  { label: 'Selesai', value: 'Selesai' },
+  'Semua Status',
+  'Sedang Dikerjakan',
+  'Selesai',
 ]
 
 function loadTasks() {
@@ -47,47 +47,44 @@ const filteredTasks = computed(() => {
   })
 })
 
-function uploadTask() {
-  router.push('/upload')
-}
-
-function openTask(task) {
-  router.push({
-    path: '/task-choice',
-    query: { id: task.id },
-  })
-}
-
-function handleDelete(taskId) {
-  if (confirm('Apakah kamu yakin ingin menghapus tugas ini?')) {
-    tasks.value = deleteTask(currentUser.value.email, taskId)
+function handleTaskAction(task) {
+  if (task.status === 'Selesai') {
+    // Mode Lihat Hasil / Skor Akhir sesuai Desktop - 14
+    router.push({
+      path: '/answer',
+      query: { id: task.id, mode: 'score' },
+    })
+  } else {
+    // Mode Periksa sesuai Desktop - 13
+    router.push({
+      path: '/answer',
+      query: { id: task.id, mode: 'eval' },
+    })
   }
 }
 </script>
 
 <template>
-  <div class="min-h-screen bg-sky-100 text-blue-950">
-    <!-- Navbar -->
+  <div class="min-h-screen bg-[#D8EDFB] text-[#0f2852] font-sans antialiased">
     <Navbar />
 
-    <main class="mx-auto max-w-7xl px-6 pb-12 pt-4">
-      <!-- Judul dan kontrol pencarian -->
-      <section class="mb-6 flex flex-wrap items-start justify-between gap-5">
+    <main class="mx-auto max-w-[1360px] px-8 pb-12 pt-6">
+      <!-- Header dan Bar Pencarian sesuai Desktop - 2 -->
+      <section class="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 class="text-3xl font-extrabold sm:text-4xl text-blue-950">
+          <h1 class="text-3xl font-black text-[#0A2540] sm:text-4xl">
             Tugas Saya
           </h1>
-
-          <p class="mt-2 text-base text-blue-900/70 sm:text-xl">
+          <p class="mt-1 text-base text-slate-600 sm:text-lg">
             Lihat dan lanjutkan tugas yang sedang atau pernah kamu kerjakan
           </p>
         </div>
 
-        <div class="flex flex-wrap items-center gap-3">
-          <!-- Search Box -->
-          <label class="flex items-center gap-2 rounded-2xl border border-blue-200 bg-white px-4 py-2.5 shadow-xs">
+        <div class="flex flex-wrap items-center gap-4">
+          <!-- Search input -->
+          <div class="flex items-center gap-2 rounded-2xl bg-white px-4 py-2.5 shadow-2xs w-64 sm:w-80">
             <svg
-              class="h-5 w-5 text-gray-400"
+              class="h-5 w-5 text-slate-400"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -96,144 +93,110 @@ function handleDelete(taskId) {
             </svg>
             <input
               v-model="searchQuery"
-              type="search"
+              type="text"
               placeholder="Cari tugas..."
-              class="w-40 sm:w-52 text-sm outline-none"
+              class="w-full text-sm outline-none placeholder:text-slate-400"
             />
-          </label>
+          </div>
 
           <!-- Status Dropdown -->
-          <select
-            v-model="selectedStatus"
-            class="rounded-2xl border border-blue-200 bg-white px-4 py-2.5 text-sm font-bold text-blue-950 shadow-xs outline-none cursor-pointer"
-          >
-            <option
-              v-for="option in statusOptions"
-              :key="option.value"
-              :value="option.value"
+          <div class="relative">
+            <select
+              v-model="selectedStatus"
+              class="appearance-none rounded-2xl bg-white px-5 py-2.5 pr-10 text-sm font-bold text-[#0f2852] shadow-2xs outline-none cursor-pointer"
             >
-              {{ option.label }}
-            </option>
-          </select>
-
-          <!-- Upload Button -->
-          <button
-            type="button"
-            @click="uploadTask"
-            class="rounded-2xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-blue-500/20 transition hover:bg-blue-700"
-          >
-            + Upload Baru
-          </button>
+              <option v-for="opt in statusOptions" :key="opt" :value="opt">
+                {{ opt }}
+              </option>
+            </select>
+            <span class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-500">
+              ▼
+            </span>
+          </div>
         </div>
       </section>
 
-      <!-- Tampilan jika belum ada tugas sama sekali -->
+      <!-- Empty State sesuai Desktop - 3 -->
       <section
-        v-if="tasks.length === 0"
-        class="grid min-h-[480px] items-center gap-8 rounded-3xl border border-blue-200 bg-white p-8 lg:grid-cols-2 lg:px-16 shadow-sm"
+        v-if="filteredTasks.length === 0 && tasks.length === 0"
+        class="flex min-h-[500px] flex-col items-center justify-center rounded-3xl bg-white p-12 shadow-xs lg:flex-row lg:justify-around"
       >
-        <div class="flex items-center justify-center">
+        <div class="max-w-md text-center lg:text-left">
           <img
             src="../assets/images/robot_bingung.png"
-            alt="Robot EQuest sedang bingung karena belum ada tugas"
-            class="max-h-[340px] w-full object-contain"
+            alt="Belum ada tugas"
+            class="mx-auto max-h-[320px] object-contain"
           />
         </div>
 
-        <div class="flex flex-col gap-6">
+        <div class="mt-8 max-w-lg space-y-5 text-center lg:mt-0 lg:text-left">
+          <h2 class="text-3xl font-extrabold text-[#0A2540]">
+            Belum ada tugas
+          </h2>
+          <p class="text-base leading-relaxed text-slate-600 sm:text-lg">
+            Mulai dengan mengunggah soal atau tugas untuk mendapatkan bantuan AI dan mulai belajar.
+          </p>
           <div>
-            <span class="rounded-full bg-blue-100 px-3.5 py-1 text-xs font-bold text-blue-700 uppercase">
-              Mulai Langkah Pertama
-            </span>
-            <h2 class="mt-3 text-3xl font-extrabold sm:text-4xl text-blue-950">
-              Belum ada tugas tersimpan
-            </h2>
-
-            <p class="mt-3 text-base text-blue-900/70 sm:text-lg leading-relaxed">
-              Mulai dengan mengunggah soal atau tugas untuk mendapatkan
-              bantuan AI, belajar dengan cepat, dan kumpulkan tiket hadiah.
-            </p>
+            <RouterLink
+              to="/upload"
+              class="inline-block rounded-2xl bg-[#2D6BE4] px-8 py-3.5 text-base font-bold text-white shadow-md shadow-blue-500/20 transition hover:bg-blue-700"
+            >
+              Upload Soal Sekarang
+            </RouterLink>
           </div>
-
-          <button
-            type="button"
-            @click="uploadTask"
-            class="w-full sm:w-fit rounded-2xl bg-blue-600 px-8 py-4 text-base sm:text-lg font-bold text-white shadow-lg shadow-blue-500/20 transition hover:bg-blue-700 hover:scale-[1.02]"
-          >
-            Upload Soal Sekarang →
-          </button>
         </div>
       </section>
 
-      <!-- Daftar tugas -->
-      <section v-else class="space-y-3.5">
+      <!-- Daftar Tugas sesuai Desktop - 2 -->
+      <section v-else class="space-y-4">
         <div
           v-for="task in filteredTasks"
           :key="task.id"
-          class="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-blue-200 bg-white p-5 shadow-xs transition hover:border-blue-400 hover:shadow-md"
+          class="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#C5E4FA] bg-white px-7 py-5 shadow-xs transition hover:border-[#2D6BE4]"
         >
-          <div class="flex items-center gap-4 min-w-0 flex-1">
-            <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-sky-100 text-3xl shadow-xs">
-              {{ task.fileName?.endsWith('.pdf') ? '📕' : '📄' }}
-            </div>
-
-            <div class="min-w-0">
-              <h2 class="truncate text-lg font-extrabold text-blue-950 sm:text-xl">
-                {{ task.name || task.fileName || 'Tugas tanpa nama' }}
-              </h2>
-
-              <p class="mt-0.5 text-xs text-blue-900/60 font-medium sm:text-sm">
-                {{ task.questionCount || 1 }} soal
-                &nbsp; | &nbsp;
-                Diunggah {{ task.uploadDate || 'Baru saja' }}
-                <span v-if="task.userScore !== undefined" class="ml-2 font-bold text-green-700">
-                  (Nilai: {{ task.userScore }}/100)
-                </span>
-              </p>
-            </div>
+          <!-- Info Tugas -->
+          <div>
+            <h2 class="text-lg font-black text-[#0A2540] sm:text-xl">
+              {{ task.name || task.fileName }}
+            </h2>
+            <p class="mt-1 text-sm text-slate-500">
+              {{ task.questionCount || 10 }} soal &nbsp;|&nbsp; Diunggah {{ task.uploadDate || '12 Okt 2026' }}
+            </p>
           </div>
 
-          <div class="flex items-center gap-3">
+          <!-- Status & Action Buttons sesuai Figma -->
+          <div class="flex items-center gap-4">
             <span
-              class="rounded-full px-3 py-1 text-xs font-bold"
+              class="rounded-full px-4 py-1.5 text-xs font-bold"
               :class="
                 task.status === 'Selesai'
-                  ? 'bg-green-100 text-green-800 border border-green-200'
-                  : 'bg-blue-100 text-blue-700 border border-blue-200'
+                  ? 'bg-[#BFF0D2] text-[#0A6C35]'
+                  : 'bg-[#DDF0FD] text-[#2D6BE4]'
               "
             >
-              {{ task.status === 'Selesai' ? '✓ Selesai' : 'Sedang Dikerjakan' }}
+              {{ task.status }}
             </span>
 
             <button
               type="button"
-              @click="openTask(task)"
-              class="rounded-xl px-5 py-2.5 text-sm font-bold transition shadow-xs"
+              @click="handleTaskAction(task)"
+              class="rounded-xl px-7 py-2.5 text-sm font-bold transition shadow-xs cursor-pointer"
               :class="
                 task.status === 'Selesai'
-                  ? 'bg-sky-100 text-blue-700 hover:bg-sky-200'
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
+                  ? 'bg-[#DDF0FD] text-[#2D6BE4] hover:bg-[#c9e8fb]'
+                  : 'bg-[#2D6BE4] text-white hover:bg-blue-700'
               "
             >
-              {{ task.status === 'Selesai' ? 'Lihat Hasil' : 'Periksa Soal' }}
-            </button>
-
-            <button
-              type="button"
-              @click="handleDelete(task.id)"
-              title="Hapus tugas"
-              class="rounded-xl border border-gray-200 p-2 text-xs text-red-500 hover:bg-red-50 hover:border-red-200"
-            >
-              🗑️
+              {{ task.status === 'Selesai' ? 'Lihat Hasil' : 'Periksa' }}
             </button>
           </div>
         </div>
 
         <p
           v-if="filteredTasks.length === 0"
-          class="rounded-3xl border border-blue-200 bg-white p-8 text-center text-sm font-semibold text-blue-900/70"
+          class="rounded-2xl bg-white p-8 text-center text-sm font-bold text-slate-500"
         >
-          Tidak ada tugas yang cocok dengan pencarian atau filter status tersebut.
+          Tidak ada tugas dengan filter atau kata kunci tersebut.
         </p>
       </section>
     </main>

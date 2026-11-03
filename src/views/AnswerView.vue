@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Navbar from '../components/Navbar.vue'
 import {
@@ -7,256 +7,587 @@ import {
   getUserTasks,
   updateTask,
   addXp,
-  unlockBadge,
+  addTickets,
+  DEFAULT_DATABASE_QUESTIONS,
 } from '../utils/equestState'
 
-const router = useRouter()
 const route = useRoute()
-const taskId = route.query.id
+const router = useRouter()
+
+const taskId = route.query.id || '1'
+const viewMode = ref(route.query.mode || 'eval') // 'study' | 'eval' | 'score'
+const activeTab = ref('all') // 'all' | 'correct' | 'wrong'
 
 const currentUser = ref(null)
 const tasks = ref([])
-const showExplanations = ref([])
+const questions = ref([...DEFAULT_DATABASE_QUESTIONS])
+const remainingAttempts = ref(2)
+const isEditing = ref(false)
+const correctionInputs = ref({})
+
+function loadData() {
+  currentUser.value = getCurrentUser()
+  if (currentUser.value?.email) {
+    tasks.value = getUserTasks(currentUser.value.email)
+  }
+
+  const existingTask = tasks.value.find((t) => String(t.id) === String(taskId))
+  if (existingTask) {
+    if (existingTask.questions && existingTask.questions.length) {
+      questions.value = JSON.parse(JSON.stringify(existingTask.questions))
+    }
+    if (existingTask.remainingAttempts !== undefined) {
+      remainingAttempts.value = existingTask.remainingAttempts
+    }
+  }
+
+  // Initialize correction inputs for incorrect questions
+  questions.value.forEach((q) => {
+    if (!q.isCorrect) {
+      correctionInputs.value[q.id] = q.userAnswer
+    }
+  })
+}
 
 onMounted(() => {
-  currentUser.value = getCurrentUser()
-  if (!currentUser.value?.email) {
-    router.push('/login')
-    return
-  }
-  tasks.value = getUserTasks(currentUser.value.email)
+  loadData()
 })
 
-const task = computed(() =>
-  tasks.value.find((item) => String(item.id) === String(taskId))
-)
-
-function getAnswerItems(text) {
-  if (!text) return []
-
-  const lines = text
-    .split(/\n+/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-
-  const items = []
-  let current = null
-
-  for (const line of lines) {
-    const match = line.match(
-      /^(?:(?:soal|pertanyaan)\s*)?(\d+)[.)]\s*(.*)$/i
-    )
-
-    if (match) {
-      if (current) items.push(current)
-
-      current = {
-        question: match[2],
-        answer: '',
-        explanation: '',
-      }
-      continue
-    }
-
-    if (!current) {
-      current = {
-        question: task.value?.questionText || task.value?.name || 'Jawaban AI',
-        answer: '',
-        explanation: '',
-      }
-    }
-
-    if (/^penjelasan\s*:/i.test(line)) {
-      current.explanation +=
-        (current.explanation ? '\n' : '') +
-        line.replace(/^penjelasan\s*:\s*/i, '')
-    } else if (/^jawaban\s*:/i.test(line)) {
-      current.answer +=
-        (current.answer ? '\n' : '') +
-        line.replace(/^jawaban\s*:\s*/i, '')
-    } else {
-      current.answer += (current.answer ? '\n' : '') + line
-    }
+const task = computed(() => {
+  return tasks.value.find((t) => String(t.id) === String(taskId)) || {
+    fileName: 'soal_latihan.pdf',
+    name: 'soal_latihan.pdf',
+    questionCount: 10,
   }
+})
 
-  if (current) items.push(current)
+const correctCount = computed(() => {
+  return questions.value.filter((q) => q.isCorrect).length
+})
 
-  return items.map((item, index) => ({
-    ...item,
-    question: item.question || `Pertanyaan ${index + 1}`,
-    answer: item.answer || 'Jawaban lengkap tersedia pada penjelasan.',
-    explanation: item.explanation || item.answer || 'Pelajari konsep utama pada pembahasan.',
-  }))
+const wrongCount = computed(() => {
+  return questions.value.filter((q) => !q.isCorrect).length
+})
+
+const totalScore = computed(() => {
+  return correctCount.value * 10
+})
+
+const filteredQuestions = computed(() => {
+  if (activeTab.value === 'correct') {
+    return questions.value.filter((q) => q.isCorrect)
+  }
+  if (activeTab.value === 'wrong') {
+    return questions.value.filter((q) => !q.isCorrect)
+  }
+  return questions.value
+})
+
+function goToExplanation(index) {
+  router.push({
+    path: '/explanation',
+    query: { taskId, questionIndex: index },
+  })
 }
 
-const answerItems = computed(() => getAnswerItems(task.value?.answer))
-
-function toggleExplanation(index) {
-  if (showExplanations.value.includes(index)) {
-    showExplanations.value = showExplanations.value.filter(
-      (item) => item !== index
-    )
-  } else {
-    showExplanations.value.push(index)
-  }
-}
-
-function finishViewing() {
+function handleFinishStudy() {
   const email = currentUser.value?.email
-  if (task.value && email) {
+  if (email) {
     updateTask(email, taskId, {
       status: 'Selesai',
-      answerViewed: true,
-      mode: 'study',
-      completedAt: new Date().toLocaleDateString('id-ID'),
+      userScore: 100,
     })
-
-    // Award study XP
     addXp(email, 20)
-    unlockBadge(email, 'first_task')
+  }
+  router.push('/tasks')
+}
+
+function handlePerbaikiJawaban() {
+  if (!isEditing.value) {
+    isEditing.value = true
+    return
   }
 
-  router.push('/tasks')
+  // Submit corrections
+  if (remainingAttempts.value > 0) {
+    remainingAttempts.value -= 1
+  }
+
+  // Check user answers against correct ones
+  questions.value.forEach((q) => {
+    if (!q.isCorrect && correctionInputs.value[q.id]) {
+      const input = correctionInputs.value[q.id].trim().toLowerCase()
+      const answer = q.correctAnswer.toLowerCase()
+      if (input.includes(answer) || answer.includes(input)) {
+        q.isCorrect = true
+        q.userAnswer = correctionInputs.value[q.id]
+      }
+    }
+  })
+
+  const email = currentUser.value?.email
+  if (email) {
+    updateTask(email, taskId, {
+      questions: questions.value,
+      remainingAttempts: remainingAttempts.value,
+    })
+  }
+
+  isEditing.value = false
+  // Tampilkan Skor Akhir
+  viewMode.value = 'score'
+}
+
+function handleClaimReward() {
+  const email = currentUser.value?.email
+  if (email) {
+    addXp(email, 80)
+    addTickets(email, 1)
+    updateTask(email, taskId, {
+      status: 'Selesai',
+      userScore: totalScore.value,
+    })
+  }
+  router.push('/blind-box')
 }
 </script>
 
 <template>
-  <div class="min-h-screen bg-sky-100 text-blue-950">
+  <div class="min-h-screen bg-[#D8EDFB] text-[#0f2852] font-sans antialiased">
     <Navbar />
 
-    <main class="mx-auto max-w-5xl px-6 pb-12 pt-4 space-y-6">
-      <!-- Judul dan info berkas -->
-      <section class="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <button
-            type="button"
-            @click="router.push('/tasks')"
-            class="mb-3 inline-flex items-center gap-1.5 text-xs font-bold text-blue-900/70 hover:text-blue-900 transition"
-          >
-            ← Kembali ke Tugas
-          </button>
-          <h1 class="text-3xl font-black text-blue-950 sm:text-4xl">
-            Daftar Jawaban &amp; Pembahasan AI
-          </h1>
-          <p class="mt-1 text-sm text-blue-900/70 sm:text-base">
-            Pelajari konsep dan cara penyelesaian yang telah dianalisis oleh AI EQuest
-          </p>
-        </div>
-
-        <div
-          v-if="task"
-          class="flex items-center gap-3 rounded-2xl border border-blue-200 bg-white px-5 py-3 shadow-xs"
-        >
-          <span class="text-3xl">📄</span>
-          <div class="max-w-64">
-            <p class="truncate text-sm font-black text-blue-950">
-              {{ task.fileName || task.name || 'Soal tanpa nama' }}
-            </p>
-            <p class="text-xs text-blue-900/60 font-semibold">
-              Mode Belajar &bull; +20 XP Pembelajaran
-            </p>
-          </div>
-        </div>
+    <!-- ========================================== -->
+    <!-- KONDISI 1: SKOR AKHIR (Desktop - 14)       -->
+    <!-- ========================================== -->
+    <main v-if="viewMode === 'score'" class="mx-auto max-w-[1360px] px-8 pb-12 pt-6">
+      <!-- Header Skor Akhir -->
+      <section class="mb-6">
+        <h1 class="text-3xl font-black text-[#0A2540] sm:text-4xl">
+          Skor Akhir
+        </h1>
+        <p class="mt-1 text-base text-slate-600 sm:text-lg">
+          {{ task.fileName || 'jawaban_latihan.pdf' }} &nbsp;|&nbsp; 10 soal selesai dikerjakan
+        </p>
       </section>
 
-      <!-- Jawaban list -->
-      <section
-        v-if="task && answerItems.length"
-        class="rounded-3xl border border-blue-200 bg-white p-6 sm:p-8 shadow-sm space-y-4"
-      >
-        <div class="flex items-center justify-between border-b border-gray-100 pb-4">
-          <p class="text-sm font-black text-blue-950">
-            Ditemukan {{ answerItems.length }} Butir Soal
-          </p>
-          <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-700">
-            Kunci Jawaban Resmi AI
-          </span>
+      <!-- Layout Skor Akhir: Robot | Donut Card | Rincian Perhitungan -->
+      <div class="grid items-center gap-8 lg:grid-cols-[300px_340px_1fr]">
+        <!-- Robot Mascot -->
+        <div class="flex items-center justify-center">
+          <img
+            src="../assets/images/robot_nunjuk.png"
+            alt="Mascot EQuest"
+            class="max-h-[360px] w-auto object-contain"
+          />
         </div>
 
-        <article
-          v-for="(item, index) in answerItems"
-          :key="index"
-          class="rounded-2xl border border-blue-100 bg-sky-50/30 p-5 transition hover:border-blue-300"
-        >
-          <div class="flex items-start gap-4">
-            <span
-              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-sm font-black text-white shadow-xs"
-            >
-              {{ index + 1 }}
-            </span>
+        <!-- Donut Card (Tengah) -->
+        <div class="flex flex-col items-center justify-between rounded-3xl bg-white p-7 text-center shadow-xs min-h-[440px]">
+          <!-- Donut Progress -->
+          <div class="relative flex h-44 w-44 items-center justify-center pt-2">
+            <svg class="h-44 w-44 -rotate-90 transform" viewBox="0 0 120 120">
+              <circle
+                cx="60"
+                cy="60"
+                r="48"
+                stroke="#E2E8F0"
+                stroke-width="12"
+                fill="transparent"
+              />
+              <circle
+                cx="60"
+                cy="60"
+                r="48"
+                stroke="#2D6BE4"
+                stroke-width="12"
+                fill="transparent"
+                stroke-dasharray="301.59"
+                :stroke-dashoffset="301.59 - (301.59 * totalScore) / 100"
+                stroke-linecap="round"
+                class="transition-all duration-1000"
+              />
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+              <span class="text-4xl font-black text-[#0A2540]">{{ totalScore }}</span>
+              <span class="text-xs font-bold text-slate-400">dari 100</span>
+            </div>
+          </div>
 
-            <div class="min-w-0 flex-1">
-              <h2 class="font-extrabold text-blue-950 text-base leading-relaxed">
-                {{ item.question }}
-              </h2>
+          <!-- Pesan Hebat -->
+          <div class="space-y-1">
+            <h2 class="text-lg font-black text-[#0A2540]">
+              Hebat, {{ correctCount }} dari 10 benar!
+            </h2>
+            <p class="text-xs text-slate-500 leading-relaxed">
+              Kamu sudah benar {{ correctCount }} jawaban. Dua soal lagi bisa dipelajari ulang.
+            </p>
+          </div>
 
-              <!-- Jawaban Singkat -->
-              <div
-                class="mt-3 rounded-xl border border-green-300 bg-green-50 p-3.5 text-sm text-green-950"
-              >
-                <div class="flex items-center gap-2 mb-1">
-                  <span class="font-black text-xs uppercase tracking-wider text-green-800">Jawaban Tepat:</span>
+          <!-- Bottom 2 Pills -->
+          <div class="grid grid-cols-2 gap-3 w-full pt-3">
+            <div class="rounded-2xl bg-[#EAF5FD] p-3 text-center">
+              <p class="text-[11px] font-bold text-slate-500">XP didapat</p>
+              <p class="text-lg font-black text-[#2D6BE4]">+80</p>
+            </div>
+            <div class="rounded-2xl bg-[#EAF5FD] p-3 text-center">
+              <p class="text-[11px] font-bold text-slate-500">Bonus tiket</p>
+              <p class="text-lg font-black text-[#2D6BE4]">+1</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rincian Perhitungan Card (Kanan) -->
+        <div class="rounded-3xl bg-white p-7 shadow-xs space-y-5">
+          <h2 class="text-base font-black text-[#0A2540]">
+            Rincian Perhitungan
+          </h2>
+
+          <!-- Table -->
+          <div class="text-xs">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2 font-bold text-slate-400">
+              <span>Kategori</span>
+              <div class="flex gap-8">
+                <span>Hitungan</span>
+                <span>Poin</span>
+              </div>
+            </div>
+
+            <div class="divide-y divide-slate-100 font-semibold text-slate-700">
+              <div class="flex items-center justify-between py-2.5">
+                <div>
+                  <p class="font-bold text-[#0A2540]">Benar di percobaan pertama</p>
+                  <p class="text-[10px] text-slate-400">10 XP per soal</p>
                 </div>
-                <div class="whitespace-pre-wrap font-bold">{{ item.answer }}</div>
+                <div class="flex gap-10">
+                  <span>8 &times; 10</span>
+                  <span class="font-extrabold text-[#16A34A]">+80 XP</span>
+                </div>
               </div>
 
-              <!-- Penjelasan Lengkap (Collapsible) -->
-              <div
-                v-if="showExplanations.includes(index)"
-                class="mt-3 rounded-xl bg-white p-4 text-sm leading-relaxed text-blue-950 border border-blue-200 shadow-xs"
-              >
-                <p class="mb-1 text-xs font-bold uppercase tracking-wider text-blue-700">Penjelasan &amp; Langkah Pengerjaan:</p>
-                <p class="whitespace-pre-wrap text-gray-700">{{ item.explanation }}</p>
+              <div class="flex items-center justify-between py-2.5">
+                <div>
+                  <p class="font-bold text-[#0A2540]">Benar setelah diperbaiki</p>
+                  <p class="text-[10px] text-slate-400">10 XP per soal</p>
+                </div>
+                <div class="flex gap-10">
+                  <span>1 &times; 10</span>
+                  <span class="font-extrabold text-[#16A34A]">+10 XP</span>
+                </div>
               </div>
 
-              <div class="mt-3 flex justify-end">
-                <button
-                  type="button"
-                  @click="toggleExplanation(index)"
-                  class="rounded-xl border border-blue-200 bg-white px-4 py-2 text-xs font-bold text-blue-600 transition hover:bg-sky-50 cursor-pointer"
-                >
-                  {{
-                    showExplanations.includes(index)
-                      ? '▲ Tutup Pembahasan'
-                      : '▼ Buka Pembahasan Detail'
-                  }}
-                </button>
+              <div class="flex items-center justify-between py-2.5">
+                <div>
+                  <p class="font-bold text-[#0A2540]">Melihat jawaban benar</p>
+                  <p class="text-[10px] text-slate-400">Tanpa XP</p>
+                </div>
+                <div class="flex gap-10">
+                  <span>1 &times; 0</span>
+                  <span class="font-extrabold text-slate-500">0 XP</span>
+                </div>
               </div>
             </div>
           </div>
-        </article>
 
-        <div class="rounded-2xl bg-amber-50 p-4 text-xs font-semibold text-amber-900 border border-amber-200">
-          💡 Catatan: Mode belajar langsung ini membuka kunci pembahasan secara instan dan memberikanmu 20 XP. Jika ingin mendapatkan Tiket Blind Box misteri, kamu bisa mencoba "Kerjakan Sendiri" pada tugas lainnya.
+          <!-- Total XP Banner -->
+          <div class="flex items-center justify-between rounded-xl bg-[#EAF5FD] px-4 py-2.5 text-xs">
+            <span class="font-black text-[#0A2540]">Total XP</span>
+            <span class="font-black text-[#2D6BE4] text-sm">+80 XP</span>
+          </div>
+
+          <div class="flex items-center justify-between text-xs font-semibold text-slate-600 px-1">
+            <span>Bonus skor di atas 80</span>
+            <span class="font-bold text-[#0A2540]">+1 Tiket Blind Box</span>
+          </div>
+
+          <!-- Poin per soal indicators -->
+          <div>
+            <p class="text-xs font-black text-[#0A2540] mb-2">Poin per soal</p>
+            <div class="grid grid-cols-10 gap-1.5 text-center text-xs">
+              <div
+                v-for="q in questions"
+                :key="q.id"
+                class="rounded-lg p-1.5"
+                :class="q.isCorrect ? 'bg-[#E1F7E9] text-[#16A34A]' : 'bg-slate-100 text-slate-400'"
+              >
+                <div class="font-black">{{ q.id }}</div>
+                <div class="text-[10px] font-bold">{{ q.isCorrect ? '+10' : '0' }}</div>
+              </div>
+            </div>
+            <!-- Legend -->
+            <div class="mt-2.5 flex items-center gap-4 text-[11px] text-slate-500">
+              <span class="flex items-center gap-1.5">
+                <span class="h-2 w-2 rounded-full bg-[#16A34A]"></span> Benar langsung
+              </span>
+              <span class="flex items-center gap-1.5">
+                <span class="h-2 w-2 rounded-full bg-[#2D6BE4]"></span> Diperbaiki
+              </span>
+              <span class="flex items-center gap-1.5">
+                <span class="h-2 w-2 rounded-full bg-slate-300"></span> Lihat jawaban
+              </span>
+            </div>
+          </div>
+
+          <!-- Bottom Actions -->
+          <div class="flex items-center justify-between pt-3">
+            <button
+              type="button"
+              @click="viewMode = 'study'"
+              class="rounded-xl border border-slate-300 bg-white px-6 py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 cursor-pointer"
+            >
+              Lihat Jawaban
+            </button>
+            <button
+              type="button"
+              @click="handleClaimReward"
+              class="rounded-xl bg-[#2D6BE4] px-7 py-2.5 text-xs font-bold text-white shadow-md transition hover:bg-blue-700 cursor-pointer"
+            >
+              Ambil Hadiah
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ========================================== -->
+    <!-- KONDISI 2: EVALUATION MODE (Desktop - 13)   -->
+    <!-- ========================================== -->
+    <main v-else-if="viewMode === 'eval'" class="mx-auto max-w-[1360px] px-8 pb-12 pt-6">
+      <!-- Header & File Pill -->
+      <section class="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 class="text-3xl font-black text-[#0A2540] sm:text-4xl">
+            Daftar Jawaban
+          </h1>
+          <p class="mt-1 text-base text-slate-600 sm:text-lg">
+            Jawaban dari soal yang kamu unggah
+          </p>
+        </div>
+
+        <div class="text-right">
+          <div class="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 shadow-2xs">
+            <span class="text-xl">📄</span>
+            <div class="text-left">
+              <p class="text-xs font-black text-[#0A2540]">soal_latihan.pdf</p>
+              <p class="text-[11px] text-slate-400">10 soal</p>
+            </div>
+          </div>
+          <p class="mt-1 text-xs font-semibold text-slate-500">
+            Sisa percobaan: {{ remainingAttempts }}
+          </p>
         </div>
       </section>
 
-      <!-- Jika jawaban belum tersedia -->
-      <section
-        v-else
-        class="rounded-3xl border border-blue-200 bg-white p-12 text-center shadow-xs"
-      >
-        <span class="text-5xl">📄</span>
-        <h2 class="mt-4 text-xl font-black text-blue-950">Jawaban belum tersedia</h2>
-        <p class="mt-2 text-sm text-blue-900/70">
-          Tugas tidak ditemukan atau jawaban belum tersimpan di memori peramban.
-        </p>
-        <RouterLink
-          to="/tasks"
-          class="mt-6 inline-block rounded-xl bg-blue-600 px-6 py-2.5 text-xs font-bold text-white hover:bg-blue-700"
-        >
-          Kembali ke Tugas Saya
-        </RouterLink>
+      <!-- Main Box Container -->
+      <div class="rounded-3xl bg-white p-7 shadow-xs space-y-6">
+        <!-- Tabs Pill sesuai Desktop - 13 -->
+        <div class="grid grid-cols-3 gap-3">
+          <button
+            type="button"
+            @click="activeTab = 'all'"
+            class="rounded-xl py-2.5 text-xs font-bold transition cursor-pointer"
+            :class="
+              activeTab === 'all'
+                ? 'bg-[#2D6BE4] text-white shadow-xs'
+                : 'border border-slate-200 text-slate-600 hover:bg-slate-50'
+            "
+          >
+            Semua (10)
+          </button>
+          <button
+            type="button"
+            @click="activeTab = 'correct'"
+            class="rounded-xl py-2.5 text-xs font-bold transition cursor-pointer"
+            :class="
+              activeTab === 'correct'
+                ? 'bg-[#16A34A] text-white shadow-xs'
+                : 'border border-[#C6F0D6] text-[#16A34A] hover:bg-emerald-50'
+            "
+          >
+            Benar ({{ correctCount }})
+          </button>
+          <button
+            type="button"
+            @click="activeTab = 'wrong'"
+            class="rounded-xl py-2.5 text-xs font-bold transition cursor-pointer"
+            :class="
+              activeTab === 'wrong'
+                ? 'bg-[#DC2626] text-white shadow-xs'
+                : 'border border-[#FBD5D5] text-[#DC2626] hover:bg-red-50'
+            "
+          >
+            Salah ({{ wrongCount }})
+          </button>
+        </div>
+
+        <!-- List Soal Evaluated -->
+        <div class="space-y-3.5">
+          <div
+            v-for="item in filteredQuestions"
+            :key="item.id"
+            class="rounded-2xl border p-4 transition"
+            :class="
+              item.isCorrect
+                ? 'border-[#C6F0D6] bg-white'
+                : 'border-[#FBD5D5] bg-[#FFFBFB]'
+            "
+          >
+            <div class="flex items-start justify-between gap-4">
+              <!-- Ikon + Pertanyaan -->
+              <div class="flex items-start gap-3">
+                <span
+                  class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-black text-white"
+                  :class="item.isCorrect ? 'bg-[#16A34A]' : 'bg-[#DC2626]'"
+                >
+                  {{ item.isCorrect ? '✓' : '✕' }}
+                </span>
+                <div>
+                  <h3 class="text-sm font-extrabold text-[#0A2540]">
+                    {{ item.id }}. {{ item.question }}
+                  </h3>
+
+                  <!-- Jawaban Pill Siswa -->
+                  <div class="mt-2.5">
+                    <span
+                      class="inline-flex items-center gap-2 rounded-xl px-3.5 py-1 text-xs"
+                      :class="
+                        item.isCorrect
+                          ? 'bg-[#E1F7E9] text-[#16A34A]'
+                          : 'bg-[#FEE2E2] text-[#DC2626]'
+                      "
+                    >
+                      <span class="font-extrabold">Jawabanmu</span>
+                      <span class="font-bold">{{ item.userAnswer }}</span>
+                    </span>
+                  </div>
+
+                  <!-- Hint & Retry Input jika salah -->
+                  <div v-if="!item.isCorrect" class="mt-2 space-y-2">
+                    <p class="text-xs font-semibold text-[#DC2626]">
+                      {{ item.hint || 'Belum tepat. Mau coba perbaiki dulu?' }}
+                    </p>
+
+                    <div v-if="isEditing" class="flex items-center gap-2 pt-1">
+                      <input
+                        v-model="correctionInputs[item.id]"
+                        type="text"
+                        placeholder="Tuliskan jawaban perbaikan..."
+                        class="w-80 rounded-xl border border-red-300 bg-white px-3 py-1.5 text-xs text-[#0A2540] outline-none focus:border-[#2D6BE4]"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- XP Badge di kanan -->
+              <span
+                class="rounded-full px-3 py-1 text-xs font-extrabold"
+                :class="
+                  item.isCorrect
+                    ? 'bg-[#E1F7E9] text-[#16A34A]'
+                    : 'bg-[#DDF0FD] text-[#2D6BE4]'
+                "
+              >
+                {{ item.isCorrect ? '+10 XP' : '+10 XP jika benar' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tombol Aksi Bawah sesuai Desktop - 13 -->
+        <div class="flex items-center justify-between pt-4 border-t border-slate-100">
+          <button
+            type="button"
+            @click="viewMode = 'study'"
+            class="rounded-xl border border-slate-300 bg-white px-6 py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 cursor-pointer"
+          >
+            Lihat Jawaban Benar
+          </button>
+
+          <button
+            type="button"
+            @click="handlePerbaikiJawaban"
+            class="rounded-xl bg-[#2D6BE4] px-8 py-2.5 text-xs font-bold text-white shadow-md transition hover:bg-blue-700 cursor-pointer"
+          >
+            {{ isEditing ? 'Simpan & Periksa Ulang' : 'Perbaiki Jawaban' }}
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- ========================================== -->
+    <!-- KONDISI 3: STUDY MODE (Desktop - 10)       -->
+    <!-- ========================================== -->
+    <main v-else class="mx-auto max-w-[1360px] px-8 pb-12 pt-6">
+      <!-- Header Daftar Jawaban -->
+      <section class="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 class="text-3xl font-black text-[#0A2540] sm:text-4xl">
+            Daftar Jawaban
+          </h1>
+          <p class="mt-1 text-base text-slate-600 sm:text-lg">
+            Jawaban dari soal yang kamu unggah
+          </p>
+        </div>
+
+        <div class="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 shadow-2xs">
+          <span class="text-xl">📄</span>
+          <div class="text-left">
+            <p class="text-xs font-black text-[#0A2540]">soal_latihan.pdf</p>
+            <p class="text-[11px] text-slate-400">10 soal</p>
+          </div>
+        </div>
       </section>
 
-      <!-- Tombol Selesai Belajar -->
-      <div class="flex justify-end gap-3 pt-4">
+      <!-- Main Box Container sesuai Desktop - 10 -->
+      <div class="rounded-3xl bg-white p-7 shadow-xs space-y-4">
+        <p class="text-xs font-black text-[#0A2540] uppercase tracking-wider">
+          10 Jawaban
+        </p>
+
+        <!-- List Soal Mode Belajar -->
+        <div class="space-y-3">
+          <div
+            v-for="(item, idx) in questions"
+            :key="item.id"
+            class="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 p-4 transition hover:border-[#2D6BE4]"
+          >
+            <div class="flex items-center gap-4">
+              <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#EAF5FD] text-xs font-black text-[#2D6BE4]">
+                {{ idx + 1 }}
+              </span>
+
+              <div>
+                <h3 class="text-sm font-extrabold text-[#0A2540]">
+                  {{ item.question }}
+                </h3>
+
+                <div class="mt-1.5 inline-flex items-center gap-2 rounded-xl bg-[#E1F7E9] px-3 py-1 text-xs font-bold text-[#16A34A]">
+                  <span>Jawaban</span>
+                  <span class="font-extrabold text-[#0F6F32]">{{ item.correctAnswer }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tombol Penjelasan -->
+            <button
+              type="button"
+              @click="goToExplanation(idx)"
+              class="rounded-xl border border-[#C5E4FA] bg-white px-5 py-2 text-xs font-bold text-[#2D6BE4] transition hover:bg-sky-50 cursor-pointer"
+            >
+              Penjelasan
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tombol Selesai (Bawah Kanan) sesuai Desktop - 10 -->
+      <div class="mt-6 flex justify-end">
         <button
           type="button"
-          @click="finishViewing"
-          class="rounded-2xl bg-blue-600 px-8 py-3.5 text-sm font-black text-white shadow-lg shadow-blue-500/25 transition hover:bg-blue-700 cursor-pointer"
+          @click="handleFinishStudy"
+          class="rounded-2xl bg-[#2D6BE4] px-10 py-3 text-sm font-bold text-white shadow-md transition hover:bg-blue-700 cursor-pointer"
         >
-          Selesai Membaca &amp; Simpan Progres (+20 XP) ✓
+          Selesai
         </button>
       </div>
     </main>

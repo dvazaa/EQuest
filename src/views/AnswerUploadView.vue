@@ -1,407 +1,189 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Navbar from '../components/Navbar.vue'
-import {
-  getCurrentUser,
-  getUserTasks,
-  updateTask,
-  addXp,
-  addTickets,
-  unlockBadge,
-} from '../utils/equestState'
+import { getCurrentUser, getUserTasks, updateTask } from '../utils/equestState'
 
 const router = useRouter()
 const route = useRoute()
-const taskId = route.query.id
+const taskId = route.query.taskId || '1'
 
-const currentUser = ref(null)
-const currentTask = ref(null)
-
+const fileInput = ref(null)
 const selectedFile = ref(null)
-const answerText = ref('')
-const errorMessage = ref('')
-const isDragging = ref(false)
-const isEvaluating = ref(false)
-const evaluationResult = ref(null)
 
-const maxFileSize = 10 * 1024 * 1024
-const allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf']
-
-onMounted(() => {
-  currentUser.value = getCurrentUser()
-  if (!currentUser.value?.email) {
-    router.push('/login')
-    return
-  }
-
-  const tasks = getUserTasks(currentUser.value.email)
-  currentTask.value = tasks.find((t) => String(t.id) === String(taskId)) || null
-})
-
-function handleFile(file) {
-  if (!file) return
-
-  const extension = file.name.split('.').pop().toLowerCase()
-  if (!allowedExtensions.includes(extension)) {
-    errorMessage.value = 'Format file harus JPG, PNG, atau PDF.'
-    return
-  }
-
-  if (file.size > maxFileSize) {
-    errorMessage.value = 'Ukuran file maksimal 10 MB.'
-    return
-  }
-
-  selectedFile.value = file
-  errorMessage.value = ''
+function triggerFileInput() {
+  fileInput.value?.click()
 }
 
-function handleFileInput(event) {
-  handleFile(event.target.files?.[0])
+function handleFileChange(event) {
+  const file = event.target.files?.[0]
+  if (file) {
+    selectedFile.value = {
+      name: file.name,
+      size: (file.size / 1024).toFixed(0) + ' KB',
+      type: file.name.split('.').pop()?.toUpperCase() || 'PDF',
+      raw: file,
+    }
+  }
 }
 
 function handleDrop(event) {
-  isDragging.value = false
-  handleFile(event.dataTransfer.files?.[0])
-}
-
-function removeFile() {
-  selectedFile.value = null
-  errorMessage.value = ''
-}
-
-const canSubmit = computed(() => {
-  return selectedFile.value !== null || answerText.value.trim().length > 0
-})
-
-async function submitAnswer() {
-  if (!canSubmit.value || isEvaluating.value) {
-    errorMessage.value = 'Unggah foto lembar jawaban atau ketik jawabanmu terlebih dahulu.'
-    return
-  }
-
-  isEvaluating.value = true
-  errorMessage.value = ''
-
-  let score = 85
-  let feedback = 'Langkah pengerjaan terstruktur dengan baik dan jawaban akhir tepat sesuai teori.'
-
-  try {
-    const formData = new FormData()
-    if (selectedFile.value) {
-      formData.append('file', selectedFile.value)
-    }
-    if (answerText.value.trim()) {
-      formData.append('studentAnswer', answerText.value.trim())
-    }
-    if (currentTask.value?.questionText) {
-      formData.append('questionText', currentTask.value.questionText)
-    }
-    if (currentTask.value?.answer) {
-      formData.append('referenceAnswer', currentTask.value.answer)
-    }
-
-    const response = await fetch('http://localhost:3000/api/grade', {
-      method: 'POST',
-      body: formData,
-    })
-
-    if (response.ok) {
-      const data = await response.json()
-      if (data.score) score = Number(data.score)
-      if (data.feedback) feedback = data.feedback
-    } else {
-      throw new Error('Server returned non-200')
-    }
-  } catch (err) {
-    console.warn('Backend grade endpoint unreachable, using client AI assessment:', err)
-    score = 80 + Math.floor(Math.random() * 21) // 80 - 100
-    const feedbackPool = [
-      'Langkah pengerjaan terstruktur dengan baik dan jawaban akhir tepat sesuai teori.',
-      'Analisis konsep sangat baik. Poin-poin utama berhasil dijelaskan dengan benar.',
-      'Pengerjaan sangat rapi dan logis. Kamu memahami inti persoalan dengan cermat.',
-    ]
-    feedback = feedbackPool[Math.floor(Math.random() * feedbackPool.length)]
-  }
-
-  const result = {
-    score,
-    feedback,
-    xpEarned: 50,
-    ticketEarned: 1,
-  }
-
-  // Save to task
-  const email = currentUser.value?.email
-  if (email && taskId) {
-    updateTask(email, taskId, {
-      status: 'Selesai',
-      mode: 'self',
-      userScore: result.score,
-      userFeedback: result.feedback,
-      completedAt: new Date().toLocaleDateString('id-ID'),
-    })
-
-    // Add rewards
-    addXp(email, result.xpEarned)
-    addTickets(email, result.ticketEarned)
-    unlockBadge(email, 'first_task')
-    if (result.score === 100) {
-      unlockBadge(email, 'score_perfection')
+  event.preventDefault()
+  const file = event.dataTransfer?.files?.[0]
+  if (file) {
+    selectedFile.value = {
+      name: file.name,
+      size: (file.size / 1024).toFixed(0) + ' KB',
+      type: file.name.split('.').pop()?.toUpperCase() || 'PDF',
+      raw: file,
     }
   }
-
-  evaluationResult.value = result
-  isEvaluating.value = false
 }
 
-function goToBlindBox() {
-  router.push('/blind-box')
-}
-
-function goToAnswer() {
+function handleStudyMode() {
+  // Mode langsung melihat jawaban sesuai Desktop - 10
   router.push({
     path: '/answer',
-    query: { id: taskId },
+    query: { id: taskId, mode: 'study' },
   })
 }
 
-function goToTasks() {
-  router.push('/tasks')
+function handleContinue() {
+  // Mode periksa / evaluasi jawaban sesuai Desktop - 13
+  router.push({
+    path: '/answer',
+    query: { id: taskId, mode: 'eval' },
+  })
 }
 </script>
 
 <template>
-  <div class="min-h-screen bg-sky-100 text-blue-950">
-    <!-- Navbar -->
+  <div class="min-h-screen bg-[#D8EDFB] text-[#0f2852] font-sans antialiased">
     <Navbar />
 
-    <main class="mx-auto max-w-7xl px-6 pb-12 pt-4">
-      <!-- Judul -->
-      <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div class="flex items-center gap-4">
-          <button
-            type="button"
-            @click="router.push('/tasks')"
-            class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-2xl shadow-xs hover:bg-sky-50 transition"
-          >
-            ←
-          </button>
+    <main class="mx-auto max-w-[1360px] px-8 pb-12 pt-6">
+      <!-- Back Arrow + Header sesuai Desktop - 6 -->
+      <section class="mb-6 flex items-start gap-4">
+        <button
+          type="button"
+          @click="router.back()"
+          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white shadow-xs transition hover:bg-slate-50 cursor-pointer"
+        >
+          <svg class="h-6 w-6 text-slate-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+        </button>
 
-          <div>
-            <h1 class="text-3xl font-extrabold sm:text-4xl text-blue-950">
-              Upload Jawaban Soal
-            </h1>
-            <p class="mt-1 text-base text-blue-900/70 sm:text-xl">
-              Kirim jawabanmu untuk dinilai oleh AI dan klaim reward +1 Tiket Blind Box!
-            </p>
+        <div>
+          <h1 class="text-3xl font-black text-[#0A2540] sm:text-4xl">
+            Upload Jawaban
+          </h1>
+          <p class="mt-1 text-base text-slate-600 sm:text-lg">
+            Unggah jawaban jika kamu ingin mendapatkan poin!
+          </p>
+        </div>
+      </section>
+
+      <!-- Main Box Card sesuai Desktop - 6 -->
+      <div class="rounded-3xl border border-[#C5E4FA] bg-white p-8 shadow-xs sm:p-12">
+        <div class="grid items-center gap-10 lg:grid-cols-[400px_1fr]">
+          <!-- Robot Mascot (Desktop - 6) -->
+          <div class="flex items-center justify-center">
+            <img
+              src="../assets/images/robot_nunjuk.png"
+              alt="Mascot EQuest"
+              class="max-h-[380px] w-auto object-contain"
+            />
           </div>
-        </div>
 
-        <div v-if="currentTask" class="rounded-2xl border border-blue-200 bg-white px-4 py-2.5 shadow-xs">
-          <p class="text-xs font-bold text-gray-500 uppercase">Tugas Terpilih</p>
-          <p class="text-sm font-black text-blue-950 truncate max-w-xs">{{ currentTask.name }}</p>
-        </div>
-      </div>
-
-      <!-- Konten utama -->
-      <section class="grid min-h-[580px] items-center gap-8 rounded-3xl border border-blue-200 bg-white p-6 sm:p-10 lg:grid-cols-[0.8fr_1.6fr] shadow-sm">
-        <!-- Robot -->
-        <div class="flex items-center justify-center">
-          <img
-            src="../assets/images/robot_nunjuk.png"
-            alt="Robot EQuest"
-            class="max-h-[340px] w-full object-contain"
-          />
-        </div>
-
-        <!-- Area upload & input jawaban -->
-        <div class="flex h-full flex-col justify-between">
-          <div>
-            <div class="flex items-center justify-between">
-              <div>
-                <h2 class="text-2xl font-extrabold text-blue-950 sm:text-3xl">
-                  Kirim Jawaban Kamu
-                </h2>
-                <p class="mt-1 text-sm text-blue-900/70">
-                  Unggah foto catatan/kertas jawaban atau ketik langsung solusi di bawah
-                </p>
-              </div>
-
-              <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">
-                🎁 Bonus: 1 🎟️ &amp; 50 XP
-              </span>
+          <!-- Kanan: Upload Jawaban Area -->
+          <div class="space-y-6">
+            <div>
+              <h2 class="text-2xl font-black text-[#0A2540] sm:text-3xl">
+                Unggah Jawaban Kamu
+              </h2>
+              <p class="mt-1 text-sm text-slate-500 sm:text-base">
+                Pilih foto atau file jawaban dari perangkatmu
+              </p>
             </div>
 
-            <!-- Upload File -->
+            <!-- Hidden File Input -->
+            <input
+              ref="fileInput"
+              type="file"
+              accept=".pdf,.png,.jpg,.jpeg"
+              class="hidden"
+              @change="handleFileChange"
+            />
+
+            <!-- Dashed Drop Area -->
             <div
-              v-if="!selectedFile"
-              @dragover.prevent="isDragging = true"
-              @dragleave.prevent="isDragging = false"
-              @drop.prevent="handleDrop"
-              class="mt-6 flex min-h-[220px] flex-col items-center justify-center rounded-3xl border-2 border-dashed border-blue-400 bg-sky-50/70 p-6 text-center transition"
-              :class="isDragging ? 'ring-4 ring-blue-300 bg-blue-100' : ''"
+              @dragover.prevent
+              @drop="handleDrop"
+              class="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#88B8EF] bg-transparent p-10 text-center transition hover:bg-sky-50/50"
             >
-              <div class="text-4xl mb-2">📷</div>
-              <p class="text-base font-bold text-blue-600 sm:text-lg">
-                Tarik foto lembar jawaban di sini
+              <!-- Cloud Upload Icon -->
+              <svg
+                class="h-14 w-14 text-[#2D6BE4]"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+
+              <p class="mt-3 text-base font-bold text-[#2D6BE4]">
+                Tarik dan letakkan file di sini
               </p>
-              <p class="mt-0.5 text-xs text-blue-900/70">
-                atau pilih file dari perangkat (JPG, PNG, PDF maks 10MB)
+              <p class="mt-0.5 text-xs text-slate-500">
+                atau pilih file dari perangkat
               </p>
-
-              <label class="mt-4 cursor-pointer rounded-xl bg-blue-600 px-8 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-500/20 hover:bg-blue-700 transition">
-                Pilih Berkas Jawaban
-                <input
-                  type="file"
-                  accept=".jpg,.jpeg,.png,.pdf"
-                  class="hidden"
-                  @change="handleFileInput"
-                />
-              </label>
-            </div>
-
-            <!-- File terpilih -->
-            <div
-              v-else
-              class="mt-6 flex flex-wrap items-center gap-4 rounded-3xl border border-blue-200 bg-sky-50/70 p-4"
-            >
-              <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white text-2xl shadow-xs">
-                📄
-              </div>
-
-              <div class="min-w-0 flex-1">
-                <p class="truncate text-sm font-bold text-blue-950">
-                  {{ selectedFile.name }}
-                </p>
-                <p class="text-xs text-blue-900/60 font-semibold">
-                  {{ (selectedFile.size / 1024).toFixed(0) }} KB &bull; Siap dinilai
-                </p>
-              </div>
 
               <button
                 type="button"
-                @click="removeFile"
-                class="rounded-xl border border-red-200 bg-white px-3 py-1.5 text-xs font-bold text-red-600 hover:bg-red-50"
+                @click="triggerFileInput"
+                class="mt-4 rounded-xl bg-[#2D6BE4] px-7 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 cursor-pointer"
               >
-                Hapus
+                Pilih File
               </button>
+
+              <p class="mt-4 text-xs font-semibold text-slate-400">
+                JPG, PNG, PDF &nbsp;|&nbsp; Maks 10 MB
+              </p>
+
+              <p v-if="selectedFile" class="mt-2 text-xs font-bold text-green-600">
+                ✓ File terpilih: {{ selectedFile.name }} ({{ selectedFile.size }})
+              </p>
             </div>
 
-            <!-- Text area jawaban -->
-            <div class="mt-5">
-              <label for="user-answer-text" class="block text-xs font-bold uppercase tracking-wider text-blue-950">
-                Atau ketik penjelasan / jawabanmu di sini:
-              </label>
-              <textarea
-                id="user-answer-text"
-                v-model="answerText"
-                rows="3"
-                placeholder="Tuliskan langkah-langkah atau jawaban akhirmu..."
-                class="mt-1.5 w-full resize-y rounded-2xl border border-blue-200 bg-sky-50/40 p-3.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              ></textarea>
-            </div>
+            <!-- Bagian Bawah: Opsi Langsung Lihat Jawaban & Tombol Lanjutkan -->
+            <div class="flex flex-wrap items-center justify-between gap-4 pt-4">
+              <div>
+                <p class="text-xs font-bold text-[#0A2540]">
+                  Atau mau langsung melihat jawaban
+                </p>
+                <button
+                  type="button"
+                  @click="handleStudyMode"
+                  class="mt-2 rounded-xl border border-[#2D6BE4] bg-white px-6 py-2.5 text-xs font-bold text-[#2D6BE4] transition hover:bg-sky-50 cursor-pointer"
+                >
+                  Lihat jawaban
+                </button>
+              </div>
 
-            <p v-if="errorMessage" class="mt-2 text-xs font-bold text-red-600">
-              {{ errorMessage }}
-            </p>
-          </div>
-
-          <!-- Actions -->
-          <div class="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-gray-100 pt-6">
-            <button
-              type="button"
-              @click="goToAnswer"
-              class="rounded-xl border border-blue-300 px-5 py-3 text-xs font-bold text-blue-700 hover:bg-sky-50 transition"
-            >
-              Atau Langsung Lihat Kunci Jawaban →
-            </button>
-
-            <button
-              type="button"
-              @click="submitAnswer"
-              :disabled="!canSubmit || isEvaluating"
-              class="rounded-2xl px-8 py-3.5 text-sm font-black text-white shadow-lg transition"
-              :class="
-                canSubmit && !isEvaluating
-                  ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/25 cursor-pointer'
-                  : 'bg-blue-300 cursor-not-allowed'
-              "
-            >
-              {{ isEvaluating ? '⚡ Robot AI Sedang Memeriksa...' : 'Kirim Jawaban untuk Dinilai (Dapat 🎟️)' }}
-            </button>
-          </div>
-        </div>
-      </section>
-    </main>
-
-    <!-- Evaluation Success Celebration Modal -->
-    <div
-      v-if="evaluationResult"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-    >
-      <div
-        class="w-full max-w-md rounded-3xl bg-white p-6 sm:p-8 text-center shadow-2xl animate-in zoom-in-95 duration-200"
-        @click.stop
-      >
-        <span class="rounded-full bg-green-100 px-4 py-1 text-xs font-black uppercase tracking-wider text-green-800">
-          Penilaian Selesai! 🎉
-        </span>
-
-        <div class="my-6">
-          <div class="mx-auto flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-tr from-green-400 to-emerald-500 text-white text-3xl font-black shadow-lg ring-8 ring-green-100">
-            {{ evaluationResult.score }}
-          </div>
-
-          <h3 class="mt-4 text-2xl font-black text-blue-950">
-            Nilai: {{ evaluationResult.score }} / 100
-          </h3>
-
-          <p class="mt-2 text-xs text-blue-900/70 italic px-4">
-            "{{ evaluationResult.feedback }}"
-          </p>
-
-          <!-- Rewards Received -->
-          <div class="mt-6 flex justify-center gap-3">
-            <div class="rounded-2xl bg-amber-50 border border-amber-200 px-4 py-2.5 text-center">
-              <p class="text-[10px] font-bold text-amber-700 uppercase">Hadiah XP</p>
-              <p class="text-lg font-black text-amber-900">+{{ evaluationResult.xpEarned }} XP ⭐</p>
-            </div>
-
-            <div class="rounded-2xl bg-purple-50 border border-purple-200 px-4 py-2.5 text-center">
-              <p class="text-[10px] font-bold text-purple-700 uppercase">Hadiah Tiket</p>
-              <p class="text-lg font-black text-purple-900">+{{ evaluationResult.ticketEarned }} Tiket 🎟️</p>
+              <div>
+                <button
+                  type="button"
+                  @click="handleContinue"
+                  class="rounded-xl bg-[#2D6BE4] px-8 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 cursor-pointer"
+                >
+                  Lanjutkan
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-
-        <div class="space-y-2.5">
-          <button
-            type="button"
-            @click="goToBlindBox"
-            class="w-full rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 py-3.5 text-sm font-bold text-white shadow-md shadow-purple-500/20 hover:from-purple-700 hover:to-indigo-700 transition"
-          >
-            Buka Blind Box dengan Tiket Barumu →
-          </button>
-
-          <button
-            type="button"
-            @click="goToAnswer"
-            class="w-full rounded-2xl border border-blue-200 bg-sky-50 py-3 text-xs font-bold text-blue-700 hover:bg-sky-100 transition"
-          >
-            Buka Pembahasan Lengkap AI
-          </button>
-
-          <button
-            type="button"
-            @click="goToTasks"
-            class="w-full py-2 text-xs font-bold text-gray-500 hover:text-gray-800 transition"
-          >
-            Kembali ke Daftar Tugas
-          </button>
         </div>
       </div>
-    </div>
+    </main>
   </div>
 </template>

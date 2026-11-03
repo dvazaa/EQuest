@@ -18,9 +18,6 @@ function loadData() {
   if (currentUser.value?.email) {
     userStats.value = getUserStats(currentUser.value.email)
     tasks.value = getUserTasks(currentUser.value.email)
-  } else {
-    userStats.value = { xp: 0, tickets: 0, streak: 0 }
-    tasks.value = []
   }
 }
 
@@ -28,215 +25,211 @@ onMounted(() => {
   loadData()
 })
 
-const isLoggedIn = computed(() => !!currentUser.value)
-
-const completedTasksCount = computed(() => {
-  return tasks.value.filter((t) => t.status === 'Selesai').length
-})
-
-const latestTask = computed(() => {
-  if (!Array.isArray(tasks.value) || tasks.value.length === 0) {
-    return null
-  }
-  return [...tasks.value].sort((a, b) => Number(b.id) - Number(a.id))[0]
-})
-
-const continueTarget = computed(() => {
-  if (!isLoggedIn.value) return '/login'
-  if (!latestTask.value) return '/upload'
-  return {
-    path: '/task-choice',
-    query: { id: latestTask.value.id },
-  }
+const currentTask = computed(() => {
+  if (!tasks.value.length) return null
+  return (
+    tasks.value.find((t) => t.name === 'soal_latihan.pdf') ||
+    tasks.value[0]
+  )
 })
 </script>
 
 <template>
-  <div class="min-h-screen bg-sky-100 text-blue-950">
-    <!-- Unified Dynamic Navbar -->
+  <div class="min-h-screen bg-[#D8EDFB] text-[#0f2852] font-sans antialiased">
+    <!-- Navbar EQuest -->
     <Navbar />
 
-    <main class="space-y-6 px-6 pb-12 pt-4">
-      <!-- Bagian utama Hero -->
-      <section class="grid items-center gap-6 lg:grid-cols-5">
-        <div class="lg:col-span-3">
+    <main class="mx-auto max-w-[1360px] px-6 pb-12 pt-5 space-y-6">
+      <!-- Hero Banner sesuai Desktop - 1 -->
+      <section class="grid items-center gap-8 rounded-3xl lg:grid-cols-[1.1fr_0.9fr]">
+        <div class="overflow-hidden rounded-3xl shadow-sm">
           <img
             src="../assets/images/beranda.png"
-            alt="Ilustrasi siswa belajar bersama robot AI"
-            class="h-[300px] w-full rounded-3xl object-cover shadow-sm sm:h-[380px] lg:h-[430px]"
+            alt="Belajar bersama robot AI EQuest"
+            class="h-[320px] w-full object-cover sm:h-[400px] lg:h-[420px]"
           />
         </div>
 
-        <div class="py-2 lg:col-span-2">
-          <p class="text-lg font-bold text-blue-900/70 sm:text-xl">
-            Halo, {{ currentUser?.name || 'Selamat Datang' }}! 👋
+        <div class="flex flex-col justify-center space-y-4">
+          <p class="text-base font-bold text-slate-600 sm:text-lg">
+            Halo, Selamat Datang!
           </p>
 
-          <h1 class="mt-2 text-3xl font-extrabold leading-tight sm:text-5xl text-blue-950">
+          <h1 class="text-3xl font-extrabold leading-tight tracking-tight text-[#0f2852] sm:text-5xl">
             Belajar Jadi Lebih Seru dengan EQuest!
           </h1>
 
-          <p class="mt-4 text-base leading-relaxed text-blue-900/75 sm:text-xl">
+          <p class="text-base leading-relaxed text-slate-600 sm:text-lg">
             Kerjakan soal, dapatkan bantuan AI, dan kumpulkan reward menarik
             di setiap langkah belajarmu.
           </p>
 
-          <div class="mt-8 flex justify-start">
+          <div class="pt-2">
             <RouterLink
-              :to="isLoggedIn ? '/tasks' : '/login'"
-              class="rounded-3xl bg-blue-600 px-10 py-4 text-center text-lg font-bold text-white shadow-lg shadow-blue-500/25 transition hover:bg-blue-700 hover:scale-[1.02] sm:text-2xl"
+              to="/upload"
+              class="inline-block rounded-2xl bg-[#2D6BE4] px-10 py-3.5 text-base font-bold text-white shadow-md shadow-blue-500/20 transition hover:bg-blue-700 hover:scale-[1.02]"
             >
-              Mulai Belajar Sekarang →
+              Mulai Belajar
             </RouterLink>
           </div>
         </div>
       </section>
 
-      <!-- Statistik Dinamis User -->
-      <section class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <!-- 4 Kartu Statistik sesuai Desktop - 1 -->
+      <section class="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
         <!-- Total XP -->
         <RouterLink
           to="/progress"
-          class="group rounded-2xl border border-blue-200/70 bg-white p-5 shadow-xs transition hover:shadow-md hover:border-amber-300"
+          class="rounded-2xl border border-blue-100 bg-white p-5 shadow-xs transition hover:shadow-md"
         >
-          <div class="flex items-center justify-between text-blue-900/60">
-            <p class="text-sm font-bold sm:text-lg">Total XP</p>
-            <span class="text-2xl">⭐</span>
-          </div>
-          <p class="mt-2 text-3xl font-black text-amber-600 sm:text-4xl">
-            {{ userStats?.xp || 0 }}
+          <p class="text-sm font-semibold text-slate-700 sm:text-base">
+            Total XP :
           </p>
-          <p class="mt-1 text-xs text-blue-900/50 group-hover:text-blue-600">Lihat progres level →</p>
+          <p class="mt-2 text-3xl font-black text-black sm:text-4xl">
+            {{ userStats?.xp || 320 }}
+          </p>
         </RouterLink>
 
         <!-- Tiket Blind Box -->
         <RouterLink
           to="/blind-box"
-          class="group rounded-2xl border border-blue-200/70 bg-white p-5 shadow-xs transition hover:shadow-md hover:border-purple-300"
+          class="rounded-2xl border border-blue-100 bg-white p-5 shadow-xs transition hover:shadow-md"
         >
-          <div class="flex items-center justify-between text-blue-900/60">
-            <p class="text-sm font-bold sm:text-lg">Tiket Blind Box</p>
-            <span class="text-2xl">🎟️</span>
-          </div>
-          <p class="mt-2 text-3xl font-black text-purple-700 sm:text-4xl">
-            {{ userStats?.tickets || 0 }}
+          <p class="text-sm font-semibold text-slate-700 sm:text-base">
+            Tiket Blind Box :
           </p>
-          <p class="mt-1 text-xs text-blue-900/50 group-hover:text-purple-600">Buka reward sekarang →</p>
+          <p class="mt-2 text-3xl font-black text-black sm:text-4xl">
+            {{ userStats?.tickets || 10 }}
+          </p>
         </RouterLink>
 
         <!-- Hari Streak -->
         <RouterLink
           to="/progress"
-          class="group rounded-2xl border border-blue-200/70 bg-white p-5 shadow-xs transition hover:shadow-md hover:border-orange-300"
+          class="rounded-2xl border border-blue-100 bg-white p-5 shadow-xs transition hover:shadow-md"
         >
-          <div class="flex items-center justify-between text-blue-900/60">
-            <p class="text-sm font-bold sm:text-lg">Hari Streak</p>
-            <span class="text-2xl">🔥</span>
-          </div>
-          <p class="mt-2 text-3xl font-black text-orange-600 sm:text-4xl">
-            {{ userStats?.streak || 0 }} Hari
+          <p class="text-sm font-semibold text-slate-700 sm:text-base">
+            Hari Streak :
           </p>
-          <p class="mt-1 text-xs text-blue-900/50 group-hover:text-orange-600">Jaga streak harian →</p>
+          <p class="mt-2 text-3xl font-black text-black sm:text-4xl">
+            {{ userStats?.streak || 18 }}
+          </p>
         </RouterLink>
 
         <!-- Soal Selesai -->
         <RouterLink
           to="/riwayat"
-          class="group rounded-2xl border border-blue-200/70 bg-white p-5 shadow-xs transition hover:shadow-md hover:border-green-300"
+          class="rounded-2xl border border-blue-100 bg-white p-5 shadow-xs transition hover:shadow-md"
         >
-          <div class="flex items-center justify-between text-blue-900/60">
-            <p class="text-sm font-bold sm:text-lg">Soal Selesai</p>
-            <span class="text-2xl">✅</span>
-          </div>
-          <p class="mt-2 text-3xl font-black text-green-600 sm:text-4xl">
-            {{ completedTasksCount }}
+          <p class="text-sm font-semibold text-slate-700 sm:text-base">
+            Soal Selesai :
           </p>
-          <p class="mt-1 text-xs text-blue-900/50 group-hover:text-green-600">Buka riwayat tugas →</p>
+          <p class="mt-2 text-3xl font-black text-black sm:text-4xl">
+            {{ userStats?.soalSelesai || 45 }}
+          </p>
         </RouterLink>
       </section>
 
-      <!-- Lanjutkan belajar dan fitur (Unblocked!) -->
-      <section class="grid gap-6 lg:grid-cols-[1.1fr_2.1fr]">
-        <!-- Lanjutkan belajar -->
+      <!-- Baris Bawah: Lanjutkan Belajar & 4 Fitur sesuai Desktop - 1 -->
+      <section class="grid gap-6 lg:grid-cols-[1.1fr_2.4fr]">
+        <!-- Kolom Lanjutkan Belajar -->
         <div>
-          <h2 class="mb-3 text-2xl font-extrabold text-blue-950">
+          <h2 class="mb-3 text-lg font-bold text-[#0f2852]">
             Lanjutkan Belajar
           </h2>
 
-          <div class="flex min-h-56 flex-col justify-between rounded-3xl border border-blue-200/70 bg-white p-6 shadow-sm">
-            <div>
-              <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-700">
-                {{ latestTask ? 'Aktivitas Terakhir' : 'Mulai Sekarang' }}
-              </span>
-              <p class="mt-3 break-words text-xl font-bold sm:text-2xl text-blue-950">
-                {{ latestTask ? (latestTask.name || latestTask.fileName) : 'Belum ada tugas yang diunggah' }}
-              </p>
-              <p v-if="latestTask" class="mt-1 text-xs text-blue-900/60">
-                Status: {{ latestTask.status }} &bull; Diunggah {{ latestTask.uploadDate }}
-              </p>
-            </div>
+          <div class="flex min-h-[160px] flex-col justify-between rounded-2xl border border-blue-100 bg-white p-6 shadow-xs">
+            <h3 class="text-lg font-extrabold text-[#0f2852]">
+              {{ currentTask?.name || 'soal_latihan.pdf' }}
+            </h3>
 
-            <div class="mt-6 flex justify-end">
+            <div class="mt-4 flex justify-end">
               <RouterLink
-                :to="continueTarget"
-                class="rounded-2xl bg-blue-600 px-7 py-3 text-base font-bold text-white shadow-md shadow-blue-500/20 transition hover:bg-blue-700 sm:text-xl"
+                :to="{ path: '/answer', query: { id: currentTask?.id || 1, mode: 'eval' } }"
+                class="rounded-xl bg-[#2D6BE4] px-6 py-2.5 text-sm font-bold text-white shadow-xs transition hover:bg-blue-700"
               >
-                {{ latestTask ? 'Lanjutkan Tugas →' : 'Upload Soal Baru →' }}
+                Lanjutkan
               </RouterLink>
             </div>
           </div>
         </div>
 
-        <!-- Fitur Aplikasi EQuest (ALL UNBLOCKED & INTERACTIVE!) -->
+        <!-- Kolom 4 Fitur Utama -->
         <div>
-          <h2 class="mb-3 text-2xl font-extrabold text-blue-950">Fitur Utama</h2>
+          <h2 class="mb-3 text-lg font-bold text-[#0f2852]">
+            Fitur
+          </h2>
 
-          <div class="grid grid-cols-2 gap-4 xl:grid-cols-4">
+          <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <!-- 1. Upload Soal -->
             <RouterLink
               to="/upload"
-              class="flex min-h-56 flex-col items-center justify-center rounded-3xl border border-blue-200/70 bg-white p-5 text-center shadow-xs transition hover:border-blue-400 hover:shadow-md hover:scale-[1.02]"
+              class="flex flex-col items-center justify-center rounded-2xl border border-blue-100 bg-white p-5 text-center shadow-xs transition hover:border-blue-400 hover:shadow-sm"
             >
-              <span class="text-5xl">📥</span>
-              <h3 class="mt-3 text-base font-bold sm:text-lg text-blue-950">Upload Soal</h3>
-              <p class="mt-1 text-xs text-blue-900/70">
-                Dari file foto atau teks
+              <img
+                src="../assets/images/feature_1.png"
+                alt="Upload Soal"
+                class="h-14 w-auto object-contain"
+              />
+              <p class="mt-3 text-sm font-extrabold text-[#0f2852]">
+                Upload Soal
+              </p>
+              <p class="mt-0.5 text-xs text-slate-500">
+                Dari file/gambar
               </p>
             </RouterLink>
 
             <!-- 2. List Tugas -->
             <RouterLink
               to="/tasks"
-              class="flex min-h-56 flex-col items-center justify-center rounded-3xl border border-blue-200/70 bg-white p-5 text-center shadow-xs transition hover:border-blue-400 hover:shadow-md hover:scale-[1.02]"
+              class="flex flex-col items-center justify-center rounded-2xl border border-blue-100 bg-white p-5 text-center shadow-xs transition hover:border-blue-400 hover:shadow-sm"
             >
-              <span class="text-5xl">📝</span>
-              <h3 class="mt-3 text-base font-bold sm:text-lg text-blue-950">Tugas Saya</h3>
-              <p class="mt-1 text-xs text-blue-900/70">
-                Kerjakan atau periksa
+              <img
+                src="../assets/images/feature_2.png"
+                alt="List Tugas"
+                class="h-14 w-auto object-contain"
+              />
+              <p class="mt-3 text-sm font-extrabold text-[#0f2852]">
+                List Tugas
+              </p>
+              <p class="mt-0.5 text-xs text-slate-500">
+                Kerjakan soalmu
               </p>
             </RouterLink>
 
-            <!-- 3. Blind Box (UNBLOCKED!) -->
+            <!-- 3. Blind Box -->
             <RouterLink
               to="/blind-box"
-              class="flex min-h-56 flex-col items-center justify-center rounded-3xl border border-purple-200 bg-white p-5 text-center shadow-xs transition hover:border-purple-400 hover:shadow-md hover:scale-[1.02]"
+              class="flex flex-col items-center justify-center rounded-2xl border border-blue-100 bg-white p-5 text-center shadow-xs transition hover:border-blue-400 hover:shadow-sm"
             >
-              <span class="text-5xl">🎁</span>
-              <h3 class="mt-3 text-base font-bold sm:text-lg text-purple-950">Blind Box</h3>
-              <p class="mt-1 text-xs text-purple-900/70">
-                Tukar tiket hadiahmu
+              <img
+                src="../assets/images/feature_3.png"
+                alt="Blind Box"
+                class="h-14 w-auto object-contain"
+              />
+              <p class="mt-3 text-sm font-extrabold text-[#0f2852]">
+                Blind Box
+              </p>
+              <p class="mt-0.5 text-xs text-slate-500">
+                Tukar tiketmu
               </p>
             </RouterLink>
 
-            <!-- 4. Progress (UNBLOCKED!) -->
+            <!-- 4. Progress -->
             <RouterLink
               to="/progress"
-              class="flex min-h-56 flex-col items-center justify-center rounded-3xl border border-amber-200 bg-white p-5 text-center shadow-xs transition hover:border-amber-400 hover:shadow-md hover:scale-[1.02]"
+              class="flex flex-col items-center justify-center rounded-2xl border border-blue-100 bg-white p-5 text-center shadow-xs transition hover:border-blue-400 hover:shadow-sm"
             >
-              <span class="text-5xl">📊</span>
-              <h3 class="mt-3 text-base font-bold sm:text-lg text-amber-950">Progress</h3>
-              <p class="mt-1 text-xs text-amber-900/70">
-                Level, streak & badge
+              <img
+                src="../assets/images/feature_4.png"
+                alt="Progress"
+                class="h-14 w-auto object-contain"
+              />
+              <p class="mt-3 text-sm font-extrabold text-[#0f2852]">
+                Progress
+              </p>
+              <p class="mt-0.5 text-xs text-slate-500">
+                Pantau Hasilmu
               </p>
             </RouterLink>
           </div>

@@ -16,6 +16,7 @@ export function getDbPool() {
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0,
+      connectTimeout: 2500, // Timeout cepat 2.5 detik agar tidak menggantung jika MySQL XAMPP belum dinyalakan
       enableKeepAlive: true,
       keepAliveInitialDelay: 0,
     })
@@ -34,7 +35,7 @@ export async function testDbConnection() {
   } catch (error) {
     return {
       connected: false,
-      message: `Database MySQL belum tersambung (${error.message}). Pastikan MySQL (XAMPP / MariaDB) sudah dijalankan.`,
+      message: `Database MySQL belum tersambung (${error.message}). Pastikan MySQL (XAMPP / MariaDB) sudah aktif.`,
     }
   }
 }
