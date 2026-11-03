@@ -334,6 +334,6 @@ INSERT INTO `Reward` (`id_reward`, `nama_reward`, `jenis`, `deskripsi`, `tingkat
 ON DUPLICATE KEY UPDATE `nama_reward`=VALUES(`nama_reward`);
 
 INSERT INTO `Paket_Premium` (`id_paket`, `nama_paket`, `durasi_hari`, `harga`, `deskripsi`, `fitur`, `status`) VALUES
-(1, 'Paket Pelajar Bulanan', 30, 29000.00, 'Akses penuh bantuan AI tanpa batas dan ekstra tiket.', 'Analisis tanpa batas, Kesempatan perbaikan bebas, 5 Tiket Blind Box', 'aktif'),
-(2, 'Paket Semester Juara', 180, 129000.00, 'Hemat 30% untuk pendampingan belajar satu semester penuh.', 'Semua fitur Bulanan, Kecepatan prioritas, 30 Tiket Blind Box', 'aktif')
+(1, 'Paket Pelajar Bulanan', 30, 9000.00, 'Akses penuh bantuan AI tanpa batas dan ekstra tiket.', 'Analisis tanpa batas, Kesempatan perbaikan bebas, 5 Tiket Blind Box', 'aktif'),
+(2, 'Paket Semester Juara', 180, 54000.00, 'Paket praktis untuk pendampingan belajar satu semester penuh (6 bulan).', 'Semua fitur Bulanan, Kecepatan prioritas, 30 Tiket Blind Box', 'aktif')
 ON DUPLICATE KEY UPDATE `nama_paket`=VALUES(`nama_paket`);

@@ -27,7 +27,7 @@ const plans = [
   {
     id: 'monthly',
     name: 'Premium Pelajar',
-    price: 'Rp 29.000',
+    price: 'Rp 9.000',
     period: '/ bulan',
     badge: 'Paling Populer',
     isCurrent: false,
@@ -45,12 +45,12 @@ const plans = [
   {
     id: 'semester',
     name: 'Premium Semesteran',
-    price: 'Rp 129.000',
+    price: 'Rp 54.000',
     period: '/ 6 bulan',
-    badge: 'Hemat 25%',
+    badge: 'Paket 6 Bulan',
     isCurrent: false,
     isPopular: false,
-    description: 'Pilihan hemat untuk pendamping belajar selama satu semester penuh.',
+    description: 'Pilihan praktis untuk pendamping belajar selama satu semester penuh (6 bulan).',
     features: [
       { text: 'Semua keuntungan paket Premium Pelajar', included: true },
       { text: 'Upload soal & Tanya AI tanpa batas selama 6 bulan', included: true },
