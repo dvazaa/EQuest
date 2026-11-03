@@ -39,6 +39,7 @@ __screenshots__/
 *.timestamp-*-*.mjs
 
 server/.env
+server/data/
 
 # Environment variables
 .env

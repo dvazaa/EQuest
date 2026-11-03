@@ -1,35 +1,23 @@
 // State Management EQuest sesuai skema SDD dan Desain Figma
-const STORAGE_VERSION_KEY = 'equest_storage_version'
-const CURRENT_STORAGE_VERSION = 'equest_v6_simple_ai'
+// Menyimpan progres secara permanen per akun (berdasarkan email unik masing-masing pengguna)
+// Tidak pernah menghapus progres akun yang sudah tersimpan!
 
-// Bersihkan cache lama yang tercampur agar setiap akun benar-benar terisolasi
-function ensureCleanStorageVersion() {
+function syncAccountToServer(email) {
+  if (!email) return
   try {
-    const savedVersion = localStorage.getItem(STORAGE_VERSION_KEY)
-    if (savedVersion !== CURRENT_STORAGE_VERSION) {
-      const keysToRemove = []
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i)
-        if (
-          k &&
-          (k.startsWith('equestStats_') ||
-            k.startsWith('equestTasks_') ||
-            k.startsWith('equestHistory_') ||
-            k === 'equestTasks' ||
-            k === 'equestUsers')
-        ) {
-          keysToRemove.push(k)
-        }
-      }
-      keysToRemove.forEach((k) => localStorage.removeItem(k))
-      localStorage.setItem(STORAGE_VERSION_KEY, CURRENT_STORAGE_VERSION)
-    }
-  } catch (e) {
-    console.error('Error cleaning storage:', e)
+    const normalized = email.trim().toLowerCase()
+    const stats = readStorage(getStatsKey(normalized), null)
+    const tasks = readStorage(getTaskKey(normalized), null)
+    const history = readStorage(getHistoryKey(normalized), null)
+    fetch('http://localhost:3000/api/account-data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: normalized, stats, tasks, history }),
+    }).catch(() => {})
+  } catch (_) {
+    // Abaikan jika server sedang offline, data tetap aman di localStorage per akun
   }
 }
-
-ensureCleanStorageVersion()
 
 export function readStorage(key, fallback) {
   try {
@@ -62,6 +50,10 @@ export function getCurrentUser() {
 
 export function setCurrentUser(user) {
   writeStorage('equestUser', user)
+  if (user?.email) {
+    // Sinkronkan cadangan data akun ke server secara otomatis
+    syncAccountToServer(user.email)
+  }
 }
 
 export function logoutUser() {
@@ -248,9 +240,16 @@ export function evaluateBadges(stats) {
   })
 }
 
-// Inisialisasi awal untuk akun
+// Inisialisasi awal untuk akun (HANYA jika akun tersebut belum punya data tersimpan!)
 export function initNewUserStats(email) {
   const key = getStatsKey(email)
+  const existing = readStorage(key, null)
+
+  // Jika akun ini sudah pernah login dan punya progres tersimpan, JANGAN DI-RESET!
+  if (existing && typeof existing === 'object') {
+    existing.badges = evaluateBadges(existing)
+    return existing
+  }
 
   if (isDemoAccount(email)) {
     const demoStats = {
@@ -279,7 +278,7 @@ export function initNewUserStats(email) {
     return demoStats
   }
 
-  // Akun baru murni: mulai benar-benar dari 0!
+  // Akun yang benar-benar baru pertama kali masuk: mulai dari 0!
   const freshStats = {
     xp: 0,
     tickets: 0,
@@ -337,6 +336,7 @@ export function saveUserStats(email, stats) {
   stats.badges = evaluateBadges(stats)
   const key = getStatsKey(email)
   writeStorage(key, stats)
+  syncAccountToServer(email)
 }
 
 export function addXp(email, amount) {
@@ -647,6 +647,12 @@ export function getTaskKey(email) {
 
 export function initNewUserTasks(email) {
   const key = getTaskKey(email)
+  const existing = readStorage(key, null)
+
+  // Jika akun ini sudah punya daftar tugas tersimpan, JANGAN DI-RESET!
+  if (Array.isArray(existing)) {
+    return existing
+  }
 
   if (isDemoAccount(email)) {
     const demoTasks = [
@@ -716,7 +722,7 @@ export function initNewUserTasks(email) {
     return demoTasks
   }
 
-  // Akun baru: daftar tugas 100% kosong!
+  // Akun baru yang belum pernah upload tugas: daftar tugas kosong!
   const emptyTasks = []
   writeStorage(key, emptyTasks)
   return emptyTasks
@@ -738,6 +744,7 @@ export function saveUserTasks(email, tasks) {
   if (!email) return
   const key = getTaskKey(email)
   writeStorage(key, tasks)
+  syncAccountToServer(email)
 }
 
 export function updateTask(email, taskId, updates) {
@@ -837,6 +844,13 @@ export const DEMO_HISTORY_GROUPS = [
 
 export function initNewUserHistory(email) {
   const key = getHistoryKey(email)
+  const existing = readStorage(key, null)
+
+  // Jika akun ini sudah punya riwayat tersimpan, JANGAN DI-RESET!
+  if (Array.isArray(existing)) {
+    return existing
+  }
+
   if (isDemoAccount(email)) {
     writeStorage(key, DEMO_HISTORY_GROUPS)
     return DEMO_HISTORY_GROUPS
@@ -883,6 +897,7 @@ export function addHistoryItem(email, item) {
   })
 
   writeStorage(getHistoryKey(email), groups)
+  syncAccountToServer(email)
 }
 
 // ============================================================================

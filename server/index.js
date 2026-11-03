@@ -2,10 +2,40 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import multer from 'multer'
+import fs from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
 import { GoogleGenAI } from '@google/genai'
 import { testDbConnection } from './config/database.js'
 
 dotenv.config()
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+const DATA_DIR = path.join(__dirname, 'data')
+const ACCOUNTS_STORE_PATH = path.join(DATA_DIR, 'accounts_store.json')
+
+function readAccountsStore() {
+  try {
+    if (fs.existsSync(ACCOUNTS_STORE_PATH)) {
+      return JSON.parse(fs.readFileSync(ACCOUNTS_STORE_PATH, 'utf-8'))
+    }
+  } catch (e) {
+    console.warn('Gagal membaca accounts_store.json:', e.message)
+  }
+  return {}
+}
+
+function writeAccountsStore(store) {
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true })
+    }
+    fs.writeFileSync(ACCOUNTS_STORE_PATH, JSON.stringify(store, null, 2), 'utf-8')
+  } catch (e) {
+    console.warn('Gagal menyimpan accounts_store.json:', e.message)
+  }
+}
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -416,6 +446,34 @@ Jawab hanya JSON:
       message: 'Gagal menilai jawaban.',
     })
   }
+})
+
+// 7. Penyimpanan Progres Permanen Per Akun (Backup Disk JSON)
+app.get('/api/account-data/:email', (req, res) => {
+  const email = (req.params.email || '').trim().toLowerCase()
+  if (!email) return res.status(400).json({ found: false })
+  const store = readAccountsStore()
+  if (store[email]) {
+    return res.json({ found: true, data: store[email] })
+  }
+  return res.json({ found: false })
+})
+
+app.post('/api/account-data', (req, res) => {
+  const { email, stats, tasks, history } = req.body || {}
+  const normalized = (email || '').trim().toLowerCase()
+  if (!normalized) return res.status(400).json({ success: false })
+
+  const store = readAccountsStore()
+  const existing = store[normalized] || {}
+  store[normalized] = {
+    stats: stats ?? existing.stats ?? null,
+    tasks: tasks ?? existing.tasks ?? null,
+    history: history ?? existing.history ?? null,
+    updatedAt: new Date().toISOString(),
+  }
+  writeAccountsStore(store)
+  res.json({ success: true })
 })
 
 app.listen(PORT, () => {
