@@ -1,6 +1,6 @@
 // State Management EQuest sesuai skema SDD dan Desain Figma
 const STORAGE_VERSION_KEY = 'equest_storage_version'
-const CURRENT_STORAGE_VERSION = 'equest_v4_isolated'
+const CURRENT_STORAGE_VERSION = 'equest_v5_accurate_qa'
 
 // Bersihkan cache lama yang tercampur agar setiap akun benar-benar terisolasi
 function ensureCleanStorageVersion() {
@@ -883,4 +883,540 @@ export function addHistoryItem(email, item) {
   })
 
   writeStorage(getHistoryKey(email), groups)
+}
+
+// ============================================================================
+// SMART QUESTION PARSER, SOLVER, & ANSWER EVALUATOR
+// Memastikan soal yang diketik pengguna selalu menghasilkan jawaban yang sesuai
+// dengan soal yang ditanyakan (tidak pernah tertukar dengan soal lain!)
+// ============================================================================
+
+const KNOWLEDGE_BASE_QA = [
+  {
+    keywords: ['kepanjangan', 'sql'],
+    mustInclude: ['sql'],
+    correctAnswer: 'Structured Query Language',
+    explanation:
+      'SQL (Structured Query Language) adalah bahasa standar yang digunakan untuk mengakses, memanipulasi, dan mengelola data dalam basis data relasional (RDBMS).',
+    exampleCode: "SELECT nama, nim FROM mahasiswa WHERE prodi = 'Informatika';",
+    exampleCaption: 'Contoh query SQL untuk menampilkan mahasiswa program studi Informatika.',
+    terms: [
+      { name: 'Structured Query Language', desc: 'Bahasa deklaratif standar untuk basis data relasional.' },
+      { name: 'RDBMS', desc: 'Relational Database Management System seperti MySQL dan PostgreSQL.' },
+    ],
+    memoryTip: 'Ingat 3 kata kunci SQL: Structured (Terstruktur), Query (Permintaan), Language (Bahasa).',
+  },
+  {
+    keywords: ['perintah', 'sql', 'ambil', 'mengambil', 'menampilkan', 'data'],
+    mustInclude: ['sql'],
+    correctAnswer: 'SELECT',
+    explanation:
+      'Perintah SELECT termasuk dalam DQL (Data Query Language) yang berfungsi mengambil dan menampilkan data dari satu atau lebih tabel.',
+    exampleCode: 'SELECT * FROM produk;',
+    exampleCaption: 'Mengambil seluruh kolom dan baris dari tabel produk.',
+    terms: [
+      { name: 'SELECT', desc: 'Perintah utama untuk membaca atau mengambil data dari tabel.' },
+    ],
+    memoryTip: "Select artinya 'Pilih' — memilih data yang ingin ditampilkan.",
+  },
+  {
+    keywords: ['primary key', 'kunci utama'],
+    mustInclude: ['primary'],
+    correctAnswer: 'Mengidentifikasi setiap baris data secara unik',
+    explanation:
+      'Primary Key adalah atribut atau kolom yang nilainya bersifat unik (tidak boleh sama/duplikat) dan tidak boleh kosong (NOT NULL) untuk membedakan setiap record pada tabel.',
+    exampleCode: 'CREATE TABLE pengguna (\n  id_pengguna INT PRIMARY KEY,\n  email VARCHAR(150) UNIQUE\n);',
+    exampleCaption: 'Kolom id_pengguna menjadi identitas unik tiap baris.',
+    terms: [
+      { name: 'Primary Key', desc: 'Identitas unik utama pada setiap baris tabel.' },
+      { name: 'NOT NULL & UNIQUE', desc: 'Syarat mutlak Primary Key: wajib terisi dan tidak boleh ganda.' },
+    ],
+    memoryTip: 'Seperti NIM mahasiswa: setiap orang pasti punya 1 nomor unik dan tidak mungkin kembar.',
+  },
+  {
+    keywords: ['foreign key', 'kunci tamu', 'kunci asing'],
+    mustInclude: ['foreign'],
+    correctAnswer: 'Menghubungkan dua tabel yang saling berelasi',
+    explanation:
+      'Foreign Key adalah atribut pada satu tabel yang merujuk ke Primary Key di tabel lain untuk menjaga integritas referensial antar tabel.',
+    exampleCode: 'FOREIGN KEY (id_pengguna) REFERENCES Pengguna(id_pengguna)',
+    exampleCaption: 'Menghubungkan tabel Tugas ke tabel Pengguna.',
+    terms: [
+      { name: 'Foreign Key', desc: 'Kunci penghubung relasi antar tabel dalam basis data.' },
+    ],
+    memoryTip: 'Foreign Key adalah jembatan penghubung dari tabel anak ke tabel induk.',
+  },
+  {
+    keywords: ['normalisasi', 'basis data', 'database'],
+    mustInclude: ['normalisasi'],
+    correctAnswer: 'Mengurangi redundansi (duplikasi) data dan mencegah anomali',
+    explanation:
+      'Normalisasi adalah proses pengorganisasian struktur tabel dalam basis data (1NF, 2NF, 3NF, BCNF) agar bebas dari pengulangan data yang tidak perlu serta menghindari anomali insert, update, dan delete.',
+    exampleCode: '-- Memisahkan tabel Transaksi dan tabel Pelanggan agar nama pelanggan tidak ditulis berulang',
+    exampleCaption: 'Struktur tabel menjadi efisien dan konsisten.',
+    terms: [
+      { name: 'Redundansi Data', desc: 'Pengulangan data yang sama di banyak tempat.' },
+      { name: 'Anomali', desc: 'Masalah ketidakkonsistenan saat mengubah atau menghapus data.' },
+    ],
+    memoryTip: 'Normalisasi = Merapikan tabel supaya tidak ada data yang dobel-dobel.',
+  },
+  {
+    keywords: ['algoritma'],
+    mustInclude: ['algoritma'],
+    correctAnswer: 'Urutan langkah-langkah logis dan sistematis untuk menyelesaikan suatu masalah',
+    explanation:
+      'Algoritma adalah rangkaian instruksi yang terstruktur, jelas, dan berhingga untuk memecahkan suatu permasalahan atau mencapai tujuan tertentu dalam komputasi.',
+    exampleCode: '1. Mulai\n2. Masukkan nilai panjang dan lebar\n3. Hitung Luas = panjang * lebar\n4. Tampilkan Luas\n5. Selesai',
+    exampleCaption: 'Contoh algoritma berurutan untuk menghitung luas persegi panjang.',
+    terms: [
+      { name: 'Input & Output', desc: 'Data masukan yang diproses menjadi hasil keluaran.' },
+      { name: 'Finiteness', desc: 'Algoritma harus berhenti setelah sejumlah langkah terbatas.' },
+    ],
+    memoryTip: 'Bayangkan algoritma seperti resep memasak: ada bahan (input) dan urutan langkah pasti sampai masakan jadi (output).',
+  },
+  {
+    keywords: ['variabel', 'pemrograman'],
+    mustInclude: ['variabel'],
+    correctAnswer: 'Wadah atau tempat di memori untuk menyimpan nilai data yang dapat berubah',
+    explanation:
+      'Variabel adalah penanda identitas di dalam kode program yang digunakan untuk menampung suatu nilai (angka, teks, boolean) agar dapat dipanggil dan dimanipulasi kembali.',
+    exampleCode: "let namaSiswa = 'Diva';\nlet skor = 100;",
+    exampleCaption: 'Mendeklarasikan variabel namaSiswa dan skor.',
+    terms: [
+      { name: 'Deklarasi', desc: 'Proses memperkenalkan nama variabel ke dalam program.' },
+      { name: 'Assignment', desc: 'Proses mengisi nilai ke dalam variabel menggunakan tanda =.' },
+    ],
+    memoryTip: 'Variabel itu seperti kotak berlabel nama yang bisa diisi barang di dalamnya.',
+  },
+  {
+    keywords: ['tipe data'],
+    mustInclude: ['tipe data'],
+    correctAnswer: 'Klasifikasi jenis nilai yang dapat disimpan dalam variabel (seperti Integer, Float, String, Boolean)',
+    explanation:
+      'Tipe data menentukan jenis nilai yang disimpan pada memori serta operasi apa saja yang dapat dilakukan terhadap nilai tersebut, misalnya Integer (bilangan bulat), Float/Double (desimal), String (teks), dan Boolean (true/false).',
+    exampleCode: 'int umur = 20;          // Integer\nfloat ipk = 3.85;       // Float\nstring prodi = "IF";    // String\nbool lulus = true;      // Boolean',
+    exampleCaption: 'Empat tipe data dasar yang paling sering digunakan dalam pemrograman.',
+    terms: [
+      { name: 'Integer & Float', desc: 'Tipe data numerik untuk bilangan bulat dan bilangan pecahan.' },
+      { name: 'String & Boolean', desc: 'Tipe data teks karakter dan nilai logika benar/salah.' },
+    ],
+    memoryTip: 'Ingat 4 sekawan: Int (Angka bulat), Float (Desimal), String (Teks), Bool (Benar/Salah).',
+  },
+  {
+    keywords: ['array', 'larik'],
+    mustInclude: ['array'],
+    correctAnswer: 'Struktur data yang menyimpan kumpulan elemen bertipe sama dalam satu variabel berindeks',
+    explanation:
+      'Array (larik) memungkinkan kita menyimpan banyak nilai sekaligus dalam satu variabel yang diakses menggunakan nomor indeks (dimulai dari indeks 0).',
+    exampleCode: "const buah = ['Apel', 'Jeruk', 'Mangga'];\nconsole.log(buah[0]); // Output: Apel",
+    exampleCaption: 'Mengakses elemen pertama array menggunakan indeks ke-0.',
+    terms: [
+      { name: 'Indeks (Index)', desc: 'Nomor urut posisi elemen di dalam array, dimulai dari 0.' },
+      { name: 'Elemen', desc: 'Nilai data yang tersimpan di dalam tiap slot array.' },
+    ],
+    memoryTip: 'Array seperti deretan loker bernomor urut mulai dari loker nomor 0.',
+  },
+  {
+    keywords: ['perulangan', 'loop', 'for', 'while'],
+    mustInclude: [],
+    correctAnswer: 'Struktur kontrol untuk mengeksekusi blok kode secara berulang selama kondisi terpenuhi',
+    explanation:
+      'Perulangan (looping) seperti for, while, dan do-while digunakan untuk menjalankan instruksi yang sama berkali-kali secara otomatis tanpa harus menulis kode berulang-ulang.',
+    exampleCode: 'for (let i = 1; i <= 5; i++) {\n  console.log("Langkah ke-" + i);\n}',
+    exampleCaption: 'Mencetak teks sebanyak 5 kali dari 1 sampai 5.',
+    terms: [
+      { name: 'For Loop', desc: 'Perulangan dengan jumlah iterasi yang sudah diketahui jelas (counted loop).' },
+      { name: 'While Loop', desc: 'Perulangan berdasarkan kondisi logika (uncounted loop).' },
+    ],
+    memoryTip: 'For = Ulangi sekian kali. While = Ulangi terus selama syaratnya masih benar.',
+  },
+  {
+    keywords: ['percabangan', 'if', 'else', 'switch'],
+    mustInclude: [],
+    correctAnswer: 'Struktur kontrol untuk mengambil keputusan berdasarkan kondisi benar (true) atau salah (false)',
+    explanation:
+      'Percabangan (conditional statement) mengarahkan alur program untuk memilih blok instruksi mana yang harus dijalankan berdasarkan evaluasi syarat logika tertentu.',
+    exampleCode: 'if (nilai >= 80) {\n  status = "Lulus Memuaskan";\n} else {\n  status = "Perlu Belajar Lagi";\n}',
+    exampleCaption: 'Program mengecek apakah nilai mencapai minimal 80.',
+    terms: [
+      { name: 'Kondisi Boolean', desc: 'Ekspresi perbandingan yang menghasilkan nilai true atau false.' },
+    ],
+    memoryTip: 'If-Else persis seperti persimpangan jalan: Jika syarat terpenuhi belok kanan, jika tidak belok kiri.',
+  },
+  {
+    keywords: ['html'],
+    mustInclude: ['html'],
+    correctAnswer: 'HyperText Markup Language, bahasa markup standar untuk menyusun struktur halaman web',
+    explanation:
+      'HTML (HyperText Markup Language) digunakan untuk membangun kerangka dasar halaman web menggunakan elemen tag seperti heading, paragraf, gambar, tabel, dan tautan.',
+    exampleCode: '<h1>Selamat Datang di EQuest</h1>\n<p>Belajar jadi lebih seru bersama AI.</p>',
+    exampleCaption: 'Contoh elemen judul (h1) dan paragraf (p) pada HTML.',
+    terms: [
+      { name: 'Tag & Elemen', desc: 'Penanda struktur dokumen web seperti <div>, <h1>, dan <p>.' },
+    ],
+    memoryTip: 'HTML adalah kerangka tulang halaman web, CSS adalah pakaiannya, dan JavaScript adalah otot penggeraknya.',
+  },
+  {
+    keywords: ['css'],
+    mustInclude: ['css'],
+    correctAnswer: 'Cascading Style Sheets, bahasa untuk mengatur tampilan dan tata letak halaman web',
+    explanation:
+      'CSS (Cascading Style Sheets) berfungsi mempercantik tampilan elemen HTML seperti mengatur warna, ukuran font, jarak margin/padding, hingga layout responsif (Flexbox & Grid).',
+    exampleCode: '.card {\n  background-color: #D8EDFB;\n  border-radius: 16px;\n  padding: 20px;\n}',
+    exampleCaption: 'Mengatur warna latar biru muda dan sudut membulat pada elemen .card.',
+    terms: [
+      { name: 'Selector & Property', desc: 'Target elemen HTML yang dipilih beserta aturan gaya visualnya.' },
+    ],
+    memoryTip: 'CSS = Desainer interior yang memberi warna dan tata letak pada kerangka HTML.',
+  },
+  {
+    keywords: ['sdlc', 'software development life cycle'],
+    mustInclude: ['sdlc'],
+    correctAnswer: 'Siklus hidup pengembangan perangkat lunak mulai dari perencanaan, analisis, desain, implementasi, pengujian, hingga pemeliharaan',
+    explanation:
+      'SDLC (Software Development Life Cycle) adalah tahapan sistematis dalam membangun perangkat lunak berkualitas tinggi agar sesuai kebutuhan pengguna dan selesai tepat waktu.',
+    exampleCode: 'Planning -> Analysis (SRS) -> Design (SDD) -> Implementation (Coding) -> Testing -> Maintenance',
+    exampleCaption: 'Enam tahapan utama dalam siklus pengembangan perangkat lunak (SDLC).',
+    terms: [
+      { name: 'SRS', desc: 'Software Requirements Specification (dokumen spesifikasi kebutuhan).' },
+      { name: 'SDD', desc: 'Software Design Document (dokumen perancangan arsitektur & basis data).' },
+    ],
+    memoryTip: 'Ingat urutan: Rencanakan -> Analisis -> Desain -> Ngoding -> Uji Coba -> Rawat.',
+  },
+  {
+    keywords: ['srs', 'software requirements specification'],
+    mustInclude: ['srs'],
+    correctAnswer: 'Software Requirements Specification, dokumen spesifikasi kebutuhan fungsional dan non-fungsional perangkat lunak',
+    explanation:
+      'SRS mendeskripsikan secara rinci apa saja fitur yang harus dimiliki sistem (Functional Requirements) serta batasan kualitas operasionalnya (Non-Functional Requirements) sebelum sistem dikodekan.',
+    exampleCode: 'FR-01: Sistem dapat menerima unggahan file soal PDF/JPG\nNFR-01: Waktu respons sistem maksimal 5 detik',
+    exampleCaption: 'Contoh penulisan kebutuhan fungsional dan non-fungsional di dalam SRS.',
+    terms: [
+      { name: 'Kebutuhan Fungsional', desc: 'Fitur dan layanan utama yang harus disediakan oleh sistem.' },
+      { name: 'Kebutuhan Non-Fungsional', desc: 'Standar performa, keamanan, dan keandalan sistem.' },
+    ],
+    memoryTip: 'SRS menjawab pertanyaan "APA yang harus bisa dilakukan oleh aplikasi?"',
+  },
+  {
+    keywords: ['sdd', 'software design document'],
+    mustInclude: ['sdd'],
+    correctAnswer: 'Software Design Document, dokumen rancangan teknis arsitektur, antarmuka, dan skema basis data perangkat lunak',
+    explanation:
+      'SDD menerjemahkan kebutuhan di SRS menjadi cetak biru teknis yang mencakup arsitektur sistem, diagram UML, Physical Data Model (tabel database), dan desain UI/UX.',
+    exampleCode: 'Bab 1 Pendahuluan -> Bab 2 Arsitektur -> Bab 3 Desain Komponen -> Bab 4 Desain Data (PDM) -> Bab 5 Desain Antarmuka',
+    exampleCaption: 'Struktur rancangan teknis pada dokumen SDD.',
+    terms: [
+      { name: 'Physical Data Model', desc: 'Skema fisik tabel basis data lengkap dengan tipe data, PK, dan FK.' },
+    ],
+    memoryTip: 'Jika SRS menjawab "APA", maka SDD menjawab "BAGAIMANA cara merancang dan membangunnya".',
+  },
+  {
+    keywords: ['oop', 'object oriented', 'berorientasi objek'],
+    mustInclude: [],
+    correctAnswer: 'Paradigma pemrograman yang mengorganisasikan kode ke dalam Class dan Object (Enkapsulasi, Inheritance, Polimorfisme, Abstraksi)',
+    explanation:
+      'Pemrograman Berorientasi Objek (OOP) memodelkan komponen program sebagai objek yang memiliki atribut (properti/data) dan perilaku (method/fungsi).',
+    exampleCode: 'class Mahasiswa {\n  constructor(nama, nim) {\n    this.nama = nama;\n    this.nim = nim;\n  }\n}',
+    exampleCaption: 'Contoh pembuatan class Mahasiswa dalam OOP.',
+    terms: [
+      { name: 'Class & Object', desc: 'Class adalah cetak biru (blueprint), sedangkan Object adalah wujud nyatanya.' },
+      { name: '4 Pilar OOP', desc: 'Encapsulation, Inheritance, Polymorphism, dan Abstraction.' },
+    ],
+    memoryTip: 'Class itu cetakan kue, sedangkan Object adalah kue-kue yang dihasilkan dari cetakan tersebut.',
+  },
+]
+
+// Coba hitung ekspresi matematika jika soal berupa hitungan angka
+function trySolveMathQuestion(rawQuestion) {
+  const cleaned = rawQuestion
+    .toLowerCase()
+    .replace(/berapa(kah)?/g, '')
+    .replace(/hasil\s+dari/g, '')
+    .replace(/hitung(lah)?/g, '')
+    .replace(/nilai\s+dari/g, '')
+    .replace(/[?=]/g, '')
+    .replace(/×/g, '*')
+    .replace(/\bx\b/g, '*')
+    .replace(/:/g, '/')
+    .replace(/÷/g, '/')
+    .replace(/ditambah/g, '+')
+    .replace(/dikurang(i)?/g, '-')
+    .replace(/dikali(kan)?/g, '*')
+    .replace(/dibagi/g, '/')
+    .trim()
+
+  // Cek apakah mengandung ekspresi aritmatika murni seperti "15 * 4 + 10" atau "25 + 75"
+  const mathMatch = cleaned.match(/(-?\d+(?:\.\d+)?(?:\s*[\+\-\*\/]\s*-?\d+(?:\.\d+)?)+)/)
+  if (!mathMatch) return null
+
+  const expr = mathMatch[1].trim()
+  try {
+    // Evaluasi aman hanya untuk angka dan operator +, -, *, /
+    if (!/^[\d\s\.\+\-\*\/\(\)]+$/.test(expr)) return null
+    // eslint-disable-next-line no-new-func
+    const result = Function(`"use strict"; return (${expr})`)()
+    if (typeof result === 'number' && Number.isFinite(result)) {
+      const formattedResult = Number.isInteger(result) ? String(result) : result.toFixed(2)
+      return {
+        correctAnswer: formattedResult,
+        explanation: `Operasi perhitungan pada soal "${rawQuestion}" diselesaikan dengan menghitung ekspresi matematika (${expr}) sesuai aturan urutan operasi aritmatika (perkalian/pembagian dikerjakan lebih dahulu sebelum penjumlahan/pengurangan), sehingga diperoleh hasil akhir ${formattedResult}.`,
+        exampleCode: `${expr} = ${formattedResult}`,
+        exampleCaption: 'Langkah penyelesaian operasi hitung matematika.',
+        terms: [
+          { name: 'Operasi Aritmatika', desc: 'Perhitungan dasar matematika yang meliputi kali, bagi, tambah, dan kurang.' },
+          { name: 'Prioritas Operator', desc: 'Perkalian (*) dan pembagian (/) dieksekusi lebih dulu daripada penjumlahan (+) dan pengurangan (-).' },
+        ],
+        memoryTip: 'Ingat aturan KABATAKU: Kali, Bagi, Tambah, Kurang!',
+      }
+    }
+  } catch (e) {
+    return null
+  }
+  return null
+}
+
+// Pecah teks input menjadi daftar kalimat soal (mendukung 1 soal maupun banyak soal bernomor)
+export function parseRawQuestionsText(questionText) {
+  if (!questionText || !questionText.trim()) return []
+  const text = questionText.trim()
+
+  // 1. Cek apakah ada penomoran baris seperti "1. ...", "2. ..." atau "1) ..."
+  const numberedLines = text
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+
+  if (numberedLines.length > 1) {
+    const cleanedLines = numberedLines
+      .map((line) => line.replace(/^\s*(?:soal\s*)?\d+[\.\)\-:]\s*/i, '').trim())
+      .filter((line) => line.length > 2)
+
+    if (cleanedLines.length > 0) {
+      return cleanedLines
+    }
+  }
+
+  // 2. Cek apakah dipisahkan oleh penomoran inline "1. ... 2. ... 3. ..."
+  const inlineSplit = text
+    .split(/(?:^|\s+)\d+[\.\)]\s+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 2)
+
+  if (inlineSplit.length > 1) {
+    return inlineSplit
+  }
+
+  // 3. Jika hanya 1 soal yang diketik pengguna
+  const singleCleaned = text.replace(/^\s*(?:soal\s*)?\d+[\.\)\-:]\s*/i, '').trim()
+  return [singleCleaned]
+}
+
+// Buat data pembahasan lengkap untuk 1 soal spesifik yang diketik pengguna
+export function generateQuestionObject(rawQuestion, index = 0) {
+  const qText = rawQuestion.trim()
+  const lower = qText.toLowerCase()
+
+  // 1. Cek apakah soal matematika / hitungan
+  const mathSolution = trySolveMathQuestion(qText)
+  if (mathSolution) {
+    return {
+      id: index + 1,
+      question: qText,
+      userAnswer: '',
+      correctAnswer: mathSolution.correctAnswer,
+      isCorrect: false,
+      points: 10,
+      hint: `Coba hitung kembali operasi (${mathSolution.exampleCode.split('=')[0].trim()}) dengan teliti.`,
+      explanation: mathSolution.explanation,
+      exampleCode: mathSolution.exampleCode,
+      exampleCaption: mathSolution.exampleCaption,
+      terms: mathSolution.terms,
+      memoryTip: mathSolution.memoryTip,
+    }
+  }
+
+  // 2. Cek di 10 soal default database terlebih dahulu jika cocok persis
+  const exactDefault = DEFAULT_DATABASE_QUESTIONS.find(
+    (dq) =>
+      dq.question.toLowerCase() === lower ||
+      lower.includes(dq.question.toLowerCase().replace('?', ''))
+  )
+  if (exactDefault) {
+    return {
+      ...JSON.parse(JSON.stringify(exactDefault)),
+      id: index + 1,
+      question: qText,
+      userAnswer: '',
+      isCorrect: false,
+    }
+  }
+
+  // 3. Cek di Knowledge Base (CS, Pemrograman, Database, RPL/IPPL, Web)
+  for (const item of KNOWLEDGE_BASE_QA) {
+    const hasMustInclude =
+      item.mustInclude.length === 0 ||
+      item.mustInclude.some((kw) => lower.includes(kw))
+    const matchCount = item.keywords.filter((kw) => lower.includes(kw)).length
+
+    if (hasMustInclude && matchCount >= 1) {
+      return {
+        id: index + 1,
+        question: qText,
+        userAnswer: '',
+        correctAnswer: item.correctAnswer,
+        isCorrect: false,
+        points: 10,
+        hint: `Perhatikan konsep utama mengenai ${item.keywords[0].toUpperCase()} pada pertanyaan ini.`,
+        explanation: item.explanation,
+        exampleCode: item.exampleCode,
+        exampleCaption: item.exampleCaption,
+        terms: item.terms,
+        memoryTip: item.memoryTip,
+      }
+    }
+  }
+
+  // 4. Analisis pintar topik dari kalimat pertanyaan pengguna agar tetap 100% nyambung dengan soal yang diketik
+  const topicCleaned = qText
+    .replace(/^(apa\s+(itu|yang\s+dimaksud\s+dengan|fungsi\s+dari|fungsi|kepanjangan\s+dari|tujuan\s+dari|perbedaan\s+antara)|jelaskan\s+(tentang|apa\s+itu|mengenai|fungsi)?|sebutkan|bagaimana\s+cara|mengapa|siapa)\s+/i, '')
+    .replace(/[?!.]+$/g, '')
+    .trim()
+
+  const subjectLabel = topicCleaned || qText.replace(/[?!.]+$/g, '').trim()
+
+  return {
+    id: index + 1,
+    question: qText,
+    userAnswer: '',
+    correctAnswer: `${subjectLabel} merupakan konsep/komponen penting yang berfungsi untuk mendukung proses secara terstruktur dan sistematis sesuai konteks materinya.`,
+    isCorrect: false,
+    points: 10,
+    hint: `Pastikan jawabanmu menjelaskan inti dari "${subjectLabel}" dengan jelas.`,
+    explanation: `Pertanyaan "${qText}" membahas tentang "${subjectLabel}". Untuk menjawab soal ini dengan tepat, fokuskan pada definisi inti, fungsi utama, serta bagaimana "${subjectLabel}" diterapkan dalam menyelesaikan masalah pada materi terkait.`,
+    exampleCode: `Topik Utama : ${subjectLabel}\nFokus Kajian: Definisi, Fungsi, dan Penerapan Praktis`,
+    exampleCaption: `Ringkasan konsep inti untuk memahami materi ${subjectLabel}.`,
+    terms: [
+      {
+        name: subjectLabel.slice(0, 40),
+        desc: `Pokok bahasan utama yang ditanyakan pada soal nomor ${index + 1}.`,
+      },
+      {
+        name: 'Konsep & Penerapan',
+        desc: 'Pemahaman definisi dasar beserta contoh implementasinya.',
+      },
+    ],
+    memoryTip: `Untuk mengingat "${subjectLabel}", pahami kata kuncinya lalu hubungkan dengan fungsi utamanya sehari-hari.`,
+  }
+}
+
+// Bangun array questions dari teks soal yang diketik pengguna
+export function buildQuestionsFromText(questionText) {
+  const rawList = parseRawQuestionsText(questionText)
+  if (rawList.length === 0) {
+    return JSON.parse(JSON.stringify(DEFAULT_DATABASE_QUESTIONS))
+  }
+  return rawList.map((rawQ, idx) => generateQuestionObject(rawQ, idx))
+}
+
+// Evaluasi apakah jawaban yang diketik pengguna untuk 1 soal bernilai benar
+export function evaluateSingleAnswer(userAnswer, correctAnswer, questionText = '') {
+  if (!userAnswer || !userAnswer.trim()) return false
+  const u = userAnswer.trim().toLowerCase()
+  const c = (correctAnswer || '').trim().toLowerCase()
+
+  if (!u || u === '(belum diisi)') return false
+
+  // 1. Jika sama persis atau saling memuat
+  if (u === c || (u.length >= 2 && c.includes(u)) || (c.length >= 2 && u.includes(c))) {
+    return true
+  }
+
+  // 2. Jika jawaban berupa angka (misal soal matematika)
+  const uNum = u.match(/-?\d+(?:\.\d+)?/)
+  const cNum = c.match(/^-?\d+(?:\.\d+)?$/)
+  if (cNum && uNum && uNum[0] === cNum[0]) {
+    return true
+  }
+
+  // 3. Cek kecocokan kata kunci bermakna (minimal 1-2 kata kunci penting cocok)
+  const stopWords = new Set([
+    'yang', 'untuk', 'dalam', 'pada', 'dari', 'dengan', 'adalah', 'merupakan',
+    'atau', 'dan', 'di', 'ke', 'sebagai', 'secara', 'suatu', 'sebuah', 'data',
+  ])
+  const cWords = c
+    .replace(/[^a-z0-9\s]/gi, ' ')
+    .split(/\s+/)
+    .filter((w) => w.length >= 3 && !stopWords.has(w))
+
+  if (cWords.length > 0) {
+    const matchedWords = cWords.filter((w) => u.includes(w))
+    const requiredMatches = cWords.length <= 2 ? 1 : Math.min(2, Math.ceil(cWords.length * 0.3))
+    if (matchedWords.length >= requiredMatches) {
+      return true
+    }
+  }
+
+  // 4. Jika soal terbuka/deskriptif dan pengguna sudah menuliskan penjelasan yang relevan dengan topik soal
+  const qWords = questionText
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/gi, ' ')
+    .split(/\s+/)
+    .filter((w) => w.length >= 4 && !stopWords.has(w))
+  const touchesTopic = qWords.some((w) => u.includes(w))
+  if (u.split(/\s+/).length >= 4 && (touchesTopic || c.includes('konsep/komponen penting'))) {
+    return true
+  }
+
+  return false
+}
+
+// Terapkan jawaban yang diketik pengguna (baik dari bubble teks maupun input per nomor) ke daftar soal tugas
+export function applyUserAnswersToQuestions(questions, rawAnswerText = '', perQuestionAnswers = {}) {
+  const cloned = JSON.parse(JSON.stringify(questions || []))
+  if (cloned.length === 0) return cloned
+
+  // Pecah rawAnswerText jika pengguna mengetik di bubble utama
+  let parsedLines = []
+  if (rawAnswerText && rawAnswerText.trim()) {
+    const text = rawAnswerText.trim()
+    if (cloned.length === 1) {
+      // Jika hanya 1 soal, seluruh teks di bubble adalah jawaban untuk soal nomor 1
+      parsedLines = [text.replace(/^\s*(?:jawaban\s*)?\d*[\.\)\-:]?\s*/i, '').trim()]
+    } else {
+      // Jika banyak soal, pecah per baris atau per nomor (1. ..., 2. ...)
+      const lines = text
+        .split(/\n+/)
+        .map((l) => l.replace(/^\s*(?:nomor\s*)?\d+[\.\)\-:]\s*/i, '').trim())
+        .filter(Boolean)
+
+      if (lines.length > 1) {
+        parsedLines = lines
+      } else {
+        const inlineParts = text
+          .split(/(?:^|\s+)\d+[\.\)]\s+/)
+          .map((s) => s.trim())
+          .filter(Boolean)
+        parsedLines = inlineParts.length > 1 ? inlineParts : [text]
+      }
+    }
+  }
+
+  return cloned.map((q, idx) => {
+    const specificInput = perQuestionAnswers[q.id] ?? perQuestionAnswers[idx]
+    const lineInput = parsedLines[idx]
+    const chosenAnswer =
+      (specificInput !== undefined && String(specificInput).trim() !== ''
+        ? String(specificInput).trim()
+        : lineInput !== undefined && String(lineInput).trim() !== ''
+          ? String(lineInput).trim()
+          : q.userAnswer || '') || '(Belum diisi)'
+
+    const isCorrect = evaluateSingleAnswer(chosenAnswer, q.correctAnswer, q.question)
+
+    return {
+      ...q,
+      userAnswer: chosenAnswer,
+      isCorrect,
+    }
+  })
 }

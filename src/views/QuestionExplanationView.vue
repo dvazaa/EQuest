@@ -84,13 +84,15 @@ async function handleAskAi() {
     const data = await res.json()
     aiChatReplies.value.push({
       user: promptText,
-      ai: data.reply || 'SQL adalah bahasa terstruktur untuk berinteraksi dengan database relasional.',
+      ai:
+        data.reply ||
+        `Untuk soal "${currentQuestion.value.question}", kunci utamanya adalah "${currentQuestion.value.correctAnswer}". ${currentQuestion.value.explanation || ''}`,
     })
   } catch (err) {
-    // Instant fallback jika server belum aktif
+    // Instant fallback kontekstual sesuai soal yang sedang dibuka
     aiChatReplies.value.push({
       user: promptText,
-      ai: `Tentu! Terkait "${promptText}": Konsep intinya adalah perintah SQL berjalan secara deklaratif untuk memilih, memfilter, atau mengelola data tabel secara sistematis.`,
+      ai: `Tentu! Terkait pertanyaanmu "${promptText}" pada soal "${currentQuestion.value.question}":\nInti jawabannya adalah "${currentQuestion.value.correctAnswer}". ${currentQuestion.value.explanation || ''} Tips mengingatnya: ${currentQuestion.value.memoryTip || 'Pahami konsep intinya secara bertahap.'}`,
     })
   } finally {
     isAskingAi.value = false

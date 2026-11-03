@@ -7,6 +7,7 @@ import {
   getUserTasks,
   updateTask,
   recordTaskCompletion,
+  evaluateSingleAnswer,
   DEFAULT_DATABASE_QUESTIONS,
 } from '../utils/equestState'
 
@@ -60,6 +61,10 @@ const task = computed(() => {
   }
 })
 
+const totalQuestions = computed(() => {
+  return questions.value.length || 1
+})
+
 const correctCount = computed(() => {
   return questions.value.filter((q) => q.isCorrect).length
 })
@@ -69,7 +74,15 @@ const wrongCount = computed(() => {
 })
 
 const totalScore = computed(() => {
-  return correctCount.value * 10
+  return Math.round((correctCount.value / totalQuestions.value) * 100)
+})
+
+const earnedXp = computed(() => {
+  return Math.max(10, correctCount.value * 10)
+})
+
+const earnedTickets = computed(() => {
+  return totalScore.value >= 80 ? 1 : 0
 })
 
 const filteredQuestions = computed(() => {
@@ -114,12 +127,11 @@ function handlePerbaikiJawaban() {
 
   // Check user answers against correct ones
   questions.value.forEach((q) => {
-    if (!q.isCorrect && correctionInputs.value[q.id]) {
-      const input = correctionInputs.value[q.id].trim().toLowerCase()
-      const answer = q.correctAnswer.toLowerCase()
-      if (input.includes(answer) || answer.includes(input)) {
-        q.isCorrect = true
-        q.userAnswer = correctionInputs.value[q.id]
+    if (!q.isCorrect && correctionInputs.value[q.id] !== undefined) {
+      const rawInput = String(correctionInputs.value[q.id]).trim()
+      if (rawInput) {
+        q.userAnswer = rawInput
+        q.isCorrect = evaluateSingleAnswer(rawInput, q.correctAnswer, q.question)
       }
     }
   })
@@ -129,6 +141,7 @@ function handlePerbaikiJawaban() {
     updateTask(email, taskId, {
       questions: questions.value,
       remainingAttempts: remainingAttempts.value,
+      userScore: totalScore.value,
     })
   }
 
@@ -140,7 +153,7 @@ function handlePerbaikiJawaban() {
 function handleClaimReward() {
   const email = currentUser.value?.email
   if (email) {
-    recordTaskCompletion(email, task.value, 80, 1)
+    recordTaskCompletion(email, task.value, earnedXp.value, earnedTickets.value)
     updateTask(email, taskId, {
       status: 'Selesai',
       userScore: totalScore.value,
@@ -164,7 +177,7 @@ function handleClaimReward() {
           Skor Akhir
         </h1>
         <p class="mt-1 text-base text-slate-600 sm:text-lg">
-          {{ task.fileName || 'jawaban_latihan.pdf' }} &nbsp;|&nbsp; 10 soal selesai dikerjakan
+          {{ task.fileName || 'jawaban_latihan.pdf' }} &nbsp;|&nbsp; {{ questions.length }} soal selesai dikerjakan
         </p>
       </section>
 
@@ -214,10 +227,14 @@ function handleClaimReward() {
           <!-- Pesan Hebat -->
           <div class="space-y-1">
             <h2 class="text-lg font-black text-[#0A2540]">
-              Hebat, {{ correctCount }} dari 10 benar!
+              Hebat, {{ correctCount }} dari {{ questions.length }} benar!
             </h2>
             <p class="text-xs text-slate-500 leading-relaxed">
-              Kamu sudah benar {{ correctCount }} jawaban. Dua soal lagi bisa dipelajari ulang.
+              {{
+                wrongCount === 0
+                  ? 'Luar biasa! Semua jawabanmu benar sempurna.'
+                  : `Kamu sudah benar ${correctCount} jawaban. ${wrongCount} soal lagi bisa dipelajari ulang.`
+              }}
             </p>
           </div>
 
@@ -225,11 +242,11 @@ function handleClaimReward() {
           <div class="grid grid-cols-2 gap-3 w-full pt-3">
             <div class="rounded-2xl bg-[#EAF5FD] p-3 text-center">
               <p class="text-[11px] font-bold text-slate-500">XP didapat</p>
-              <p class="text-lg font-black text-[#2D6BE4]">+80</p>
+              <p class="text-lg font-black text-[#2D6BE4]">+{{ earnedXp }}</p>
             </div>
             <div class="rounded-2xl bg-[#EAF5FD] p-3 text-center">
               <p class="text-[11px] font-bold text-slate-500">Bonus tiket</p>
-              <p class="text-lg font-black text-[#2D6BE4]">+1</p>
+              <p class="text-lg font-black text-[#2D6BE4]">+{{ earnedTickets }}</p>
             </div>
           </div>
         </div>
@@ -253,33 +270,22 @@ function handleClaimReward() {
             <div class="divide-y divide-slate-100 font-semibold text-slate-700">
               <div class="flex items-center justify-between py-2.5">
                 <div>
-                  <p class="font-bold text-[#0A2540]">Benar di percobaan pertama</p>
+                  <p class="font-bold text-[#0A2540]">Jawaban benar</p>
                   <p class="text-[10px] text-slate-400">10 XP per soal</p>
                 </div>
                 <div class="flex gap-10">
-                  <span>8 &times; 10</span>
-                  <span class="font-extrabold text-[#16A34A]">+80 XP</span>
+                  <span>{{ correctCount }} &times; 10</span>
+                  <span class="font-extrabold text-[#16A34A]">+{{ correctCount * 10 }} XP</span>
                 </div>
               </div>
 
               <div class="flex items-center justify-between py-2.5">
                 <div>
-                  <p class="font-bold text-[#0A2540]">Benar setelah diperbaiki</p>
-                  <p class="text-[10px] text-slate-400">10 XP per soal</p>
-                </div>
-                <div class="flex gap-10">
-                  <span>1 &times; 10</span>
-                  <span class="font-extrabold text-[#16A34A]">+10 XP</span>
-                </div>
-              </div>
-
-              <div class="flex items-center justify-between py-2.5">
-                <div>
-                  <p class="font-bold text-[#0A2540]">Melihat jawaban benar</p>
+                  <p class="font-bold text-[#0A2540]">Perlu dipelajari ulang</p>
                   <p class="text-[10px] text-slate-400">Tanpa XP</p>
                 </div>
                 <div class="flex gap-10">
-                  <span>1 &times; 0</span>
+                  <span>{{ wrongCount }} &times; 0</span>
                   <span class="font-extrabold text-slate-500">0 XP</span>
                 </div>
               </div>
@@ -289,12 +295,12 @@ function handleClaimReward() {
           <!-- Total XP Banner -->
           <div class="flex items-center justify-between rounded-xl bg-[#EAF5FD] px-4 py-2.5 text-xs">
             <span class="font-black text-[#0A2540]">Total XP</span>
-            <span class="font-black text-[#2D6BE4] text-sm">+80 XP</span>
+            <span class="font-black text-[#2D6BE4] text-sm">+{{ earnedXp }} XP</span>
           </div>
 
           <div class="flex items-center justify-between text-xs font-semibold text-slate-600 px-1">
-            <span>Bonus skor di atas 80</span>
-            <span class="font-bold text-[#0A2540]">+1 Tiket Blind Box</span>
+            <span>Bonus skor minimal 80</span>
+            <span class="font-bold text-[#0A2540]">+{{ earnedTickets }} Tiket Blind Box</span>
           </div>
 
           <!-- Poin per soal indicators -->
@@ -389,7 +395,7 @@ function handleClaimReward() {
                 : 'border border-slate-200 text-slate-600 hover:bg-slate-50'
             "
           >
-            Semua (10)
+            Semua ({{ questions.length }})
           </button>
           <button
             type="button"
@@ -539,7 +545,7 @@ function handleClaimReward() {
       <!-- Main Box Container sesuai Desktop - 10 -->
       <div class="rounded-3xl bg-white p-7 shadow-xs space-y-4">
         <p class="text-xs font-black text-[#0A2540] uppercase tracking-wider">
-          10 Jawaban
+          {{ questions.length }} Jawaban
         </p>
 
         <!-- List Soal Mode Belajar -->

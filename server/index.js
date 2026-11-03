@@ -89,7 +89,7 @@ app.get('/api/test-gemini', async (req, res) => {
   }
 })
 
-// 3. Analisis Soal (Ekstraksi Soal & Pembahasan)
+// 3. Analisis Soal (Ekstraksi Soal & Pembahasan Terstruktur sesuai Soal yang Diketik/Diunggah)
 app.post('/api/analyze', upload.single('file'), async (req, res) => {
   try {
     const questionText = req.body.questionText?.trim()
@@ -106,12 +106,26 @@ app.post('/api/analyze', upload.single('file'), async (req, res) => {
       try {
         const contents = [
           {
-            text: `Kamu adalah asisten belajar EQuest. Ekstraksi soal dan buat kunci jawaban serta pembahasan ringkas dalam format:
-1. [Pertanyaan]
-Jawaban: [Jawaban singkat]
-Penjelasan: [Penjelasan konsep]
+            text: `Kamu adalah asisten belajar cerdas EQuest. Analisis soal yang diberikan pengguna berikut ini (jangan mengganti dengan soal lain!).
+Kembalikan HANYA format JSON array murni berisi daftar soal beserta kunci jawaban dan pembahasannya:
+[
+  {
+    "id": 1,
+    "question": "Kalimat pertanyaan sesuai soal pengguna",
+    "correctAnswer": "Jawaban singkat dan tepat",
+    "hint": "Petunjuk singkat jika siswa menjawab salah",
+    "explanation": "Penjelasan lengkap kenapa jawabannya begitu",
+    "exampleCode": "Contoh kode / rumus / ilustrasi singkat",
+    "exampleCaption": "Keterangan singkat dari contoh di atas",
+    "terms": [
+      { "name": "Istilah 1", "desc": "Penjelasan istilah 1" },
+      { "name": "Istilah 2", "desc": "Penjelasan istilah 2" }
+    ],
+    "memoryTip": "Cara mudah mengingat konsep soal ini"
+  }
+]
 
-${questionText ? `Teks soal:\n${questionText}` : ''}`,
+${questionText ? `Teks soal dari pengguna:\n${questionText}` : 'Ekstrak semua soal dari berkas terlampir.'}`,
           },
         ]
 
@@ -133,10 +147,35 @@ ${questionText ? `Teks soal:\n${questionText}` : ''}`,
         )
 
         if (response.text) {
+          const cleanJson = response.text.replace(/```json/gi, '').replace(/```/g, '').trim()
+          let parsedQuestions = null
+          try {
+            const maybeArray = JSON.parse(cleanJson)
+            if (Array.isArray(maybeArray) && maybeArray.length > 0) {
+              parsedQuestions = maybeArray.map((q, idx) => ({
+                id: idx + 1,
+                question: q.question || questionText,
+                userAnswer: '',
+                correctAnswer: q.correctAnswer || '',
+                isCorrect: false,
+                points: 10,
+                hint: q.hint || 'Periksa kembali konsep utama pada soal ini.',
+                explanation: q.explanation || '',
+                exampleCode: q.exampleCode || '',
+                exampleCaption: q.exampleCaption || '',
+                terms: Array.isArray(q.terms) && q.terms.length ? q.terms : [{ name: 'Konsep Inti', desc: 'Pokok bahasan utama soal.' }],
+                memoryTip: q.memoryTip || 'Pahami konsep dasarnya secara bertahap.',
+              }))
+            }
+          } catch (_) {
+            // Jika bukan JSON murni, biarkan fallback parser di frontend menangani
+          }
+
           return res.json({
             success: true,
             source: 'gemini-live',
             answer: response.text,
+            questions: parsedQuestions,
           })
         }
       } catch (geminiErr) {
@@ -144,15 +183,14 @@ ${questionText ? `Teks soal:\n${questionText}` : ''}`,
       }
     }
 
-    // Fallback instan jika API key belum diisi atau server Gemini lambat
-    const sampleAnswer = `1. ${questionText || 'Apa fungsi utama sistem basis data relasional?'}
-Jawaban: Menyimpan dan mengelola data dalam bentuk tabel-tabel yang saling berelasi.
-Penjelasan: Basis data relasional memudahkan pengelolaan integritas data, pencarian menggunakan SQL, dan meminimalkan duplikasi data.`
+    // Fallback instan sesuai teks soal yang dikirim pengguna
+    const sampleAnswer = `Soal berhasil dianalisis: ${questionText || file?.originalname || 'Soal Latihan'}`
 
     res.json({
       success: true,
       source: 'equest-fast-cache',
       answer: sampleAnswer,
+      questions: null,
     })
   } catch (error) {
     console.error('Kesalahan analisis:', error.message)
@@ -200,14 +238,13 @@ Berikan penjelasan yang singkat, mudah dipahami siswa, dan beri contoh nyata bil
       }
     }
 
-    // Contextual fast response
-    let simulatedReply = `Tentu! Untuk pertanyaanmu "${userPrompt}": 
-Konsep intinya adalah memahami relasi dan perintah dasarnya. Dalam SQL, data disimpan dalam baris dan kolom yang terstruktur, sehingga perintah seperti SELECT atau WHERE bekerja memfilter data dengan presisi tinggi. Cobalah mengingat polanya secara bertahap!`
+    // Contextual fast response yang selalu merujuk ke soal & jawaban yang sedang dibahas
+    let simulatedReply = `Tentu! Untuk pertanyaanmu "${userPrompt}" terkait soal "${question}":\nJawaban yang tepat adalah "${currentAnswer}". Fokus utamanya adalah memahami definisi dan cara kerja konsep tersebut agar mudah diterapkan pada soal serupa.`
 
     if (userPrompt.toLowerCase().includes('contoh')) {
-      simulatedReply = `Contoh sederhananya:\nMisalkan kita punya tabel 'mahasiswa' dengan kolom 'nim' dan 'nama'. Jika ingin mengambil data mahasiswa bernama Diva, kita cukup menulis:\nSELECT * FROM mahasiswa WHERE nama = 'Diva';\nSangat intuitif dan mudah dipelajari!`
+      simulatedReply = `Berikut contoh sederhana untuk soal "${question}":\nMisalkan dalam praktik sehari-hari kita menerapkan "${currentAnswer}", langkah pertamanya adalah mengidentifikasi masalah utama dari soal lalu mencocokkannya dengan fungsi inti dari konsep tersebut.`
     } else if (userPrompt.toLowerCase().includes('sederhana') || userPrompt.toLowerCase().includes('simpel')) {
-      simulatedReply = `Bayangkan tabel seperti buku catatan bergaris dengan judul kolom. Query adalah permintaanmu kepada petugas perpustakaan: "Tolong carikan siswa yang di kelas 10A". Petugas akan langsung membawakannya untukmu!`
+      simulatedReply = `Secara sederhana, untuk soal "${question}", kamu cukup mengingat kata kunci utamanya yaitu: "${currentAnswer}". Pahami dulu fungsi dasarnya, maka pembahasannya akan jauh lebih mudah diingat!`
     }
 
     res.json({

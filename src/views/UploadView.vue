@@ -8,6 +8,7 @@ import {
   saveUserTasks,
   getUserStats,
   saveUserStats,
+  buildQuestionsFromText,
   DEFAULT_DATABASE_QUESTIONS,
 } from '../utils/equestState'
 
@@ -16,6 +17,8 @@ const fileInput = ref(null)
 const selectedFile = ref(null)
 const questionText = ref('')
 const isUploaded = ref(false)
+const isAnalyzing = ref(false)
+const errorMessage = ref('')
 
 function triggerFileInput() {
   fileInput.value?.click()
@@ -52,6 +55,7 @@ function handleReset() {
   selectedFile.value = null
   isUploaded.value = false
   questionText.value = ''
+  errorMessage.value = ''
 }
 
 async function handleContinue() {
@@ -61,15 +65,68 @@ async function handleContinue() {
     return
   }
 
+  const trimmedText = questionText.value.trim()
+  if (!selectedFile.value && !trimmedText) {
+    errorMessage.value = 'Silakan unggah file soal atau ketik teks soal terlebih dahulu.'
+    return
+  }
+
+  errorMessage.value = ''
+  isAnalyzing.value = true
+
+  let extractedText = trimmedText
+  // Jika pengguna mengunggah file .txt, baca isi teksnya secara langsung
+  if (!extractedText && selectedFile.value?.raw && selectedFile.value.name.toLowerCase().endsWith('.txt')) {
+    try {
+      extractedText = (await selectedFile.value.raw.text()).trim()
+    } catch (_) {
+      // Abaikan jika gagal membaca teks
+    }
+  }
+
+  // Bangun daftar soal sesuai persis dengan yang diketik pengguna
+  let taskQuestions = extractedText
+    ? buildQuestionsFromText(extractedText)
+    : JSON.parse(JSON.stringify(DEFAULT_DATABASE_QUESTIONS))
+
+  // Coba hubungi backend AI (/api/analyze) jika server aktif & memiliki Gemini API Key
+  if (extractedText || selectedFile.value?.raw) {
+    try {
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), 6000)
+
+      const formData = new FormData()
+      if (extractedText) formData.append('questionText', extractedText)
+      if (selectedFile.value?.raw) formData.append('file', selectedFile.value.raw)
+
+      const res = await fetch('http://localhost:3000/api/analyze', {
+        method: 'POST',
+        body: formData,
+        signal: controller.signal,
+      })
+      clearTimeout(timer)
+
+      if (res.ok) {
+        const data = await res.json()
+        if (Array.isArray(data.questions) && data.questions.length > 0) {
+          taskQuestions = data.questions
+        }
+      }
+    } catch (_) {
+      // Gunakan hasil buildQuestionsFromText lokal yang cepat dan akurat
+    }
+  }
+
   const email = user.email
   const existingTasks = getUserTasks(email)
 
   const newTaskId = Date.now()
-  const fileName =
-    selectedFile.value?.name ||
-    (questionText.value.trim() ? 'Soal_Teks_Latihan.txt' : 'soal_latihan.pdf')
-  const fileType = selectedFile.value?.type || 'PDF'
-  const fileSize = selectedFile.value?.size || '245 KB'
+  const shortTitle = extractedText
+    ? `Soal: ${taskQuestions[0]?.question?.slice(0, 35) || 'Latihan'}${taskQuestions[0]?.question?.length > 35 ? '...' : ''}`
+    : null
+  const fileName = selectedFile.value?.name || shortTitle || 'soal_latihan.pdf'
+  const fileType = selectedFile.value?.type || (extractedText ? 'TEKS' : 'PDF')
+  const fileSize = selectedFile.value?.size || `${Math.max(1, Math.ceil((extractedText.length || 500) / 1024))} KB`
 
   const newTask = {
     id: newTaskId,
@@ -77,7 +134,8 @@ async function handleContinue() {
     fileName: fileName,
     fileSize: fileSize,
     fileType: fileType,
-    questionCount: 10,
+    rawQuestionText: extractedText,
+    questionCount: taskQuestions.length,
     uploadDate: new Date().toLocaleDateString('id-ID', {
       day: 'numeric',
       month: 'short',
@@ -85,8 +143,8 @@ async function handleContinue() {
     }),
     status: 'Sedang Dikerjakan',
     remainingAttempts: 2,
-    questions: JSON.parse(JSON.stringify(DEFAULT_DATABASE_QUESTIONS)),
-    userScore: 80,
+    questions: taskQuestions,
+    userScore: 0,
   }
 
   existingTasks.unshift(newTask)
@@ -100,6 +158,8 @@ async function handleContinue() {
     stats.streak = 1
   }
   saveUserStats(email, stats)
+
+  isAnalyzing.value = false
 
   // Arahkan ke Desktop - 6 (Upload Jawaban)
   router.push({
@@ -252,15 +312,23 @@ async function handleContinue() {
                 <textarea
                   v-model="questionText"
                   rows="3"
-                  placeholder="Ketik atau tempel soal disini..."
-                  class="w-full rounded-2xl border border-slate-300 p-4 text-sm text-[#0f2852] outline-none transition focus:border-[#2D6BE4] placeholder:text-slate-400"
+                  placeholder="Ketik atau tempel soal disini (bisa 1 soal atau beberapa soal bernomor 1. 2. dst)..."
+                  class="w-full rounded-2xl border border-slate-300 bg-[#F8FBFF] p-4 text-sm text-[#0f2852] outline-none transition focus:border-[#2D6BE4] focus:bg-white placeholder:text-slate-400"
                 ></textarea>
               </div>
+
+              <p
+                v-if="errorMessage"
+                class="rounded-xl bg-red-50 px-4 py-2.5 text-xs font-bold text-red-600"
+              >
+                ⚠️ {{ errorMessage }}
+              </p>
 
               <!-- Tombol Lanjutkan -->
               <div class="flex justify-end pt-2">
                 <button
                   type="button"
+                  :disabled="isAnalyzing"
                   @click="handleContinue"
                   class="rounded-xl px-8 py-3 text-sm font-bold text-white transition shadow-sm"
                   :class="
@@ -269,7 +337,7 @@ async function handleContinue() {
                       : 'bg-[#A3C4F3] cursor-pointer hover:bg-[#2D6BE4]'
                   "
                 >
-                  Lanjutkan
+                  {{ isAnalyzing ? 'Memproses Soal...' : 'Lanjutkan' }}
                 </button>
               </div>
             </div>
