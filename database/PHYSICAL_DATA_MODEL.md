@@ -1,184 +1,137 @@
 # DOKUMEN PERANCANGAN BASIS DATA FISIK (PHYSICAL DATA MODEL - PDM)
 **Sistem Pendamping Pengerjaan Tugas Berbasis AI (EQuest)**  
-*Berdasarkan Dokumen Software Requirements Specification (SRS) v1.0*  
+*Berdasarkan Software Design Document (SDD) Bab 4.4 Halaman 35 & Software Requirements Specification (SRS)*  
 *Penyusun: 11241026 - Diva Novaliza Fitriyani*
 
 ---
 
-## 1. Ringkasan Arsitektur Basis Data
+## 1. Ringkasan Arsitektur Basis Data Fisik
 * **DBMS**: MySQL / MariaDB (Versi 8.0+ / 10.4+)
 * **Storage Engine**: InnoDB (Mendukung transaksi ACID dan Integritas Relasional / Foreign Keys)
 * **Karakter Set**: `utf8mb4` (Mendukung emoji avatar dan karakter teks internasional)
 * **Collation**: `utf8mb4_unicode_ci`
 * **Nama Database**: `equest_db`
+* **Total Entitas Fisik**: **17 Tabel Relasional** (Sesuai SDD Bab 4.4 Halaman 35)
 
 ---
 
-## 2. Struktur Tabel Fisik & Kamus Data
+## 2. Struktur 17 Tabel Relasional Fisik
 
-### 2.1 Tabel `users`
-Menyimpan kredensial dan identitas akun pengguna (Pelajar / Pengguna Umum).
-*Referensi SRS: FR-01 (Registrasi), FR-02 (Login), NFR-01, NFR-02 (Keamanan Password Hash).*
+### 2.1 Kelompok Pengguna & Gamifikasi
 
-| Nama Kolom | Tipe Data Fisik | Constraint | Nilai Bawaan | Keterangan |
-| :--- | :--- | :--- | :--- | :--- |
-| `id` | `INT` | PK, AUTO_INCREMENT | - | Pengidentifikasi unik pengguna |
-| `name` | `VARCHAR(100)` | NOT NULL | - | Nama lengkap pengguna |
-| `email` | `VARCHAR(150)` | NOT NULL, UNIQUE, INDEX | - | Email aktif akun |
-| `password_hash` | `VARCHAR(255)` | NOT NULL | - | Hash password menggunakan bcrypt (NFR-02) |
-| `avatar` | `VARCHAR(50)` | NULL | `'👤'` | Ikon avatar pengguna |
-| `role` | `ENUM('student','general')` | NOT NULL | `'student'` | Kategori pengguna |
-| `provider` | `ENUM('local','google')` | NOT NULL | `'local'` | Metode autentikasi |
-| `created_at` | `TIMESTAMP` | NOT NULL | `CURRENT_TIMESTAMP` | Waktu registrasi |
-| `updated_at` | `TIMESTAMP` | NOT NULL | `CURRENT_TIMESTAMP ON UPDATE` | Waktu pembaharuan profil |
+#### 1. Tabel `Pengguna`
+Menyimpan data akun pengguna dan statistik utama.
+* Primary Key: `id_pengguna` (INT, AUTO_INCREMENT)
+* Atribut: `nama`, `email`, `password_hash`, `role`, `foto_profil`, `tanggal_daftar`, `xp_total`, `tiket_total`, `status_akun`.
 
----
+#### 2. Tabel `Streak`
+Mencatat konsistensi hari belajar pengguna.
+* Primary Key: `id_streak` (INT, AUTO_INCREMENT)
+* Foreign Key: `id_pengguna` -> `Pengguna(id_pengguna)` ON DELETE CASCADE
+* Atribut: `jumlah_hari`, `tanggal_terakhir`, `status` (`aktif`, `freeze`, `putus`).
 
-### 2.2 Tabel `user_stats`
-Menyimpan parameter gamifikasi dan status kemajuan pengguna.
-*Referensi SRS: FR-10 (Kesempatan Perbaikan), FR-12 (XP & Tiket), FR-14 (Progress), FR-15 (Streak).*
-
-| Nama Kolom | Tipe Data Fisik | Constraint | Nilai Bawaan | Keterangan |
-| :--- | :--- | :--- | :--- | :--- |
-| `id` | `INT` | PK, AUTO_INCREMENT | - | ID baris statistik |
-| `user_id` | `INT` | NOT NULL, UNIQUE, FK (`users.id`) | - | Relasi ke tabel pengguna (CASCADE) |
-| `xp` | `INT` | NOT NULL | `0` | Total Experience Points |
-| `tickets` | `INT` | NOT NULL | `0` | Jumlah tiket Mystery Blind Box |
-| `streak` | `INT` | NOT NULL | `0` | Jumlah hari belajar berturut-turut |
-| `repair_chances_left` | `INT` | NOT NULL | `3` | Sisa kesempatan perbaikan tugas (FR-10) |
-| `last_active_date` | `DATE` | NULL | NULL | Tanggal interaksi terakhir untuk validasi streak |
-| `created_at` | `TIMESTAMP` | NOT NULL | `CURRENT_TIMESTAMP` | Waktu inisialisasi statistik |
-| `updated_at` | `TIMESTAMP` | NOT NULL | `CURRENT_TIMESTAMP ON UPDATE` | Waktu perubahan statistik |
+#### 3. Tabel `Progres_Pengguna`
+Menyimpan akumulasi kemajuan tugas dan tingkat akurasi belajar.
+* Primary Key: `id_progres` (INT, AUTO_INCREMENT)
+* Foreign Key: `id_pengguna` -> `Pengguna(id_pengguna)` ON DELETE CASCADE
+* Atribut: `total_tugas`, `total_benar`, `total_salah`, `rata_rata_skor`, `waktu_belajar_menit`, `terakhir_diperbarui`.
 
 ---
 
-### 2.3 Tabel `tasks`
-Menyimpan tugas/soal yang diunggah pengguna.
-*Referensi SRS: FR-03 (Mengunggah Tugas), FR-04 (Menganalisis Soal), NFR-03 (Keamanan Data Tugas).*
+### 2.2 Kelompok Reward, Blind Box & Koleksi
 
-| Nama Kolom | Tipe Data Fisik | Constraint | Nilai Bawaan | Keterangan |
-| :--- | :--- | :--- | :--- | :--- |
-| `id` | `INT` | PK, AUTO_INCREMENT | - | ID tugas |
-| `user_id` | `INT` | NOT NULL, FK (`users.id`), INDEX | - | Pengguna pemilik tugas |
-| `title` | `VARCHAR(255)` | NOT NULL | - | Judul tugas / nama berkas asli |
-| `file_url` | `VARCHAR(255)` | NULL | NULL | URL path berkas tugas di storage/Cloudinary |
-| `file_type` | `VARCHAR(20)` | NULL | NULL | Ekstensi berkas (`jpg`, `png`, `pdf`) |
-| `question_text` | `TEXT` | NULL | NULL | Teks soal hasil ekstraksi OCR / input pengguna |
-| `status` | `ENUM('uploaded','analyzed','in_progress','completed')` | NOT NULL | `'uploaded'` | Status pengerjaan tugas |
-| `created_at` | `TIMESTAMP` | NOT NULL | `CURRENT_TIMESTAMP` | Waktu unggah tugas |
-| `updated_at` | `TIMESTAMP` | NOT NULL | `CURRENT_TIMESTAMP ON UPDATE` | Waktu pembaruan status |
+#### 4. Tabel `Reward`
+Master data hadiah (XP booster, tiket gratis, lencana).
+* Primary Key: `id_reward` (INT, AUTO_INCREMENT)
+* Atribut: `nama_reward`, `tipe_reward` (`xp`, `tiket`, `badge`, `tema`, `figur`), `nilai_reward`, `deskripsi`, `ikon_url`.
 
----
+#### 5. Tabel `Reward_Pengguna`
+Log kepemilikan hadiah yang didapat siswa.
+* Primary Key: `id_reward_pengguna` (INT, AUTO_INCREMENT)
+* Foreign Key: `id_pengguna` -> `Pengguna(id_pengguna)`, `id_reward` -> `Reward(id_reward)`
+* Atribut: `tanggal_didapat`, `status_klaim`.
 
-### 2.4 Tabel `task_ai_assistance`
-Menyimpan konten pendampingan cerdas yang dihasilkan oleh Google Gemini AI.
-*Referensi SRS: FR-05 (Penjelasan Soal), FR-06 (Petunjuk Pengerjaan), FR-11 (Bantuan Berdasarkan Kemampuan).*
+#### 6. Tabel `Blind_Box`
+Katalog jenis mystery blind box.
+* Primary Key: `id_blind_box` (INT, AUTO_INCREMENT)
+* Atribut: `nama_box`, `biaya_tiket`, `tingkat_kelangkaan`, `status_tersedia`.
 
-| Nama Kolom | Tipe Data Fisik | Constraint | Nilai Bawaan | Keterangan |
-| :--- | :--- | :--- | :--- | :--- |
-| `id` | `INT` | PK, AUTO_INCREMENT | - | ID bantuan AI |
-| `task_id` | `INT` | NOT NULL, UNIQUE, FK (`tasks.id`) | - | Relasi 1-to-1 dengan tugas (CASCADE) |
-| `concept_explanation` | `TEXT` | NULL | NULL | Penjelasan konsep & maksud soal (FR-05) |
-| `hints` | `TEXT` | NULL | NULL | Petunjuk / clue langkah pengerjaan (FR-06) |
-| `difficulty_level` | `ENUM('easy','medium','hard')` | NOT NULL | `'medium'` | Tingkat kesulitan adaptif (FR-11) |
-| `reference_solution` | `TEXT` | NULL | NULL | Rujukan solusi internal untuk validasi jawaban |
-| `created_at` | `TIMESTAMP` | NOT NULL | `CURRENT_TIMESTAMP` | Waktu AI selesai memproses |
+#### 7. Tabel `Blind_Box_Reward`
+Tabel relasi (many-to-many) isi hadiah di dalam setiap box beserta peluang probabilitasnya.
+* Primary Key: `id_blind_box_reward` (INT, AUTO_INCREMENT)
+* Foreign Key: `id_blind_box` -> `Blind_Box(id_blind_box)`, `id_reward` -> `Reward(id_reward)`
+* Atribut: `probabilitas_persen`.
+
+#### 8. Tabel `Koleksi_Pengguna`
+Menyimpan koleksi figur 3D robot AI hasil buka box.
+* Primary Key: `id_koleksi` (INT, AUTO_INCREMENT)
+* Foreign Key: `id_pengguna` -> `Pengguna(id_pengguna)`
+* Atribut: `nama_figur`, `gambar_url`, `tanggal_peroleh`.
 
 ---
 
-### 2.5 Tabel `task_submissions`
-Menyimpan percobaan pengiriman jawaban mandiri oleh siswa.
-*Referensi SRS: FR-07 (Mengirim Jawaban), FR-08 (Memeriksa Jawaban), FR-09 (Koreksi), FR-10 (Perbaikan).*
+### 2.3 Kelompok Tugas, Jawaban & Pemeriksaan AI
 
-| Nama Kolom | Tipe Data Fisik | Constraint | Nilai Bawaan | Keterangan |
-| :--- | :--- | :--- | :--- | :--- |
-| `id` | `INT` | PK, AUTO_INCREMENT | - | ID pengiriman |
-| `task_id` | `INT` | NOT NULL, FK (`tasks.id`), INDEX | - | Relasi ke tugas yang dikerjakan |
-| `user_id` | `INT` | NOT NULL, FK (`users.id`), INDEX | - | Siswa yang mengerjakan |
-| `attempt_number` | `INT` | NOT NULL | `1` | Percobaan ke-n (FR-10) |
-| `submission_file_url` | `VARCHAR(255)` | NULL | NULL | Berkas foto lembar jawaban siswa |
-| `student_answer_text` | `TEXT` | NULL | NULL | Teks jawaban yang diketik |
-| `is_correct` | `BOOLEAN` | NOT NULL | `FALSE` | Status kebenaran dari AI (FR-08) |
-| `score` | `INT` | NULL | NULL | Nilai kuantitatif hasil evaluasi (0-100) |
-| `correction_notes` | `TEXT` | NULL | NULL | Ulasan kesalahan & petunjuk koreksi (FR-09) |
-| `created_at` | `TIMESTAMP` | NOT NULL | `CURRENT_TIMESTAMP` | Waktu pengiriman jawaban |
+#### 9. Tabel `Tugas`
+Menyimpan data berkas soal yang diunggah siswa.
+* Primary Key: `id_tugas` (INT, AUTO_INCREMENT)
+* Foreign Key: `id_pengguna` -> `Pengguna(id_pengguna)` ON DELETE CASCADE
+* Atribut: `judul_tugas`, `nama_file`, `tipe_file`, `ukuran_file`, `url_file`, `jumlah_soal`, `status` (`unggah`, `proses`, `selesai`), `tanggal_unggah`.
 
----
+#### 10. Tabel `Jawaban`
+Menyimpan rincian butir soal, kunci jawaban AI, dan teks jawaban siswa.
+* Primary Key: `id_jawaban` (INT, AUTO_INCREMENT)
+* Foreign Key: `id_tugas` -> `Tugas(id_tugas)` ON DELETE CASCADE
+* Atribut: `nomor_soal`, `teks_soal`, `jawaban_siswa`, `kunci_jawaban`, `penjelasan_konsep`, `apakah_benar`, `poin_soal`.
 
-### 2.6 Tabel `mistake_history`
-Menyimpan riwayat kesalahan yang pernah dilakukan pengguna untuk bahan evaluasi belajar ulang.
-*Referensi SRS: FR-16 (Menampilkan Riwayat Kesalahan).*
+#### 11. Tabel `Kesempatan_Perbaikan`
+Mencatat sisa kesempatan percobaan revisi siswa (maks. 2-3 kali).
+* Primary Key: `id_kesempatan` (INT, AUTO_INCREMENT)
+* Foreign Key: `id_tugas` -> `Tugas(id_tugas)`
+* Atribut: `percobaan_ke`, `sisa_kesempatan`, `tanggal_perbaikan`.
 
-| Nama Kolom | Tipe Data Fisik | Constraint | Nilai Bawaan | Keterangan |
-| :--- | :--- | :--- | :--- | :--- |
-| `id` | `INT` | PK, AUTO_INCREMENT | - | ID riwayat kesalahan |
-| `user_id` | `INT` | NOT NULL, FK (`users.id`), INDEX | - | Pengguna pemilik catatan |
-| `task_id` | `INT` | NOT NULL, FK (`tasks.id`) | - | Terkait tugas mana |
-| `submission_id` | `INT` | NULL, FK (`task_submissions.id`) | NULL | Terkait submission yang mana |
-| `topic` | `VARCHAR(150)` | NULL | NULL | Topik / materi kesalahan |
-| `mistake_description` | `TEXT` | NOT NULL | - | Bagian yang salah pada pengerjaan siswa |
-| `correction_guidance` | `TEXT` | NOT NULL | - | Arahan konsep yang harus dipelajari ulang |
-| `is_resolved` | `BOOLEAN` | NOT NULL | `FALSE` | Apakah sudah dipelajari/diperbaiki |
-| `resolved_at` | `TIMESTAMP` | NULL | NULL | Waktu perbaikan berhasil |
-| `created_at` | `TIMESTAMP` | NOT NULL | `CURRENT_TIMESTAMP` | Waktu pencatatan kesalahan |
+#### 12. Tabel `Pemeriksaan`
+Hasil evaluasi menyeluruh dari asisten AI.
+* Primary Key: `id_pemeriksaan` (INT, AUTO_INCREMENT)
+* Foreign Key: `id_tugas` -> `Tugas(id_tugas)`
+* Atribut: `skor_akhir`, `total_soal_benar`, `total_soal_salah`, `xp_diberikan`, `tiket_diberikan`, `umpan_balik_umum`, `tanggal_pemeriksaan`.
 
----
+#### 13. Tabel `Koreksi`
+Koreksi mendalam per butir soal yang salah beserta tips & petunjuk (*hint*).
+* Primary Key: `id_koreksi` (INT, AUTO_INCREMENT)
+* Foreign Key: `id_jawaban` -> `Jawaban(id_jawaban)`
+* Atribut: `bagian_salah`, `petunjuk_perbaikan`, `contoh_kode_query`, `istilah_penting`.
 
-### 2.7 Tabel `task_history`
-Arsip kronologis seluruh aktivitas penyelesaian soal.
-*Referensi SRS: FR-17 (Menyimpan Riwayat Pengerjaan), FR-12 (XP & Tiket), FR-18 (Melihat Jawaban Benar).*
-
-| Nama Kolom | Tipe Data Fisik | Constraint | Nilai Bawaan | Keterangan |
-| :--- | :--- | :--- | :--- | :--- |
-| `id` | `INT` | PK, AUTO_INCREMENT | - | ID riwayat |
-| `user_id` | `INT` | NOT NULL, FK (`users.id`), INDEX | - | Pengguna |
-| `task_id` | `INT` | NOT NULL, FK (`tasks.id`) | - | Tugas terkait |
-| `mode` | `ENUM('study_view','self_solve')` | NOT NULL | `'self_solve'` | Mode yang dipilih siswa (FR-18) |
-| `final_score` | `INT` | NULL | NULL | Skor akhir |
-| `xp_earned` | `INT` | NOT NULL | `0` | XP yang diperoleh (0 jika `study_view`) |
-| `tickets_earned` | `INT` | NOT NULL | `0` | Tiket yang diperoleh (0 jika `study_view`) |
-| `attempts_used` | `INT` | NOT NULL | `1` | Jumlah kesempatan yang dipakai |
-| `completed_at` | `TIMESTAMP` | NOT NULL | `CURRENT_TIMESTAMP` | Waktu selesai |
+#### 14. Tabel `Riwayat_Kesalahan`
+Log pola kesalahan untuk dipelajari ulang di kemudian hari.
+* Primary Key: `id_riwayat` (INT, AUTO_INCREMENT)
+* Foreign Key: `id_pengguna` -> `Pengguna(id_pengguna)`
+* Atribut: `topik_materi`, `deskripsi_kesalahan`, `rekomendasi_belajar`, `status_dipelajari`, `tanggal_catat`.
 
 ---
 
-### 2.8 Tabel `collectibles`
-Master data hadiah, item, dan lencana yang dapat diperoleh dari Mystery Blind Box.
-*Referensi SRS: FR-13 (Mystery Blind Box & Collectible).*
+### 2.4 Kelompok Layanan Premium & Transaksi
 
-| Nama Kolom | Tipe Data Fisik | Constraint | Nilai Bawaan | Keterangan |
-| :--- | :--- | :--- | :--- | :--- |
-| `id` | `INT` | PK, AUTO_INCREMENT | - | ID item |
-| `name` | `VARCHAR(100)` | NOT NULL | - | Nama collectible / badge |
-| `type` | `ENUM('badge','title','xp_pack','streak_shield','ticket_booster')` | NOT NULL | - | Jenis item |
-| `icon` | `VARCHAR(50)` | NOT NULL | `'🎁'` | Ikon emoji / grafik |
-| `rarity` | `ENUM('common','rare','epic','legendary')` | NOT NULL | `'common'` | Tingkat kelangkaan item |
-| `description` | `TEXT` | NULL | NULL | Deskripsi manfaat item |
-| `value_amount` | `INT` | NOT NULL | `0` | Nilai numerik (misal: nominal bonus XP) |
-| `created_at` | `TIMESTAMP` | NOT NULL | `CURRENT_TIMESTAMP` | Waktu pembuatan item |
+#### 15. Tabel `Paket_Premium`
+Pilihan paket berlangganan fitur ekstra.
+* Primary Key: `id_paket` (INT, AUTO_INCREMENT)
+* Atribut: `nama_paket`, `durasi_hari`, `harga`, `fitur_deskripsi`.
 
----
+#### 16. Tabel `Langganan_Premium`
+Status aktif paket premium pada akun pengguna.
+* Primary Key: `id_langganan` (INT, AUTO_INCREMENT)
+* Foreign Key: `id_pengguna` -> `Pengguna(id_pengguna)`, `id_paket` -> `Paket_Premium(id_paket)`
+* Atribut: `tanggal_mulai`, `tanggal_berakhir`, `status_aktif`.
 
-### 2.9 Tabel `user_collectibles` & `blind_box_logs`
-* `user_collectibles`: Inventori hadiah yang dimiliki siswa (`user_id`, `collectible_id`, `obtained_at`).
-* `blind_box_logs`: Log audit pembukaan blind box dengan pemotongan tiket (`user_id`, `collectible_id`, `ticket_cost`, `opened_at`).
+#### 17. Tabel `Transaksi`
+Catatan transaksi pembayaran berlangganan.
+* Primary Key: `id_transaksi` (INT, AUTO_INCREMENT)
+* Foreign Key: `id_pengguna` -> `Pengguna(id_pengguna)`, `id_paket` -> `Paket_Premium(id_paket)`
+* Atribut: `kode_transaksi`, `total_bayar`, `metode_bayar`, `status_transaksi` (`pending`, `berhasil`, `gagal`), `waktu_transaksi`.
 
 ---
 
-### 2.10 Tabel `premium_packages` & `user_subscriptions`
-Menyimpan katalog paket berlangganan dan status transaksi Premium pengguna.
-*Referensi SRS: FR-19 (Paket Premium), FR-20 (Berlangganan), FR-21 (Status Premium).*
-
----
-
-## 3. Relasi Antar Tabel (Entity Relationship Overview)
-* `users` **1 ─── 1** `user_stats`
-* `users` **1 ─── N** `tasks`
-* `tasks` **1 ─── 1** `task_ai_assistance`
-* `tasks` **1 ─── N** `task_submissions`
-* `users` **1 ─── N** `task_submissions`
-* `users` **1 ─── N** `mistake_history`
-* `users` **1 ─── N** `task_history`
-* `users` **1 ─── N** `user_collectibles` **N ─── 1** `collectibles`
-* `users` **1 ─── N** `blind_box_logs`
-* `users` **1 ─── N** `user_subscriptions` **N ─── 1** `premium_packages`
+## 3. Lokasi Berkas Implementasi pada Repositori
+* **DDL SQL Siap Eksekusi**: [`database/equest_physical_schema.sql`](file:///c:/Users/Asus/OneDrive/Desktop/IPPL/equest/database/equest_physical_schema.sql) dan [`server/database/schema.sql`](file:///c:/Users/Asus/OneDrive/Desktop/IPPL/equest/server/database/schema.sql)
+* **Koneksi Database Backend**: [`server/config/database.js`](file:///c:/Users/Asus/OneDrive/Desktop/IPPL/equest/server/config/database.js)
+* **Konfigurasi Environment**: [`server/.env.example`](file:///c:/Users/Asus/OneDrive/Desktop/IPPL/equest/server/.env.example)
