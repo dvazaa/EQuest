@@ -2,11 +2,12 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Navbar from '../components/Navbar.vue'
-import { getCurrentUser, getUserStats, DEMO_EMAIL } from '../utils/equestState'
+import { getCurrentUser, getUserStats, getUserHistory } from '../utils/equestState'
 
 const router = useRouter()
 const currentUser = ref(null)
 const userStats = ref(null)
+const historyGroups = ref([])
 const searchQuery = ref('')
 const selectedPeriod = ref('30 Hari Terakhir')
 
@@ -16,8 +17,10 @@ function loadData() {
   currentUser.value = getCurrentUser()
   if (currentUser.value?.email) {
     userStats.value = getUserStats(currentUser.value.email)
+    historyGroups.value = getUserHistory(currentUser.value.email)
   } else {
     userStats.value = { activityMonth: 0, xpMonth: 0, soalSelesai: 0, openedBoxes: 0 }
+    historyGroups.value = []
   }
 }
 
@@ -25,87 +28,11 @@ onMounted(() => {
   loadData()
 })
 
-const demoTimelineGroups = [
-  {
-    dateLabel: '12 Okt 2026',
-    dayName: 'Senin',
-    items: [
-      {
-        id: 1,
-        type: 'task',
-        title: 'Menyelesaikan soal_latihan.pdf',
-        subtitle: '10 soal | 8 benar | 14.20',
-        badgeText: '+40 XP',
-        badgeClass: 'bg-[#E1F7E9] text-[#16A34A]',
-        hasAction: true,
-        taskId: 1,
-      },
-      {
-        id: 2,
-        type: 'box',
-        title: 'Membuka Blind Box',
-        subtitle: 'Hadiah: +50 XP | 13.05',
-        badgeText: '-1 Tiket',
-        badgeClass: 'bg-[#DDF0FD] text-[#2D6BE4]',
-        hasAction: false,
-      },
-    ],
-  },
-  {
-    dateLabel: '10 Okt 2026',
-    dayName: 'Sabtu',
-    items: [
-      {
-        id: 3,
-        type: 'task',
-        title: 'Menyelesaikan Pemrograman_Modul 2.png',
-        subtitle: '5 soal | 5 benar | 19.42',
-        badgeText: '+25 XP',
-        badgeClass: 'bg-[#E1F7E9] text-[#16A34A]',
-        hasAction: true,
-        taskId: 2,
-      },
-      {
-        id: 4,
-        type: 'badge',
-        title: 'Badge baru: 7 Days Streak',
-        subtitle: 'Belajar 7 hari berturut-turut | 19.43',
-        badgeText: 'Badge',
-        badgeClass: 'bg-[#F0E6FF] text-[#7C3AED]',
-        hasAction: false,
-      },
-    ],
-  },
-  {
-    dateLabel: '1 Okt 2026',
-    dayName: 'Kamis',
-    items: [
-      {
-        id: 5,
-        type: 'task',
-        title: 'Menyelesaikan JaringanKomputer_Kuis.pdf',
-        subtitle: '5 soal | 4 benar | 16.30',
-        badgeText: '+20 XP',
-        badgeClass: 'bg-[#E1F7E9] text-[#16A34A]',
-        hasAction: true,
-        taskId: 5,
-      },
-    ],
-  },
-]
-
-const timelineGroups = computed(() => {
-  if (currentUser.value?.email?.toLowerCase() === DEMO_EMAIL.toLowerCase()) {
-    return demoTimelineGroups
-  }
-  return []
-})
-
 const filteredGroups = computed(() => {
-  if (!searchQuery.value.trim()) return timelineGroups.value
+  if (!searchQuery.value.trim()) return historyGroups.value
   const q = searchQuery.value.toLowerCase()
 
-  return timelineGroups.value
+  return historyGroups.value
     .map((group) => ({
       ...group,
       items: group.items.filter(

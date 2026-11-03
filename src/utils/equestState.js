@@ -1,4 +1,36 @@
 // State Management EQuest sesuai skema SDD dan Desain Figma
+const STORAGE_VERSION_KEY = 'equest_storage_version'
+const CURRENT_STORAGE_VERSION = 'equest_v4_isolated'
+
+// Bersihkan cache lama yang tercampur agar setiap akun benar-benar terisolasi
+function ensureCleanStorageVersion() {
+  try {
+    const savedVersion = localStorage.getItem(STORAGE_VERSION_KEY)
+    if (savedVersion !== CURRENT_STORAGE_VERSION) {
+      const keysToRemove = []
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i)
+        if (
+          k &&
+          (k.startsWith('equestStats_') ||
+            k.startsWith('equestTasks_') ||
+            k.startsWith('equestHistory_') ||
+            k === 'equestTasks' ||
+            k === 'equestUsers')
+        ) {
+          keysToRemove.push(k)
+        }
+      }
+      keysToRemove.forEach((k) => localStorage.removeItem(k))
+      localStorage.setItem(STORAGE_VERSION_KEY, CURRENT_STORAGE_VERSION)
+    }
+  } catch (e) {
+    console.error('Error cleaning storage:', e)
+  }
+}
+
+ensureCleanStorageVersion()
+
 export function readStorage(key, fallback) {
   try {
     const value = localStorage.getItem(key)
@@ -19,11 +51,13 @@ export function writeStorage(key, value) {
 
 export const DEMO_EMAIL = 'diva.novaliza@equest.edu'
 
+export function isDemoAccount(email) {
+  return Boolean(email && email.trim().toLowerCase() === DEMO_EMAIL.toLowerCase())
+}
+
 // User session management
 export function getCurrentUser() {
-  const user = readStorage('equestUser', null)
-  // Jangan auto-login ke demo jika pengguna sudah logout
-  return user
+  return readStorage('equestUser', null)
 }
 
 export function setCurrentUser(user) {
@@ -41,7 +75,7 @@ export function getAllUsers() {
     const seedUsers = [
       {
         id: 1,
-        name: 'Diva Novaliza',
+        name: 'Diva Novaliza (Demo)',
         email: DEMO_EMAIL,
         password: 'password123',
         avatar: '👩‍🎓',
@@ -76,9 +110,10 @@ export function saveUser(user) {
     users[existingIndex] = { ...users[existingIndex], ...userData }
   } else {
     users.push(userData)
-    // Buat initial stats & tasks kosong untuk akun baru
+    // Inisialisasi akun baru benar-benar dari 0!
     initNewUserStats(normalizedEmail)
     initNewUserTasks(normalizedEmail)
+    initNewUserHistory(normalizedEmail)
   }
 
   writeStorage('equestUsers', users)
@@ -118,9 +153,10 @@ export function loginWithGoogle(account) {
     }
     users.push(user)
     writeStorage('equestUsers', users)
-    // Akun Google baru mulai dari 0
+    // Akun Google baru mulai murni dari 0!
     initNewUserStats(normalizedEmail)
     initNewUserTasks(normalizedEmail)
+    initNewUserHistory(normalizedEmail)
   }
 
   const sessionUser = {
@@ -145,8 +181,8 @@ export const DEFAULT_BADGES = [
     name: 'First Step',
     iconImage: 'badge_1.png',
     desc: 'Selesaikan 1 Latihan',
-    unlocked: true,
-    unlockedAt: 'Hari ini',
+    unlocked: false,
+    unlockedAt: null,
   },
   {
     id: 'streak_7',
@@ -182,27 +218,52 @@ export const DEFAULT_BADGES = [
   },
 ]
 
-// Inisialisasi awal untuk akun baru (Benar-benar dari 0!)
+// Evaluasi syarat kelayakan badge secara akurat sesuai angka statistik pengguna
+export function evaluateBadges(stats) {
+  const completedLatihan = stats.completedLatihan ?? (stats.soalSelesai > 0 ? 1 : 0)
+  const streak = stats.streak ?? 0
+  const soalSelesai = stats.soalSelesai ?? 0
+  const filesUploaded = stats.filesUploaded ?? 0
+
+  return DEFAULT_BADGES.map((b) => {
+    let isUnlocked = false
+    if (b.id === 'first_step') {
+      isUnlocked = completedLatihan >= 1 || soalSelesai >= 1
+    } else if (b.id === 'streak_7') {
+      isUnlocked = streak >= 7
+    } else if (b.id === 'problem_solver') {
+      // Hanya terbuka jika soalSelesai >= 50! (Jika 45 masih terkunci!)
+      isUnlocked = soalSelesai >= 50
+    } else if (b.id === 'curious_mind') {
+      isUnlocked = filesUploaded >= 50
+    } else if (b.id === 'master_learner') {
+      isUnlocked = soalSelesai >= 100
+    }
+
+    return {
+      ...b,
+      unlocked: isUnlocked,
+      unlockedAt: isUnlocked ? b.unlockedAt || 'Tercapai' : null,
+    }
+  })
+}
+
+// Inisialisasi awal untuk akun
 export function initNewUserStats(email) {
   const key = getStatsKey(email)
-  const isDemo = email.toLowerCase() === DEMO_EMAIL.toLowerCase()
 
-  if (isDemo) {
+  if (isDemoAccount(email)) {
     const demoStats = {
       xp: 320,
       tickets: 10,
       streak: 18,
       soalSelesai: 45,
+      completedLatihan: 2,
+      filesUploaded: 5,
       activityMonth: 24,
       xpMonth: 135,
       openedBoxes: 3,
-      badges: DEFAULT_BADGES.map((b) => ({
-        ...b,
-        unlocked: ['first_step', 'streak_7', 'problem_solver'].includes(b.id),
-        unlockedAt: ['first_step', 'streak_7', 'problem_solver'].includes(b.id)
-          ? '10 Okt 2026'
-          : null,
-      })),
+      badges: [],
       rewards: [
         {
           id: 1,
@@ -213,26 +274,26 @@ export function initNewUserStats(email) {
         },
       ],
     }
+    demoStats.badges = evaluateBadges(demoStats)
     writeStorage(key, demoStats)
     return demoStats
   }
 
-  // Akun baru murni (Mulai dari 0)
+  // Akun baru murni: mulai benar-benar dari 0!
   const freshStats = {
     xp: 0,
-    tickets: 1, // Bonus 1 tiket selamat datang
-    streak: 1, // Hari ke-1 bergabung
+    tickets: 0,
+    streak: 0,
     soalSelesai: 0,
-    activityMonth: 1,
+    completedLatihan: 0,
+    filesUploaded: 0,
+    activityMonth: 0,
     xpMonth: 0,
     openedBoxes: 0,
-    badges: DEFAULT_BADGES.map((b) => ({
-      ...b,
-      unlocked: b.id === 'first_step',
-      unlockedAt: b.id === 'first_step' ? 'Hari ini' : null,
-    })),
+    badges: [],
     rewards: [],
   }
+  freshStats.badges = evaluateBadges(freshStats)
   writeStorage(key, freshStats)
   return freshStats
 }
@@ -242,7 +303,23 @@ export function initUserStats(email) {
 }
 
 export function getUserStats(email) {
-  if (!email) return initNewUserStats('guest')
+  if (!email) {
+    const empty = {
+      xp: 0,
+      tickets: 0,
+      streak: 0,
+      soalSelesai: 0,
+      completedLatihan: 0,
+      filesUploaded: 0,
+      activityMonth: 0,
+      xpMonth: 0,
+      openedBoxes: 0,
+      badges: evaluateBadges({}),
+      rewards: [],
+    }
+    return empty
+  }
+
   const key = getStatsKey(email)
   const saved = readStorage(key, null)
 
@@ -250,15 +327,20 @@ export function getUserStats(email) {
     return initNewUserStats(email)
   }
 
+  // Selalu sinkronkan status terbuka/terkunci badge berdasarkan capaian nyata
+  saved.badges = evaluateBadges(saved)
   return saved
 }
 
 export function saveUserStats(email, stats) {
+  if (!email) return
+  stats.badges = evaluateBadges(stats)
   const key = getStatsKey(email)
   writeStorage(key, stats)
 }
 
 export function addXp(email, amount) {
+  if (!email) return 0
   const stats = getUserStats(email)
   stats.xp = (stats.xp || 0) + amount
   stats.xpMonth = (stats.xpMonth || 0) + amount
@@ -267,6 +349,7 @@ export function addXp(email, amount) {
 }
 
 export function addTickets(email, count) {
+  if (!email) return 0
   const stats = getUserStats(email)
   stats.tickets = (stats.tickets || 0) + count
   saveUserStats(email, stats)
@@ -274,15 +357,18 @@ export function addTickets(email, count) {
 }
 
 export function useTicket(email) {
+  if (!email) return false
   const stats = getUserStats(email)
   if (stats.tickets <= 0) return false
   stats.tickets -= 1
   stats.openedBoxes = (stats.openedBoxes || 0) + 1
+  stats.activityMonth = (stats.activityMonth || 0) + 1
   saveUserStats(email, stats)
   return true
 }
 
 export function addReward(email, reward) {
+  if (!email) return
   const stats = getUserStats(email)
   if (!stats.rewards) stats.rewards = []
   stats.rewards.unshift({
@@ -291,18 +377,95 @@ export function addReward(email, reward) {
     date: new Date().toLocaleDateString('id-ID'),
   })
   saveUserStats(email, stats)
+
+  // Catat ke riwayat belajar pengguna
+  addHistoryItem(email, {
+    type: 'box',
+    title: 'Membuka Blind Box',
+    subtitle: `Hadiah: ${reward.name} | ${new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`,
+    badgeText: '-1 Tiket',
+    badgeClass: 'bg-[#DDF0FD] text-[#2D6BE4]',
+    hasAction: false,
+  })
 }
 
 export function unlockBadge(email, badgeId) {
+  if (!email) return false
   const stats = getUserStats(email)
-  const badge = stats.badges?.find((b) => b.id === badgeId)
-  if (badge && !badge.unlocked) {
-    badge.unlocked = true
-    badge.unlockedAt = new Date().toLocaleDateString('id-ID')
+  saveUserStats(email, stats)
+  return true
+}
+
+// Pencatatan penyelesaian tugas secara utuh (Update Soal Selesai, Streak, XP, Tiket, Badge, & Riwayat)
+export function recordTaskCompletion(email, task, earnedXp = 80, earnedTickets = 1) {
+  if (!email || !task) return
+
+  const stats = getUserStats(email)
+  const wasAlreadyCompleted = task.status === 'Selesai'
+
+  const qCount = Number(task.questionCount) || 10
+  const correctCount = task.questions
+    ? task.questions.filter((q) => q.isCorrect).length
+    : Math.round(((task.userScore || 80) / 100) * qCount)
+
+  if (!wasAlreadyCompleted) {
+    const prevFirstStep = stats.badges?.find((b) => b.id === 'first_step')?.unlocked
+    const prevProblemSolver = stats.badges?.find((b) => b.id === 'problem_solver')?.unlocked
+
+    stats.soalSelesai = (stats.soalSelesai || 0) + qCount
+    stats.completedLatihan = (stats.completedLatihan || 0) + 1
+    stats.activityMonth = (stats.activityMonth || 0) + 1
+    if ((stats.streak || 0) === 0) {
+      stats.streak = 1
+    }
+    stats.xp = (stats.xp || 0) + earnedXp
+    stats.xpMonth = (stats.xpMonth || 0) + earnedXp
+    stats.tickets = (stats.tickets || 0) + earnedTickets
+
     saveUserStats(email, stats)
-    return true
+
+    const timeStr = new Date().toLocaleTimeString('id-ID', {
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+
+    // Tambahkan ke Riwayat Belajar
+    addHistoryItem(email, {
+      type: 'task',
+      title: `Menyelesaikan ${task.fileName || task.name}`,
+      subtitle: `${qCount} soal | ${correctCount} benar | ${timeStr}`,
+      badgeText: `+${earnedXp} XP`,
+      badgeClass: 'bg-[#E1F7E9] text-[#16A34A]',
+      hasAction: true,
+      taskId: task.id,
+    })
+
+    // Cek apakah badge First Step baru saja terbuka
+    const newBadges = evaluateBadges(stats)
+    const nowFirstStep = newBadges.find((b) => b.id === 'first_step')?.unlocked
+    const nowProblemSolver = newBadges.find((b) => b.id === 'problem_solver')?.unlocked
+
+    if (!prevFirstStep && nowFirstStep) {
+      addHistoryItem(email, {
+        type: 'badge',
+        title: 'Badge baru: First Step',
+        subtitle: `Selesaikan 1 Latihan | ${timeStr}`,
+        badgeText: 'Badge',
+        badgeClass: 'bg-[#F0E6FF] text-[#7C3AED]',
+        hasAction: false,
+      })
+    }
+    if (!prevProblemSolver && nowProblemSolver) {
+      addHistoryItem(email, {
+        type: 'badge',
+        title: 'Badge baru: Problem Solver',
+        subtitle: `Selesaikan 50 soal | ${timeStr}`,
+        badgeText: 'Badge',
+        badgeClass: 'bg-[#F0E6FF] text-[#7C3AED]',
+        hasAction: false,
+      })
+    }
   }
-  return false
 }
 
 // 10 Soal Basis Data sesuai Figma Desktop 10, 13, 14, 15
@@ -476,7 +639,7 @@ export const DEFAULT_DATABASE_QUESTIONS = [
   },
 ]
 
-// User Tasks management
+// User Tasks management (Terisolasi penuh per email!)
 export function getTaskKey(email) {
   const normalized = email ? email.trim().toLowerCase() : 'guest'
   return `equestTasks_${encodeURIComponent(normalized)}`
@@ -484,9 +647,8 @@ export function getTaskKey(email) {
 
 export function initNewUserTasks(email) {
   const key = getTaskKey(email)
-  const isDemo = email.toLowerCase() === DEMO_EMAIL.toLowerCase()
 
-  if (isDemo) {
+  if (isDemoAccount(email)) {
     const demoTasks = [
       {
         id: 1,
@@ -554,7 +716,7 @@ export function initNewUserTasks(email) {
     return demoTasks
   }
 
-  // Akun baru mulai dari list KOSONG
+  // Akun baru: daftar tugas 100% kosong!
   const emptyTasks = []
   writeStorage(key, emptyTasks)
   return emptyTasks
@@ -563,7 +725,7 @@ export function initNewUserTasks(email) {
 export function getUserTasks(email) {
   if (!email) return []
   const key = getTaskKey(email)
-  let tasks = readStorage(key, null)
+  const tasks = readStorage(key, null)
 
   if (tasks === null) {
     return initNewUserTasks(email)
@@ -573,11 +735,13 @@ export function getUserTasks(email) {
 }
 
 export function saveUserTasks(email, tasks) {
+  if (!email) return
   const key = getTaskKey(email)
   writeStorage(key, tasks)
 }
 
 export function updateTask(email, taskId, updates) {
+  if (!email) return null
   const tasks = getUserTasks(email)
   const index = tasks.findIndex((t) => String(t.id) === String(taskId))
   if (index !== -1) {
@@ -589,8 +753,134 @@ export function updateTask(email, taskId, updates) {
 }
 
 export function deleteTask(email, taskId) {
+  if (!email) return []
   const tasks = getUserTasks(email)
   const filtered = tasks.filter((t) => String(t.id) !== String(taskId))
   saveUserTasks(email, filtered)
   return filtered
+}
+
+// Riwayat Belajar per Pengguna
+export function getHistoryKey(email) {
+  const normalized = email ? email.trim().toLowerCase() : 'guest'
+  return `equestHistory_${encodeURIComponent(normalized)}`
+}
+
+export const DEMO_HISTORY_GROUPS = [
+  {
+    dateLabel: '12 Okt 2026',
+    dayName: 'Senin',
+    items: [
+      {
+        id: 1,
+        type: 'task',
+        title: 'Menyelesaikan soal_latihan.pdf',
+        subtitle: '10 soal | 8 benar | 14.20',
+        badgeText: '+40 XP',
+        badgeClass: 'bg-[#E1F7E9] text-[#16A34A]',
+        hasAction: true,
+        taskId: 1,
+      },
+      {
+        id: 2,
+        type: 'box',
+        title: 'Membuka Blind Box',
+        subtitle: 'Hadiah: +50 XP | 13.05',
+        badgeText: '-1 Tiket',
+        badgeClass: 'bg-[#DDF0FD] text-[#2D6BE4]',
+        hasAction: false,
+      },
+    ],
+  },
+  {
+    dateLabel: '10 Okt 2026',
+    dayName: 'Sabtu',
+    items: [
+      {
+        id: 3,
+        type: 'task',
+        title: 'Menyelesaikan Pemrograman_Modul 2.png',
+        subtitle: '5 soal | 5 benar | 19.42',
+        badgeText: '+25 XP',
+        badgeClass: 'bg-[#E1F7E9] text-[#16A34A]',
+        hasAction: true,
+        taskId: 2,
+      },
+      {
+        id: 4,
+        type: 'badge',
+        title: 'Badge baru: 7 Days Streak',
+        subtitle: 'Belajar 7 hari berturut-turut | 19.43',
+        badgeText: 'Badge',
+        badgeClass: 'bg-[#F0E6FF] text-[#7C3AED]',
+        hasAction: false,
+      },
+    ],
+  },
+  {
+    dateLabel: '1 Okt 2026',
+    dayName: 'Kamis',
+    items: [
+      {
+        id: 5,
+        type: 'task',
+        title: 'Menyelesaikan JaringanKomputer_Kuis.pdf',
+        subtitle: '5 soal | 4 benar | 16.30',
+        badgeText: '+20 XP',
+        badgeClass: 'bg-[#E1F7E9] text-[#16A34A]',
+        hasAction: true,
+        taskId: 5,
+      },
+    ],
+  },
+]
+
+export function initNewUserHistory(email) {
+  const key = getHistoryKey(email)
+  if (isDemoAccount(email)) {
+    writeStorage(key, DEMO_HISTORY_GROUPS)
+    return DEMO_HISTORY_GROUPS
+  }
+  const emptyHistory = []
+  writeStorage(key, emptyHistory)
+  return emptyHistory
+}
+
+export function getUserHistory(email) {
+  if (!email) return []
+  const key = getHistoryKey(email)
+  const saved = readStorage(key, null)
+  if (saved === null) {
+    return initNewUserHistory(email)
+  }
+  return Array.isArray(saved) ? saved : []
+}
+
+export function addHistoryItem(email, item) {
+  if (!email) return
+  const groups = getUserHistory(email)
+  const now = new Date()
+  const dateLabel = now.toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
+  const dayName = now.toLocaleDateString('id-ID', { weekday: 'long' })
+
+  let todayGroup = groups.find((g) => g.dateLabel === dateLabel)
+  if (!todayGroup) {
+    todayGroup = {
+      dateLabel,
+      dayName,
+      items: [],
+    }
+    groups.unshift(todayGroup)
+  }
+
+  todayGroup.items.unshift({
+    id: Date.now() + Math.random(),
+    ...item,
+  })
+
+  writeStorage(getHistoryKey(email), groups)
 }

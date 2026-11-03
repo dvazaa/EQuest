@@ -12,9 +12,9 @@ import badge5 from '../assets/images/badge_5.png'
 const badgeImages = {
   first_step: badge1,
   streak_7: badge2,
-  problem_solver: badge3,
-  curious_mind: badge4,
-  master_learner: badge5,
+  problem_solver: badge1,
+  curious_mind: badge2,
+  master_learner: badge1,
 }
 
 const currentUser = ref(null)
@@ -110,9 +110,10 @@ const badges = computed(() => userStats.value?.badges || [])
             <!-- Badge Shield Icon dari Figma -->
             <div class="flex h-14 w-14 shrink-0 items-center justify-center">
               <img
-                :src="badgeImages[badge.id] || badge1"
+                :src="badge.unlocked ? (badgeImages[badge.id] || badge1) : badge3"
                 :alt="badge.name"
                 class="h-12 w-auto object-contain drop-shadow-xs"
+                :class="!badge.unlocked ? 'grayscale opacity-80' : ''"
               />
             </div>
 

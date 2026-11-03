@@ -6,8 +6,7 @@ import {
   getCurrentUser,
   getUserTasks,
   updateTask,
-  addXp,
-  addTickets,
+  recordTaskCompletion,
   DEFAULT_DATABASE_QUESTIONS,
 } from '../utils/equestState'
 
@@ -93,11 +92,11 @@ function goToExplanation(index) {
 function handleFinishStudy() {
   const email = currentUser.value?.email
   if (email) {
+    recordTaskCompletion(email, task.value, 20, 0)
     updateTask(email, taskId, {
       status: 'Selesai',
       userScore: 100,
     })
-    addXp(email, 20)
   }
   router.push('/tasks')
 }
@@ -141,8 +140,7 @@ function handlePerbaikiJawaban() {
 function handleClaimReward() {
   const email = currentUser.value?.email
   if (email) {
-    addXp(email, 80)
-    addTickets(email, 1)
+    recordTaskCompletion(email, task.value, 80, 1)
     updateTask(email, taskId, {
       status: 'Selesai',
       userScore: totalScore.value,
@@ -367,8 +365,8 @@ function handleClaimReward() {
           <div class="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 shadow-2xs">
             <span class="text-xl">📄</span>
             <div class="text-left">
-              <p class="text-xs font-black text-[#0A2540]">soal_latihan.pdf</p>
-              <p class="text-[11px] text-slate-400">10 soal</p>
+              <p class="text-xs font-black text-[#0A2540]">{{ task.fileName || task.name || 'soal_latihan.pdf' }}</p>
+              <p class="text-[11px] text-slate-400">{{ task.questionCount || 10 }} soal</p>
             </div>
           </div>
           <p class="mt-1 text-xs font-semibold text-slate-500">
@@ -532,8 +530,8 @@ function handleClaimReward() {
         <div class="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 shadow-2xs">
           <span class="text-xl">📄</span>
           <div class="text-left">
-            <p class="text-xs font-black text-[#0A2540]">soal_latihan.pdf</p>
-            <p class="text-[11px] text-slate-400">10 soal</p>
+            <p class="text-xs font-black text-[#0A2540]">{{ task.fileName || task.name || 'soal_latihan.pdf' }}</p>
+            <p class="text-[11px] text-slate-400">{{ task.questionCount || 10 }} soal</p>
           </div>
         </div>
       </section>

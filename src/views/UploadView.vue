@@ -6,6 +6,8 @@ import {
   getCurrentUser,
   getUserTasks,
   saveUserTasks,
+  getUserStats,
+  saveUserStats,
   DEFAULT_DATABASE_QUESTIONS,
 } from '../utils/equestState'
 
@@ -14,7 +16,6 @@ const fileInput = ref(null)
 const selectedFile = ref(null)
 const questionText = ref('')
 const isUploaded = ref(false)
-const isAnalyzing = ref(false)
 
 function triggerFileInput() {
   fileInput.value?.click()
@@ -25,7 +26,7 @@ function handleFileChange(event) {
   if (file) {
     selectedFile.value = {
       name: file.name,
-      size: (file.size / 1024).toFixed(0) + ' KB',
+      size: Math.max(1, Math.round(file.size / 1024)) + ' KB',
       type: file.name.split('.').pop()?.toUpperCase() || 'PDF',
       raw: file,
     }
@@ -39,7 +40,7 @@ function handleDrop(event) {
   if (file) {
     selectedFile.value = {
       name: file.name,
-      size: (file.size / 1024).toFixed(0) + ' KB',
+      size: Math.max(1, Math.round(file.size / 1024)) + ' KB',
       type: file.name.split('.').pop()?.toUpperCase() || 'PDF',
       raw: file,
     }
@@ -55,11 +56,18 @@ function handleReset() {
 
 async function handleContinue() {
   const user = getCurrentUser()
-  const email = user?.email || 'guest@equest.edu'
+  if (!user?.email) {
+    router.push('/login')
+    return
+  }
+
+  const email = user.email
   const existingTasks = getUserTasks(email)
 
   const newTaskId = Date.now()
-  const fileName = selectedFile.value?.name || 'soal_latihan.pdf'
+  const fileName =
+    selectedFile.value?.name ||
+    (questionText.value.trim() ? 'Soal_Teks_Latihan.txt' : 'soal_latihan.pdf')
   const fileType = selectedFile.value?.type || 'PDF'
   const fileSize = selectedFile.value?.size || '245 KB'
 
@@ -77,12 +85,21 @@ async function handleContinue() {
     }),
     status: 'Sedang Dikerjakan',
     remainingAttempts: 2,
-    questions: DEFAULT_DATABASE_QUESTIONS,
+    questions: JSON.parse(JSON.stringify(DEFAULT_DATABASE_QUESTIONS)),
     userScore: 80,
   }
 
   existingTasks.unshift(newTask)
   saveUserTasks(email, existingTasks)
+
+  // Update statistik unggahan berkas & streak aktif pengguna ini
+  const stats = getUserStats(email)
+  stats.filesUploaded = (stats.filesUploaded || 0) + 1
+  stats.activityMonth = (stats.activityMonth || 0) + 1
+  if ((stats.streak || 0) === 0) {
+    stats.streak = 1
+  }
+  saveUserStats(email, stats)
 
   // Arahkan ke Desktop - 6 (Upload Jawaban)
   router.push({
