@@ -18,6 +18,9 @@ function loadData() {
   if (currentUser.value?.email) {
     userStats.value = getUserStats(currentUser.value.email)
     tasks.value = getUserTasks(currentUser.value.email)
+  } else {
+    userStats.value = { xp: 0, tickets: 0, streak: 0, soalSelesai: 0 }
+    tasks.value = []
   }
 }
 
@@ -28,7 +31,7 @@ onMounted(() => {
 const currentTask = computed(() => {
   if (!tasks.value.length) return null
   return (
-    tasks.value.find((t) => t.name === 'soal_latihan.pdf') ||
+    tasks.value.find((t) => t.status !== 'Selesai') ||
     tasks.value[0]
   )
 })
@@ -52,7 +55,7 @@ const currentTask = computed(() => {
 
         <div class="flex flex-col justify-center space-y-4">
           <p class="text-base font-bold text-slate-600 sm:text-lg">
-            Halo, Selamat Datang!
+            Halo, {{ currentUser?.name || 'Selamat Datang' }}! 👋
           </p>
 
           <h1 class="text-3xl font-extrabold leading-tight tracking-tight text-[#0f2852] sm:text-5xl">
@@ -86,7 +89,7 @@ const currentTask = computed(() => {
             Total XP :
           </p>
           <p class="mt-2 text-3xl font-black text-black sm:text-4xl">
-            {{ userStats?.xp || 320 }}
+            {{ userStats?.xp ?? 0 }}
           </p>
         </RouterLink>
 
@@ -99,7 +102,7 @@ const currentTask = computed(() => {
             Tiket Blind Box :
           </p>
           <p class="mt-2 text-3xl font-black text-black sm:text-4xl">
-            {{ userStats?.tickets || 10 }}
+            {{ userStats?.tickets ?? 0 }}
           </p>
         </RouterLink>
 
@@ -112,7 +115,7 @@ const currentTask = computed(() => {
             Hari Streak :
           </p>
           <p class="mt-2 text-3xl font-black text-black sm:text-4xl">
-            {{ userStats?.streak || 18 }}
+            {{ userStats?.streak ?? 0 }}
           </p>
         </RouterLink>
 
@@ -125,7 +128,7 @@ const currentTask = computed(() => {
             Soal Selesai :
           </p>
           <p class="mt-2 text-3xl font-black text-black sm:text-4xl">
-            {{ userStats?.soalSelesai || 45 }}
+            {{ userStats?.soalSelesai ?? 0 }}
           </p>
         </RouterLink>
       </section>
@@ -139,16 +142,29 @@ const currentTask = computed(() => {
           </h2>
 
           <div class="flex min-h-[160px] flex-col justify-between rounded-2xl border border-blue-100 bg-white p-6 shadow-xs">
-            <h3 class="text-lg font-extrabold text-[#0f2852]">
-              {{ currentTask?.name || 'soal_latihan.pdf' }}
-            </h3>
+            <div>
+              <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-700">
+                {{ currentTask ? 'Aktivitas Terakhir' : 'Mulai Tugas Baru' }}
+              </span>
+              <h3 class="mt-3 text-lg font-extrabold text-[#0f2852]">
+                {{ currentTask?.name || 'Belum ada tugas yang kamu buat' }}
+              </h3>
+            </div>
 
             <div class="mt-4 flex justify-end">
               <RouterLink
-                :to="{ path: '/answer', query: { id: currentTask?.id || 1, mode: 'eval' } }"
+                v-if="currentTask"
+                :to="{ path: '/answer', query: { id: currentTask.id, mode: 'eval' } }"
                 class="rounded-xl bg-[#2D6BE4] px-6 py-2.5 text-sm font-bold text-white shadow-xs transition hover:bg-blue-700"
               >
                 Lanjutkan
+              </RouterLink>
+              <RouterLink
+                v-else
+                to="/upload"
+                class="rounded-xl bg-[#2D6BE4] px-6 py-2.5 text-sm font-bold text-white shadow-xs transition hover:bg-blue-700"
+              >
+                Upload Soal Sekarang →
               </RouterLink>
             </div>
           </div>

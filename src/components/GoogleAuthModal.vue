@@ -1,7 +1,7 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { loginWithGoogle } from '../utils/equestState'
+import { loginWithGoogle, readStorage } from '../utils/equestState'
 
 const props = defineProps({
   isOpen: {
@@ -17,47 +17,55 @@ const props = defineProps({
 const emit = defineEmits(['close', 'success'])
 const router = useRouter()
 
-const isCustom = ref(false)
-const customName = ref('')
-const customEmail = ref('')
+const googleEmail = ref('')
+const googleName = ref('')
+const errorMessage = ref('')
 const isLoading = ref(false)
+const savedGoogleAccounts = ref([])
 
-const predefinedAccounts = [
-  {
-    name: 'Budi Santoso',
-    email: 'budi.santoso@gmail.com',
-    avatar: '👨‍🎓',
-  },
-  {
-    name: 'Siti Rahmawati',
-    email: 'siti.rahma@gmail.com',
-    avatar: '👩‍🎓',
-  },
-  {
-    name: 'Dimas Pratama',
-    email: 'dimas.pratama@gmail.com',
-    avatar: '🧑‍💻',
-  },
-]
+onMounted(() => {
+  // Ambil akun google asli yang pernah login di perangkat ini
+  savedGoogleAccounts.value = readStorage('equestGoogleAccounts', [])
+})
 
-function selectAccount(account) {
+function handleGoogleLogin(emailToUse, nameToUse) {
+  errorMessage.value = ''
+  const email = (emailToUse || googleEmail.value).trim().toLowerCase()
+  const name = (nameToUse || googleName.value).trim()
+
+  if (!email) {
+    errorMessage.value = 'Silakan masukkan alamat email Google kamu.'
+    return
+  }
+
+  if (!email.includes('@')) {
+    errorMessage.value = 'Format email Google tidak valid (contoh: nama@gmail.com).'
+    return
+  }
+
   isLoading.value = true
+
   setTimeout(() => {
-    loginWithGoogle(account)
+    const accountData = {
+      email,
+      name: name || email.split('@')[0],
+      avatar: '🌐',
+    }
+
+    // Simpan ke riwayat akun Google di perangkat ini
+    const existing = readStorage('equestGoogleAccounts', [])
+    const foundIdx = existing.findIndex((a) => a.email.toLowerCase() === email)
+    if (foundIdx === -1) {
+      existing.unshift(accountData)
+      localStorage.setItem('equestGoogleAccounts', JSON.stringify(existing.slice(0, 3)))
+    }
+
+    loginWithGoogle(accountData)
     isLoading.value = false
     emit('success')
     emit('close')
     router.push('/')
-  }, 500)
-}
-
-function handleCustomSubmit() {
-  if (!customEmail.value.trim() || !customName.value.trim()) return
-  selectAccount({
-    name: customName.value.trim(),
-    email: customEmail.value.trim().toLowerCase(),
-    avatar: '✨',
-  })
+  }, 400)
 }
 </script>
 
@@ -98,96 +106,86 @@ function handleCustomSubmit() {
 
         <button
           type="button"
-          @click="emit('close')"
-          class="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+          @click="$emit('close')"
+          class="rounded-xl p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer"
         >
-          ✕
+          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
         </button>
       </div>
 
       <!-- Content -->
-      <div class="mt-5">
-        <p class="text-sm text-gray-600">
-          Pilih akun Google Anda untuk melanjutkan belajar di
-          <span class="font-bold text-blue-900">EQuest</span>.
+      <div class="mt-5 space-y-4">
+        <p class="text-xs text-gray-500">
+          Gunakan akun Google asli milikmu untuk masuk ke EQuest secara aman.
         </p>
 
-        <!-- Quick Select Accounts -->
-        <div v-if="!isCustom" class="mt-4 space-y-2.5">
+        <!-- Akun yang pernah digunakan sebelumnya (jika ada) -->
+        <div v-if="savedGoogleAccounts.length > 0" class="space-y-2">
+          <p class="text-[11px] font-bold uppercase tracking-wider text-gray-400">
+            Akun Google yang Pernah Masuk:
+          </p>
           <button
-            v-for="account in predefinedAccounts"
-            :key="account.email"
+            v-for="acc in savedGoogleAccounts"
+            :key="acc.email"
             type="button"
-            :disabled="isLoading"
-            @click="selectAccount(account)"
-            class="flex w-full items-center gap-3.5 rounded-2xl border border-gray-200 p-3.5 text-left transition hover:border-blue-500 hover:bg-sky-50/50"
+            @click="handleGoogleLogin(acc.email, acc.name)"
+            class="flex w-full items-center justify-between rounded-2xl border border-gray-200 p-3 text-left transition hover:border-blue-400 hover:bg-blue-50/50 cursor-pointer"
           >
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xl shadow-xs">
-              {{ account.avatar }}
+            <div class="flex items-center gap-3">
+              <span class="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-700">
+                {{ acc.name?.charAt(0).toUpperCase() || 'G' }}
+              </span>
+              <div>
+                <p class="text-xs font-bold text-gray-800">{{ acc.name }}</p>
+                <p class="text-[11px] text-gray-500">{{ acc.email }}</p>
+              </div>
             </div>
-            <div class="min-w-0 flex-1">
-              <p class="truncate text-sm font-bold text-gray-900">{{ account.name }}</p>
-              <p class="truncate text-xs text-gray-500">{{ account.email }}</p>
-            </div>
-            <span class="text-gray-400">→</span>
-          </button>
-
-          <!-- Custom Account Trigger -->
-          <button
-            type="button"
-            @click="isCustom = true"
-            class="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-gray-300 py-3 text-xs font-semibold text-blue-600 hover:bg-blue-50"
-          >
-            <span>➕</span>
-            <span>Gunakan akun Google lainnya</span>
+            <span class="text-xs font-bold text-blue-600">Pilih →</span>
           </button>
         </div>
 
-        <!-- Custom Account Form -->
-        <form v-else @submit.prevent="handleCustomSubmit" class="mt-4 space-y-3">
+        <!-- Form Masuk dengan Akun Google Asli -->
+        <div class="space-y-3 pt-2">
           <div>
-            <label class="text-xs font-bold text-gray-700">Nama Akun Google</label>
+            <label class="block text-xs font-bold text-gray-700">
+              Email Google (Gmail) Kamu:
+            </label>
             <input
-              v-model="customName"
-              type="text"
-              required
-              placeholder="Contoh: Rian Hidayat"
-              class="mt-1 w-full rounded-xl border border-gray-300 px-3.5 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            />
-          </div>
-
-          <div>
-            <label class="text-xs font-bold text-gray-700">Email Google (@gmail.com)</label>
-            <input
-              v-model="customEmail"
+              v-model="googleEmail"
               type="email"
-              required
-              placeholder="nama@gmail.com"
-              class="mt-1 w-full rounded-xl border border-gray-300 px-3.5 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              placeholder="contoh: diva@gmail.com"
+              class="mt-1 w-full rounded-xl border border-gray-300 px-3.5 py-2.5 text-xs text-gray-900 outline-none transition focus:border-blue-500"
             />
           </div>
 
-          <div class="flex gap-2 pt-2">
-            <button
-              type="button"
-              @click="isCustom = false"
-              class="flex-1 rounded-xl border border-gray-200 py-2.5 text-xs font-bold text-gray-600 hover:bg-gray-50"
-            >
-              Batal
-            </button>
-            <button
-              type="submit"
-              :disabled="isLoading"
-              class="flex-1 rounded-xl bg-blue-600 py-2.5 text-xs font-bold text-white transition hover:bg-blue-700"
-            >
-              {{ isLoading ? 'Menghubungkan...' : 'Lanjutkan' }}
-            </button>
+          <div>
+            <label class="block text-xs font-bold text-gray-700">
+              Nama Lengkap:
+            </label>
+            <input
+              v-model="googleName"
+              type="text"
+              placeholder="contoh: Diva Novaliza"
+              class="mt-1 w-full rounded-xl border border-gray-300 px-3.5 py-2.5 text-xs text-gray-900 outline-none transition focus:border-blue-500"
+            />
           </div>
-        </form>
 
-        <p v-if="isLoading" class="mt-4 text-center text-xs text-blue-600 animate-pulse font-medium">
-          Menghubungkan ke layanan Google OAuth...
-        </p>
+          <p v-if="errorMessage" class="text-xs font-bold text-red-500">
+            ⚠️ {{ errorMessage }}
+          </p>
+
+          <button
+            type="button"
+            @click="handleGoogleLogin()"
+            :disabled="isLoading || !googleEmail.trim()"
+            class="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-xs font-bold text-white shadow-md transition hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
+          >
+            <span v-if="isLoading">Menghubungkan...</span>
+            <span v-else>Lanjutkan dengan Akun Google</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>

@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Navbar from '../components/Navbar.vue'
-import { getCurrentUser, getUserStats } from '../utils/equestState'
+import { getCurrentUser, getUserStats, DEMO_EMAIL } from '../utils/equestState'
 
 const router = useRouter()
 const currentUser = ref(null)
@@ -16,6 +16,8 @@ function loadData() {
   currentUser.value = getCurrentUser()
   if (currentUser.value?.email) {
     userStats.value = getUserStats(currentUser.value.email)
+  } else {
+    userStats.value = { activityMonth: 0, xpMonth: 0, soalSelesai: 0, openedBoxes: 0 }
   }
 }
 
@@ -23,7 +25,7 @@ onMounted(() => {
   loadData()
 })
 
-const timelineGroups = [
+const demoTimelineGroups = [
   {
     dateLabel: '12 Okt 2026',
     dayName: 'Senin',
@@ -92,11 +94,18 @@ const timelineGroups = [
   },
 ]
 
+const timelineGroups = computed(() => {
+  if (currentUser.value?.email?.toLowerCase() === DEMO_EMAIL.toLowerCase()) {
+    return demoTimelineGroups
+  }
+  return []
+})
+
 const filteredGroups = computed(() => {
-  if (!searchQuery.value.trim()) return timelineGroups
+  if (!searchQuery.value.trim()) return timelineGroups.value
   const q = searchQuery.value.toLowerCase()
 
-  return timelineGroups
+  return timelineGroups.value
     .map((group) => ({
       ...group,
       items: group.items.filter(
@@ -176,7 +185,7 @@ function handleViewResult(taskId) {
             Aktivitas bulan ini
           </p>
           <p class="mt-2 text-4xl font-black text-[#0A2540] sm:text-5xl">
-            24
+            {{ userStats?.activityMonth ?? 0 }}
           </p>
         </div>
 
@@ -186,7 +195,7 @@ function handleViewResult(taskId) {
             XP didapat
           </p>
           <p class="mt-2 text-4xl font-black text-[#0A2540] sm:text-5xl">
-            +135
+            {{ (userStats?.xpMonth ?? 0) > 0 ? '+' + userStats.xpMonth : 0 }}
           </p>
         </div>
 
@@ -196,7 +205,7 @@ function handleViewResult(taskId) {
             Soal selesai
           </p>
           <p class="mt-2 text-4xl font-black text-[#0A2540] sm:text-5xl">
-            45
+            {{ userStats?.soalSelesai ?? 0 }}
           </p>
         </div>
 
@@ -206,7 +215,7 @@ function handleViewResult(taskId) {
             Blind Box dibuka
           </p>
           <p class="mt-2 text-4xl font-black text-[#0A2540] sm:text-5xl">
-            3
+            {{ userStats?.openedBoxes ?? 0 }}
           </p>
         </div>
       </section>
@@ -232,7 +241,6 @@ function handleViewResult(taskId) {
           >
             <!-- Ikon & Info Aktivitas -->
             <div class="flex items-center gap-4">
-              <!-- Ikon -->
               <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#EAF5FD] text-xl text-[#2D6BE4]">
                 <span v-if="item.type === 'task'">📄</span>
                 <span v-else-if="item.type === 'box'">🎁</span>
@@ -270,12 +278,27 @@ function handleViewResult(taskId) {
           </div>
         </div>
 
-        <p
+        <!-- Empty State jika akun baru -->
+        <div
           v-if="filteredGroups.length === 0"
-          class="rounded-2xl bg-white p-8 text-center text-sm font-bold text-slate-500"
+          class="rounded-3xl bg-white p-12 text-center shadow-xs"
         >
-          Tidak ada riwayat aktivitas yang sesuai pencarian.
-        </p>
+          <span class="text-5xl">🕒</span>
+          <h3 class="mt-4 text-xl font-black text-[#0A2540]">
+            Belum ada riwayat aktivitas
+          </h3>
+          <p class="mt-2 text-sm text-slate-500">
+            Selesaikan tugas atau buka Mystery Blind Box untuk mencatat riwayat belajarmu di sini.
+          </p>
+          <div class="mt-6">
+            <RouterLink
+              to="/upload"
+              class="inline-block rounded-xl bg-[#2D6BE4] px-6 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-blue-700"
+            >
+              Upload Tugas Pertama →
+            </RouterLink>
+          </div>
+        </div>
       </section>
     </main>
   </div>

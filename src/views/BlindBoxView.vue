@@ -28,7 +28,7 @@ onMounted(() => {
   loadData()
 })
 
-const ticketCount = computed(() => userStats.value?.tickets || 0)
+const ticketCount = computed(() => userStats.value?.tickets ?? 0)
 
 const possibleRewards = [
   { type: 'xp', name: '+ 50 XP', xp: 50, icon: '⭐', desc: 'Bonus pengalaman belajar ekstra' },

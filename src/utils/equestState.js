@@ -17,21 +17,12 @@ export function writeStorage(key, value) {
   }
 }
 
+export const DEMO_EMAIL = 'diva.novaliza@equest.edu'
+
 // User session management
 export function getCurrentUser() {
   const user = readStorage('equestUser', null)
-  if (!user) {
-    // Default logged in user untuk kemudahan pengujian demo sesuai Figma
-    const demoUser = {
-      id: 1,
-      name: 'Diva Novaliza',
-      email: 'diva.novaliza@equest.edu',
-      avatar: '👩‍🎓',
-      provider: 'email',
-    }
-    setCurrentUser(demoUser)
-    return demoUser
-  }
+  // Jangan auto-login ke demo jika pengguna sudah logout
   return user
 }
 
@@ -51,20 +42,11 @@ export function getAllUsers() {
       {
         id: 1,
         name: 'Diva Novaliza',
-        email: 'diva.novaliza@equest.edu',
+        email: DEMO_EMAIL,
         password: 'password123',
         avatar: '👩‍🎓',
         provider: 'email',
         createdAt: '01/10/2026',
-      },
-      {
-        id: 2,
-        name: 'Budi Santoso',
-        email: 'budi.santoso@gmail.com',
-        password: 'password123',
-        avatar: '👨‍🎓',
-        provider: 'email',
-        createdAt: '05/10/2026',
       },
     ]
     writeStorage('equestUsers', seedUsers)
@@ -80,21 +62,27 @@ export function saveUser(user) {
     (u) => u.email?.trim().toLowerCase() === normalizedEmail
   )
 
+  const userData = {
+    id: user.id || Date.now(),
+    name: user.name || normalizedEmail.split('@')[0],
+    email: normalizedEmail,
+    password: user.password || '',
+    avatar: user.avatar || '👤',
+    provider: user.provider || 'email',
+    createdAt: new Date().toLocaleDateString('id-ID'),
+  }
+
   if (existingIndex >= 0) {
-    users[existingIndex] = { ...users[existingIndex], ...user }
+    users[existingIndex] = { ...users[existingIndex], ...userData }
   } else {
-    users.push({
-      id: user.id || Date.now(),
-      name: user.name || 'Pengguna EQuest',
-      email: normalizedEmail,
-      password: user.password || '',
-      avatar: user.avatar || '👤',
-      provider: user.provider || 'email',
-      createdAt: new Date().toLocaleDateString('id-ID'),
-    })
+    users.push(userData)
+    // Buat initial stats & tasks kosong untuk akun baru
+    initNewUserStats(normalizedEmail)
+    initNewUserTasks(normalizedEmail)
   }
 
   writeStorage('equestUsers', users)
+  return userData
 }
 
 export function updateUserPassword(email, newPassword) {
@@ -113,7 +101,7 @@ export function updateUserPassword(email, newPassword) {
   return { success: true, message: 'Kata sandi berhasil diperbarui.' }
 }
 
-// Google Auth Simulation
+// Google Auth - Mendukung Akun Google Nyata
 export function loginWithGoogle(account) {
   const normalizedEmail = account.email.trim().toLowerCase()
   const users = getAllUsers()
@@ -122,14 +110,17 @@ export function loginWithGoogle(account) {
   if (!user) {
     user = {
       id: Date.now(),
-      name: account.name || 'Pengguna Google',
+      name: account.name || normalizedEmail.split('@')[0],
       email: normalizedEmail,
-      avatar: account.avatar || '🌐',
+      avatar: '🌐',
       provider: 'google',
       createdAt: new Date().toLocaleDateString('id-ID'),
     }
     users.push(user)
     writeStorage('equestUsers', users)
+    // Akun Google baru mulai dari 0
+    initNewUserStats(normalizedEmail)
+    initNewUserTasks(normalizedEmail)
   }
 
   const sessionUser = {
@@ -140,11 +131,9 @@ export function loginWithGoogle(account) {
     provider: 'google',
   }
   setCurrentUser(sessionUser)
-  initUserStats(sessionUser.email)
   return sessionUser
 }
 
-// User Stats & Gamification matching Desktop - 8 & Desktop - 1
 export function getStatsKey(email) {
   const normalized = email ? email.trim().toLowerCase() : 'guest'
   return `equestStats_${encodeURIComponent(normalized)}`
@@ -157,23 +146,23 @@ export const DEFAULT_BADGES = [
     iconImage: 'badge_1.png',
     desc: 'Selesaikan 1 Latihan',
     unlocked: true,
-    unlockedAt: '1 Okt 2026',
+    unlockedAt: 'Hari ini',
   },
   {
     id: 'streak_7',
     name: '7 Days Streak',
     iconImage: 'badge_2.png',
     desc: 'Belajar 7 hari berturut-turut',
-    unlocked: true,
-    unlockedAt: '10 Okt 2026',
+    unlocked: false,
+    unlockedAt: null,
   },
   {
     id: 'problem_solver',
     name: 'Problem Solver',
     iconImage: 'badge_3.png',
     desc: 'Selesaikan 50 soal',
-    unlocked: true,
-    unlockedAt: '12 Okt 2026',
+    unlocked: false,
+    unlockedAt: null,
   },
   {
     id: 'curious_mind',
@@ -193,55 +182,75 @@ export const DEFAULT_BADGES = [
   },
 ]
 
-export function getUserStats(email) {
+// Inisialisasi awal untuk akun baru (Benar-benar dari 0!)
+export function initNewUserStats(email) {
   const key = getStatsKey(email)
-  const fallback = {
-    xp: 320,
-    tickets: 10,
-    streak: 18,
-    soalSelesai: 45,
-    activityMonth: 24,
-    xpMonth: 135,
-    openedBoxes: 3,
-    badges: DEFAULT_BADGES,
-    rewards: [
-      {
-        id: 1,
-        name: 'XP Boost +50',
-        icon: '⭐',
-        rarity: 'Common',
-        date: '12 Okt 2026',
-      },
-      {
-        id: 2,
-        name: 'Tiket Tambahan +1',
-        icon: '🎟️',
-        rarity: 'Rare',
-        date: '10 Okt 2026',
-      },
-    ],
+  const isDemo = email.toLowerCase() === DEMO_EMAIL.toLowerCase()
+
+  if (isDemo) {
+    const demoStats = {
+      xp: 320,
+      tickets: 10,
+      streak: 18,
+      soalSelesai: 45,
+      activityMonth: 24,
+      xpMonth: 135,
+      openedBoxes: 3,
+      badges: DEFAULT_BADGES.map((b) => ({
+        ...b,
+        unlocked: ['first_step', 'streak_7', 'problem_solver'].includes(b.id),
+        unlockedAt: ['first_step', 'streak_7', 'problem_solver'].includes(b.id)
+          ? '10 Okt 2026'
+          : null,
+      })),
+      rewards: [
+        {
+          id: 1,
+          name: 'XP Boost +50',
+          icon: '⭐',
+          rarity: 'Common',
+          date: '12 Okt 2026',
+        },
+      ],
+    }
+    writeStorage(key, demoStats)
+    return demoStats
   }
 
-  const saved = readStorage(key, null)
-  if (!saved) {
-    writeStorage(key, fallback)
-    return fallback
+  // Akun baru murni (Mulai dari 0)
+  const freshStats = {
+    xp: 0,
+    tickets: 1, // Bonus 1 tiket selamat datang
+    streak: 1, // Hari ke-1 bergabung
+    soalSelesai: 0,
+    activityMonth: 1,
+    xpMonth: 0,
+    openedBoxes: 0,
+    badges: DEFAULT_BADGES.map((b) => ({
+      ...b,
+      unlocked: b.id === 'first_step',
+      unlockedAt: b.id === 'first_step' ? 'Hari ini' : null,
+    })),
+    rewards: [],
   }
-
-  // Ensure fields match Figma defaults if previously missing
-  if (saved.xp === undefined) saved.xp = 320
-  if (saved.tickets === undefined) saved.tickets = 10
-  if (saved.streak === undefined) saved.streak = 18
-  if (saved.soalSelesai === undefined) saved.soalSelesai = 45
-  if (!saved.badges || saved.badges.length !== 5) {
-    saved.badges = DEFAULT_BADGES
-  }
-
-  return saved
+  writeStorage(key, freshStats)
+  return freshStats
 }
 
 export function initUserStats(email) {
   return getUserStats(email)
+}
+
+export function getUserStats(email) {
+  if (!email) return initNewUserStats('guest')
+  const key = getStatsKey(email)
+  const saved = readStorage(key, null)
+
+  if (!saved) {
+    return initNewUserStats(email)
+  }
+
+  return saved
 }
 
 export function saveUserStats(email, stats) {
@@ -252,6 +261,7 @@ export function saveUserStats(email, stats) {
 export function addXp(email, amount) {
   const stats = getUserStats(email)
   stats.xp = (stats.xp || 0) + amount
+  stats.xpMonth = (stats.xpMonth || 0) + amount
   saveUserStats(email, stats)
   return stats.xp
 }
@@ -466,18 +476,18 @@ export const DEFAULT_DATABASE_QUESTIONS = [
   },
 ]
 
-// User Tasks management matching Desktop - 2
+// User Tasks management
 export function getTaskKey(email) {
   const normalized = email ? email.trim().toLowerCase() : 'guest'
   return `equestTasks_${encodeURIComponent(normalized)}`
 }
 
-export function getUserTasks(email) {
+export function initNewUserTasks(email) {
   const key = getTaskKey(email)
-  let tasks = readStorage(key, null)
+  const isDemo = email.toLowerCase() === DEMO_EMAIL.toLowerCase()
 
-  if (tasks === null) {
-    const seedTasks = [
+  if (isDemo) {
+    const demoTasks = [
       {
         id: 1,
         name: 'soal_latihan.pdf',
@@ -540,8 +550,23 @@ export function getUserTasks(email) {
         questions: DEFAULT_DATABASE_QUESTIONS.slice(0, 5),
       },
     ]
-    writeStorage(key, seedTasks)
-    return seedTasks
+    writeStorage(key, demoTasks)
+    return demoTasks
+  }
+
+  // Akun baru mulai dari list KOSONG
+  const emptyTasks = []
+  writeStorage(key, emptyTasks)
+  return emptyTasks
+}
+
+export function getUserTasks(email) {
+  if (!email) return []
+  const key = getTaskKey(email)
+  let tasks = readStorage(key, null)
+
+  if (tasks === null) {
+    return initNewUserTasks(email)
   }
 
   return Array.isArray(tasks) ? tasks : []

@@ -24,6 +24,8 @@ function loadData() {
   currentUser.value = getCurrentUser()
   if (currentUser.value?.email) {
     userStats.value = getUserStats(currentUser.value.email)
+  } else {
+    userStats.value = { xp: 0, tickets: 0, streak: 0, soalSelesai: 0, badges: [] }
   }
 }
 
@@ -57,7 +59,7 @@ const badges = computed(() => userStats.value?.badges || [])
             Total XP :
           </p>
           <p class="mt-2 text-4xl font-black text-[#0A2540] sm:text-5xl">
-            {{ userStats?.xp || 320 }}
+            {{ userStats?.xp ?? 0 }}
           </p>
         </div>
 
@@ -67,7 +69,7 @@ const badges = computed(() => userStats.value?.badges || [])
             Tiket Blind Box :
           </p>
           <p class="mt-2 text-4xl font-black text-[#0A2540] sm:text-5xl">
-            {{ userStats?.tickets || 10 }}
+            {{ userStats?.tickets ?? 0 }}
           </p>
         </div>
 
@@ -77,7 +79,7 @@ const badges = computed(() => userStats.value?.badges || [])
             Hari Streak :
           </p>
           <p class="mt-2 text-4xl font-black text-[#0A2540] sm:text-5xl">
-            {{ userStats?.streak || 18 }}
+            {{ userStats?.streak ?? 0 }}
           </p>
         </div>
 
@@ -87,7 +89,7 @@ const badges = computed(() => userStats.value?.badges || [])
             Soal Selesai :
           </p>
           <p class="mt-2 text-4xl font-black text-[#0A2540] sm:text-5xl">
-            {{ userStats?.soalSelesai || 45 }}
+            {{ userStats?.soalSelesai ?? 0 }}
           </p>
         </div>
       </section>
@@ -103,6 +105,7 @@ const badges = computed(() => userStats.value?.badges || [])
             v-for="badge in badges"
             :key="badge.id"
             class="flex items-center gap-5 transition hover:translate-x-1"
+            :class="badge.unlocked ? 'opacity-100' : 'opacity-60'"
           >
             <!-- Badge Shield Icon dari Figma -->
             <div class="flex h-14 w-14 shrink-0 items-center justify-center">
@@ -115,9 +118,23 @@ const badges = computed(() => userStats.value?.badges || [])
 
             <!-- Detail Badge -->
             <div>
-              <h3 class="text-base font-extrabold text-[#0A2540] sm:text-lg">
-                {{ badge.name }}
-              </h3>
+              <div class="flex items-center gap-2">
+                <h3 class="text-base font-extrabold text-[#0A2540] sm:text-lg">
+                  {{ badge.name }}
+                </h3>
+                <span
+                  v-if="badge.unlocked"
+                  class="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700"
+                >
+                  ✓ Terbuka
+                </span>
+                <span
+                  v-else
+                  class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500"
+                >
+                  🔒 Terkunci
+                </span>
+              </div>
               <p class="text-sm text-slate-500">
                 {{ badge.desc }}
               </p>
