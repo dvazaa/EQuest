@@ -78,11 +78,18 @@ const totalScore = computed(() => {
 })
 
 const earnedXp = computed(() => {
-  return Math.max(10, correctCount.value * 10)
+  return correctCount.value * 10
 })
 
 const earnedTickets = computed(() => {
   return totalScore.value >= 80 ? 1 : 0
+})
+
+// Cek apakah pengguna memilih "Lihat jawaban" langsung tanpa mengirimkan jawaban sendiri
+const isDirectStudy = computed(() => {
+  if (route.query.direct === '1') return true
+  if (task.value?.directStudy === true && !task.value?.hasSubmittedAnswer) return true
+  return false
 })
 
 const filteredQuestions = computed(() => {
@@ -98,20 +105,47 @@ const filteredQuestions = computed(() => {
 function goToExplanation(index) {
   router.push({
     path: '/explanation',
-    query: { taskId, questionIndex: index },
+    query: {
+      taskId,
+      questionIndex: index,
+      fromMode: viewMode.value,
+      direct: isDirectStudy.value ? '1' : '0',
+    },
   })
 }
 
 function handleFinishStudy() {
   const email = currentUser.value?.email
-  if (email) {
-    recordTaskCompletion(email, task.value, 20, 0)
-    updateTask(email, taskId, {
-      status: 'Selesai',
-      userScore: 100,
-    })
+  // Jika pengguna memilih "Lihat jawaban" langsung tanpa mengerjakan sendiri -> LANGSUNG SELESAI TANPA POIN!
+  if (isDirectStudy.value) {
+    if (email) {
+      updateTask(email, taskId, {
+        status: 'Selesai',
+        userScore: 0,
+        directStudy: true,
+      })
+    }
+    router.push('/tasks')
+    return
   }
-  router.push('/tasks')
+
+  // Jika pengguna sebelumnya sudah mengerjakan/mengunggah jawaban sendiri, berikan poin reward dan tampilkan Skor Akhir
+  handleFinishCorrection()
+}
+
+function handleFinishCorrection() {
+  const email = currentUser.value?.email
+  if (email) {
+    recordTaskCompletion(email, task.value, earnedXp.value, earnedTickets.value)
+    updateTask(email, taskId, {
+      questions: questions.value,
+      status: 'Selesai',
+      userScore: totalScore.value,
+    })
+    tasks.value = getUserTasks(email)
+  }
+  isEditing.value = false
+  viewMode.value = 'score'
 }
 
 function handlePerbaikiJawaban() {
@@ -146,8 +180,6 @@ function handlePerbaikiJawaban() {
   }
 
   isEditing.value = false
-  // Tampilkan Skor Akhir
-  viewMode.value = 'score'
 }
 
 function handleClaimReward() {
@@ -159,7 +191,11 @@ function handleClaimReward() {
       userScore: totalScore.value,
     })
   }
-  router.push('/blind-box')
+  if (earnedTickets.value > 0) {
+    router.push('/blind-box')
+  } else {
+    router.push('/tasks')
+  }
 }
 </script>
 
@@ -482,38 +518,58 @@ function handleClaimReward() {
                 </div>
               </div>
 
-              <!-- XP Badge di kanan -->
-              <span
-                class="rounded-full px-3 py-1 text-xs font-extrabold"
-                :class="
-                  item.isCorrect
-                    ? 'bg-[#E1F7E9] text-[#16A34A]'
-                    : 'bg-[#DDF0FD] text-[#2D6BE4]'
-                "
-              >
-                {{ item.isCorrect ? '+10 XP' : '+10 XP jika benar' }}
-              </span>
+              <!-- XP Badge & Tombol Penjelasan di kanan -->
+              <div class="flex flex-col items-end gap-2 shrink-0">
+                <span
+                  class="rounded-full px-3 py-1 text-xs font-extrabold"
+                  :class="
+                    item.isCorrect
+                      ? 'bg-[#E1F7E9] text-[#16A34A]'
+                      : 'bg-[#DDF0FD] text-[#2D6BE4]'
+                  "
+                >
+                  {{ item.isCorrect ? '+10 XP' : '+10 XP jika benar' }}
+                </span>
+                <button
+                  type="button"
+                  @click="goToExplanation(questions.findIndex((q) => q.id === item.id))"
+                  class="rounded-lg border border-[#C5E4FA] bg-white px-3 py-1 text-[11px] font-bold text-[#2D6BE4] transition hover:bg-sky-50 cursor-pointer"
+                >
+                  Penjelasan AI
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Tombol Aksi Bawah sesuai Desktop - 13 -->
-        <div class="flex items-center justify-between pt-4 border-t border-slate-100">
+        <!-- Tombol Aksi Bawah Halaman Koreksi (Desktop - 13) -->
+        <div class="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-100">
           <button
             type="button"
             @click="viewMode = 'study'"
             class="rounded-xl border border-slate-300 bg-white px-6 py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 cursor-pointer"
           >
-            Lihat Jawaban Benar
+            Lihat Kunci Jawaban
           </button>
 
-          <button
-            type="button"
-            @click="handlePerbaikiJawaban"
-            class="rounded-xl bg-[#2D6BE4] px-8 py-2.5 text-xs font-bold text-white shadow-md transition hover:bg-blue-700 cursor-pointer"
-          >
-            {{ isEditing ? 'Simpan & Periksa Ulang' : 'Perbaiki Jawaban' }}
-          </button>
+          <div class="flex flex-wrap items-center gap-3">
+            <button
+              v-if="wrongCount > 0 && remainingAttempts > 0"
+              type="button"
+              @click="handlePerbaikiJawaban"
+              class="rounded-xl border border-[#2D6BE4] bg-[#EAF5FD] px-6 py-2.5 text-xs font-bold text-[#2D6BE4] transition hover:bg-sky-100 cursor-pointer"
+            >
+              {{ isEditing ? '✓ Simpan & Periksa Ulang' : `Perbaiki Jawaban (${remainingAttempts}x sisa)` }}
+            </button>
+
+            <button
+              type="button"
+              @click="handleFinishCorrection"
+              class="rounded-xl bg-[#2D6BE4] px-8 py-2.5 text-xs font-bold text-white shadow-md transition hover:bg-blue-700 cursor-pointer"
+            >
+              Selesai & Ambil Poin (+{{ earnedXp }} XP)
+            </button>
+          </div>
         </div>
       </div>
     </main>
@@ -541,6 +597,16 @@ function handleClaimReward() {
           </div>
         </div>
       </section>
+
+      <!-- Info Banner jika Mode Lihat Jawaban Langsung (Tanpa Poin) -->
+      <div
+        v-if="isDirectStudy"
+        class="mb-5 flex items-center justify-between gap-4 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-3.5 text-xs font-semibold text-amber-800"
+      >
+        <span>
+          📖 <strong>Mode Lihat Jawaban Langsung:</strong> Kamu bisa mempelajari seluruh jawaban dan penjelasan AI di bawah ini. Karena tidak mengirimkan jawaban sendiri, tugas ini selesai tanpa tambahan poin XP (0 XP).
+        </span>
+      </div>
 
       <!-- Main Box Container sesuai Desktop - 10 -->
       <div class="rounded-3xl bg-white p-7 shadow-xs space-y-4">
@@ -585,13 +651,23 @@ function handleClaimReward() {
       </div>
 
       <!-- Tombol Selesai (Bawah Kanan) sesuai Desktop - 10 -->
-      <div class="mt-6 flex justify-end">
+      <div class="mt-6 flex items-center justify-between gap-4">
+        <button
+          v-if="!isDirectStudy"
+          type="button"
+          @click="viewMode = 'eval'"
+          class="rounded-2xl border border-slate-300 bg-white px-6 py-3 text-xs font-bold text-slate-700 transition hover:bg-slate-50 cursor-pointer"
+        >
+          ← Kembali ke Halaman Koreksi
+        </button>
+        <div v-else></div>
+
         <button
           type="button"
           @click="handleFinishStudy"
           class="rounded-2xl bg-[#2D6BE4] px-10 py-3 text-sm font-bold text-white shadow-md transition hover:bg-blue-700 cursor-pointer"
         >
-          Selesai
+          {{ isDirectStudy ? 'Selesai (Tanpa Poin)' : `Selesai & Ambil Poin (+${earnedXp} XP)` }}
         </button>
       </div>
     </main>

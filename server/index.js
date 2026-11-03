@@ -10,6 +10,12 @@ dotenv.config()
 const app = express()
 const PORT = process.env.PORT || 3000
 
+// Model Gemini tercepat & stabil untuk akun baru
+const GEMINI_MODEL = 'gemini-3.5-flash'
+const FAST_GEN_CONFIG = {
+  thinkingConfig: { thinkingBudget: 0 },
+}
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
@@ -29,11 +35,11 @@ if (apiKey && apiKey !== 'your_gemini_api_key_here') {
 app.use(cors())
 app.use(express.json())
 
-// Helper timeout agar request AI tidak menggantung lama
-function withTimeout(promise, ms = 12000) {
+// Helper timeout agar request AI tidak pernah menggantung lama
+function withTimeout(promise, ms = 9000) {
   let timer
   const timeoutPromise = new Promise((_, reject) => {
-    timer = setTimeout(() => reject(new Error('Waktu permintaan AI habis (Timeout 12 detik)')), ms)
+    timer = setTimeout(() => reject(new Error('Waktu permintaan AI habis (Timeout)')), ms)
   })
   return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timer))
 }
@@ -45,6 +51,7 @@ app.get('/api/health', async (req, res) => {
     status: 'ok',
     message: 'Backend EQuest berjalan cepat dan responsif!',
     hasGeminiKey: Boolean(apiKey && apiKey !== 'your_gemini_api_key_here'),
+    model: GEMINI_MODEL,
     database: dbStatus,
   })
 })
@@ -60,22 +67,24 @@ app.get('/api/test-gemini', async (req, res) => {
     return res.json({
       success: true,
       mode: 'simulasi',
-      answer: 'Gemini API Key belum diset di server/.env, backend menggunakan mode simulasi cerdas EQuest yang responsif.',
+      answer: 'Gemini API Key belum diset di server/.env, backend menggunakan mode simulasi cerdas EQuest.',
     })
   }
 
   try {
     const response = await withTimeout(
       ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: 'Jawab dalam satu kalimat: apakah AI EQuest siap digunakan?',
+        model: GEMINI_MODEL,
+        contents: 'Jawab dalam satu kalimat ramah: apakah AI EQuest siap membantu belajar?',
+        config: FAST_GEN_CONFIG,
       }),
-      8000
+      7000
     )
 
     res.json({
       success: true,
       mode: 'live-gemini',
+      model: GEMINI_MODEL,
       answer: response.text,
     })
   } catch (error) {
@@ -89,7 +98,7 @@ app.get('/api/test-gemini', async (req, res) => {
   }
 })
 
-// 3. Analisis Soal (Ekstraksi Soal & Pembahasan Terstruktur sesuai Soal yang Diketik/Diunggah)
+// 3. Analisis Soal (Ekstraksi Soal & Pembahasan Sederhana untuk Semua Pelajaran)
 app.post('/api/analyze', upload.single('file'), async (req, res) => {
   try {
     const questionText = req.body.questionText?.trim()
@@ -101,31 +110,33 @@ app.post('/api/analyze', upload.single('file'), async (req, res) => {
       })
     }
 
-    // Jika Gemini API key tersedia, jalankan dengan model gemini-2.5-flash yang super cepat
     if (ai) {
       try {
         const contents = [
           {
-            text: `Kamu adalah asisten belajar cerdas EQuest. Analisis soal yang diberikan pengguna berikut ini (jangan mengganti dengan soal lain!).
-Kembalikan HANYA format JSON array murni berisi daftar soal beserta kunci jawaban dan pembahasannya:
+            text: `Kamu adalah guru pendamping belajar yang ramah di EQuest untuk pelajar dari berbagai jenjang dan jurusan (Matematika, Sains, Bahasa, IPS, Umum, maupun Teknologi).
+Analisis soal yang diberikan pengguna berikut ini. JANGAN mengganti soal pengguna dengan soal lain!
+Gunakan bahasa Indonesia sehari-hari yang SANGAT SEDERHANA, santai, mudah dipahami anak sekolah maupun mahasiswa umum, dan JANGAN menggunakan istilah teknis koding/SQL kecuali soalnya memang bertanya tentang koding/SQL.
+
+Kembalikan HANYA format JSON array murni seperti ini:
 [
   {
     "id": 1,
     "question": "Kalimat pertanyaan sesuai soal pengguna",
-    "correctAnswer": "Jawaban singkat dan tepat",
-    "hint": "Petunjuk singkat jika siswa menjawab salah",
-    "explanation": "Penjelasan lengkap kenapa jawabannya begitu",
-    "exampleCode": "Contoh kode / rumus / ilustrasi singkat",
+    "correctAnswer": "Jawaban singkat, jelas, dan tepat",
+    "hint": "Petunjuk ramah dan sederhana jika jawaban siswa masih belum tepat",
+    "explanation": "Penjelasan sederhana dengan bahasa sehari-hari kenapa jawabannya seperti itu",
+    "exampleCode": "Contoh ilustrasi sederhana di kehidupan sehari-hari atau langkah hitung singkat",
     "exampleCaption": "Keterangan singkat dari contoh di atas",
     "terms": [
-      { "name": "Istilah 1", "desc": "Penjelasan istilah 1" },
-      { "name": "Istilah 2", "desc": "Penjelasan istilah 2" }
+      { "name": "Poin Penting 1", "desc": "Penjelasan singkat dengan bahasa sederhana" },
+      { "name": "Poin Penting 2", "desc": "Penjelasan singkat dengan bahasa sederhana" }
     ],
-    "memoryTip": "Cara mudah mengingat konsep soal ini"
+    "memoryTip": "Cara gampang dan seru untuk mengingat materi soal ini"
   }
 ]
 
-${questionText ? `Teks soal dari pengguna:\n${questionText}` : 'Ekstrak semua soal dari berkas terlampir.'}`,
+${questionText ? `Teks soal dari pengguna:\n${questionText}` : 'Ekstrak semua soal yang terlihat pada berkas/gambar terlampir.'}`,
           },
         ]
 
@@ -140,10 +151,11 @@ ${questionText ? `Teks soal dari pengguna:\n${questionText}` : 'Ekstrak semua so
 
         const response = await withTimeout(
           ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: GEMINI_MODEL,
             contents,
+            config: FAST_GEN_CONFIG,
           }),
-          10000
+          8500
         )
 
         if (response.text) {
@@ -156,19 +168,22 @@ ${questionText ? `Teks soal dari pengguna:\n${questionText}` : 'Ekstrak semua so
                 id: idx + 1,
                 question: q.question || questionText,
                 userAnswer: '',
-                correctAnswer: q.correctAnswer || '',
+                correctAnswer: String(q.correctAnswer ?? ''),
                 isCorrect: false,
                 points: 10,
-                hint: q.hint || 'Periksa kembali konsep utama pada soal ini.',
+                hint: q.hint || 'Yuk coba periksa lagi langkah penyelesaiannya pelan-pelan.',
                 explanation: q.explanation || '',
                 exampleCode: q.exampleCode || '',
                 exampleCaption: q.exampleCaption || '',
-                terms: Array.isArray(q.terms) && q.terms.length ? q.terms : [{ name: 'Konsep Inti', desc: 'Pokok bahasan utama soal.' }],
-                memoryTip: q.memoryTip || 'Pahami konsep dasarnya secara bertahap.',
+                terms:
+                  Array.isArray(q.terms) && q.terms.length
+                    ? q.terms
+                    : [{ name: 'Inti Materi', desc: 'Pokok bahasan utama pada soal ini.' }],
+                memoryTip: q.memoryTip || 'Pahami konsep dasarnya dengan contoh sehari-hari.',
               }))
             }
           } catch (_) {
-            // Jika bukan JSON murni, biarkan fallback parser di frontend menangani
+            // Biarkan parser lokal di frontend menangani jika output bukan JSON
           }
 
           return res.json({
@@ -179,17 +194,14 @@ ${questionText ? `Teks soal dari pengguna:\n${questionText}` : 'Ekstrak semua so
           })
         }
       } catch (geminiErr) {
-        console.warn('Gemini live timeout/error, beralih ke respons cerdas:', geminiErr.message)
+        console.warn('Gemini analyze fallback:', geminiErr.message)
       }
     }
-
-    // Fallback instan sesuai teks soal yang dikirim pengguna
-    const sampleAnswer = `Soal berhasil dianalisis: ${questionText || file?.originalname || 'Soal Latihan'}`
 
     res.json({
       success: true,
       source: 'equest-fast-cache',
-      answer: sampleAnswer,
+      answer: `Soal berhasil dianalisis: ${questionText || file?.originalname || 'Soal Latihan'}`,
       questions: null,
     })
   } catch (error) {
@@ -201,7 +213,82 @@ ${questionText ? `Teks soal dari pengguna:\n${questionText}` : 'Ekstrak semua so
   }
 })
 
-// 4. Tanya AI tentang Soal Spesifik (Desktop - 15 & Desktop - 17)
+// 4. Pemeriksaan Jawaban Siswa dengan AI (Dipanggil saat pengguna klik Lanjutkan di Upload Jawaban)
+app.post('/api/evaluate-answers', async (req, res) => {
+  try {
+    const { questions } = req.body
+    if (!Array.isArray(questions) || questions.length === 0) {
+      return res.status(400).json({ message: 'Daftar soal dan jawaban tidak ditemukan.' })
+    }
+
+    if (ai) {
+      try {
+        const prompt = `Kamu adalah guru penilai yang adil, bijak, dan ramah di EQuest.
+Periksa jawaban siswa berikut terhadap masing-masing soal dan kunci jawabannya.
+Aturan penilaian:
+- Jika jawaban siswa memiliki makna/arti/angka yang benar (meskipun kalimatnya berbeda atau lebih singkat/panjang dari kunci jawaban), nyatakan "isCorrect": true!
+- Jika jawaban siswa salah atau belum menjawab, nyatakan "isCorrect": false dan berikan "hint" (petunjuk singkat yang ramah dalam bahasa sederhana tanpa membocorkan seluruh jawaban).
+
+Data soal dan jawaban siswa:
+${JSON.stringify(
+  questions.map((q) => ({
+    id: q.id,
+    question: q.question,
+    correctAnswer: q.correctAnswer,
+    userAnswer: q.userAnswer,
+  })),
+  null,
+  2
+)}
+
+Kembalikan HANYA JSON array murni dengan format:
+[
+  {
+    "id": 1,
+    "isCorrect": true,
+    "hint": "Jawabanmu sudah tepat!"
+  }
+]`
+
+        const response = await withTimeout(
+          ai.models.generateContent({
+            model: GEMINI_MODEL,
+            contents: prompt,
+            config: FAST_GEN_CONFIG,
+          }),
+          7500
+        )
+
+        if (response.text) {
+          const cleanJson = response.text.replace(/```json/gi, '').replace(/```/g, '').trim()
+          const evalResults = JSON.parse(cleanJson)
+          if (Array.isArray(evalResults)) {
+            return res.json({
+              success: true,
+              source: 'gemini-live',
+              evaluations: evalResults,
+            })
+          }
+        }
+      } catch (err) {
+        console.warn('Evaluate answers AI fallback:', err.message)
+      }
+    }
+
+    res.json({
+      success: true,
+      source: 'local-evaluator',
+      evaluations: null,
+    })
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    })
+  }
+})
+
+// 5. Tanya AI tentang Soal Spesifik (Desktop - 15 & Desktop - 17)
 app.post('/api/ask-question-ai', async (req, res) => {
   try {
     const { question, currentAnswer, userPrompt } = req.body
@@ -212,19 +299,21 @@ app.post('/api/ask-question-ai', async (req, res) => {
 
     if (ai) {
       try {
-        const prompt = `Sebagai asisten belajar ramah di EQuest, bantu siswa memahami materi ini:
+        const prompt = `Kamu adalah teman belajar AI yang ramah di EQuest.
+Bantu siswa memahami soal berikut dengan bahasa sehari-hari yang SANGAT SEDERHANA, santai, dan mudah dimengerti (jangan gunakan istilah rumit atau istilah pemrograman/SQL kecuali soalnya memang tentang itu):
 Soal: ${question}
-Jawaban: ${currentAnswer}
+Kunci Jawaban: ${currentAnswer}
 Pertanyaan siswa: "${userPrompt}"
 
-Berikan penjelasan yang singkat, mudah dipahami siswa, dan beri contoh nyata bila perlu. Gunakan bahasa Indonesia yang santun dan menyemangati.`
+Jawab dalam 2-4 kalimat yang jelas, ramah, dan beri perumpamaan sederhana di kehidupan nyata bila perlu.`
 
         const response = await withTimeout(
           ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: GEMINI_MODEL,
             contents: prompt,
+            config: FAST_GEN_CONFIG,
           }),
-          8000
+          7500
         )
 
         if (response.text) {
@@ -238,13 +327,17 @@ Berikan penjelasan yang singkat, mudah dipahami siswa, dan beri contoh nyata bil
       }
     }
 
-    // Contextual fast response yang selalu merujuk ke soal & jawaban yang sedang dibahas
-    let simulatedReply = `Tentu! Untuk pertanyaanmu "${userPrompt}" terkait soal "${question}":\nJawaban yang tepat adalah "${currentAnswer}". Fokus utamanya adalah memahami definisi dan cara kerja konsep tersebut agar mudah diterapkan pada soal serupa.`
+    // Respons cadangan sederhana yang selalu nyambung dengan soal apapun (tanpa istilah SQL!)
+    let simulatedReply = `Untuk soal "${question}", jawaban yang tepat adalah "${currentAnswer}". Cara paling mudah memahaminya adalah dengan melihat inti pertanyaannya lalu menghubungkannya dengan contoh sederhana di sekitar kita.`
 
     if (userPrompt.toLowerCase().includes('contoh')) {
-      simulatedReply = `Berikut contoh sederhana untuk soal "${question}":\nMisalkan dalam praktik sehari-hari kita menerapkan "${currentAnswer}", langkah pertamanya adalah mengidentifikasi masalah utama dari soal lalu mencocokkannya dengan fungsi inti dari konsep tersebut.`
-    } else if (userPrompt.toLowerCase().includes('sederhana') || userPrompt.toLowerCase().includes('simpel')) {
-      simulatedReply = `Secara sederhana, untuk soal "${question}", kamu cukup mengingat kata kunci utamanya yaitu: "${currentAnswer}". Pahami dulu fungsi dasarnya, maka pembahasannya akan jauh lebih mudah diingat!`
+      simulatedReply = `Contoh sederhananya untuk soal "${question}": bayangkan situasi ini dalam kegiatan sehari-hari, sehingga alasan mengapa jawabannya "${currentAnswer}" bisa langsung terbayang dengan jelas dan mudah diingat.`
+    } else if (
+      userPrompt.toLowerCase().includes('sederhana') ||
+      userPrompt.toLowerCase().includes('simpel') ||
+      userPrompt.toLowerCase().includes('kenapa')
+    ) {
+      simulatedReply = `Penjelasan paling simpelnya: pada soal "${question}", hasil atau jawaban "${currentAnswer}" didapat langsung dari konsep dasarnya. Jadi kamu cukup mengingat langkah intinya saja!`
     }
 
     res.json({
@@ -259,7 +352,7 @@ Berikan penjelasan yang singkat, mudah dipahami siswa, dan beri contoh nyata bil
   }
 })
 
-// 5. Penilaian Jawaban Siswa (Grading Mode)
+// 6. Penilaian Jawaban Siswa (Grading Mode)
 app.post('/api/grade', upload.single('file'), async (req, res) => {
   try {
     const questionText = req.body.questionText?.trim() || ''
@@ -269,7 +362,7 @@ app.post('/api/grade', upload.single('file'), async (req, res) => {
 
     if (ai) {
       try {
-        const prompt = `Nilai jawaban siswa:
+        const prompt = `Nilai jawaban siswa dengan bahasa yang ramah dan sederhana:
 Soal: ${questionText}
 Kunci: ${referenceAnswer}
 Jawaban Siswa: ${studentAnswer}
@@ -294,10 +387,11 @@ Jawab hanya JSON:
 
         const response = await withTimeout(
           ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: GEMINI_MODEL,
             contents,
+            config: FAST_GEN_CONFIG,
           }),
-          10000
+          8000
         )
 
         const cleanText = response.text.replace(/```json/gi, '').replace(/```/g, '').trim()
@@ -308,13 +402,12 @@ Jawab hanya JSON:
       }
     }
 
-    // Fast fallback
     res.json({
       success: true,
       score: 80,
-      feedback: 'Kerja bagus! Pemahaman konsep dasar sudah tepat.',
-      strengths: 'Menguasai istilah utama dan sintaks dasar.',
-      improvement: 'Tingkatkan ketelitian pada fungsi agregat dan integritas referensial.',
+      feedback: 'Kerja bagus! Jawabanmu sudah mengarah ke konsep yang tepat.',
+      strengths: 'Sudah memahami maksud utama dari pertanyaan.',
+      improvement: 'Coba lengkapi sedikit lagi detail penjelasannya.',
     })
   } catch (error) {
     console.error('Kesalahan penilaian:', error.message)
@@ -326,5 +419,5 @@ Jawab hanya JSON:
 })
 
 app.listen(PORT, () => {
-  console.log(`Backend EQuest aktif di http://localhost:${PORT}`)
+  console.log(`Backend EQuest aktif di http://localhost:${PORT} (Model: ${GEMINI_MODEL})`)
 })

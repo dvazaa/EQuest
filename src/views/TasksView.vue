@@ -49,6 +49,13 @@ const filteredTasks = computed(() => {
 
 function handleTaskAction(task) {
   if (task.status === 'Selesai') {
+    if (task.directStudy && !task.hasSubmittedAnswer) {
+      router.push({
+        path: '/answer',
+        query: { id: task.id, mode: 'study', direct: '1' },
+      })
+      return
+    }
     // Mode Lihat Hasil / Skor Akhir sesuai Desktop - 14
     router.push({
       path: '/answer',

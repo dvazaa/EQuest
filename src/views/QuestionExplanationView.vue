@@ -42,24 +42,41 @@ const currentQuestion = computed(() => {
   return questions.value[currentIndex.value] || questions.value[0]
 })
 
+const isCodeExample = computed(() => {
+  const code = (currentQuestion.value?.exampleCode || '').toLowerCase()
+  const q = (currentQuestion.value?.question || '').toLowerCase()
+  return (
+    q.includes('sql') ||
+    q.includes('kode') ||
+    q.includes('pemrograman') ||
+    q.includes('html') ||
+    q.includes('css') ||
+    code.includes('select ') ||
+    code.includes('create table') ||
+    code.includes('insert into') ||
+    code.includes('console.log') ||
+    code.includes('class ')
+  )
+})
+
 function goToNextQuestion() {
   if (currentIndex.value < questions.value.length - 1) {
     currentIndex.value++
     userPrompt.value = ''
     aiChatReplies.value = []
   } else {
-    // Kembali ke Daftar Jawaban
-    router.push({
-      path: '/answer',
-      query: { id: taskId, mode: 'study' },
-    })
+    goBackToAnswer()
   }
 }
 
 function goBackToAnswer() {
   router.push({
     path: '/answer',
-    query: { id: taskId, mode: 'study' },
+    query: {
+      id: taskId,
+      mode: route.query.fromMode || 'study',
+      ...(route.query.direct ? { direct: route.query.direct } : {}),
+    },
   })
 }
 
@@ -162,14 +179,23 @@ async function handleAskAi() {
             </div>
           </div>
 
-          <!-- Contoh Penggunaan (Code Snippet Box) -->
+          <!-- Contoh Penggunaan / Contoh Sederhana -->
           <div v-if="currentQuestion.exampleCode" class="space-y-2">
             <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-700">
-              Contoh penggunaan
+              {{ isCodeExample ? 'Contoh penggunaan' : 'Contoh sederhana' }}
             </h3>
 
-            <div class="rounded-2xl bg-[#1A2234] p-5 font-mono text-xs sm:text-sm text-sky-200">
+            <div
+              v-if="isCodeExample"
+              class="rounded-2xl bg-[#1A2234] p-5 font-mono text-xs sm:text-sm text-sky-200"
+            >
               <pre class="overflow-x-auto whitespace-pre">{{ currentQuestion.exampleCode }}</pre>
+            </div>
+            <div
+              v-else
+              class="rounded-2xl border border-[#C5E4FA] bg-[#F8FBFF] p-5 text-sm font-bold text-[#0A2540]"
+            >
+              <p class="whitespace-pre-wrap leading-relaxed">{{ currentQuestion.exampleCode }}</p>
             </div>
 
             <p class="text-xs text-slate-500">

@@ -19,6 +19,7 @@ const selectedFile = ref(null)
 const answerText = ref('')
 const perQuestionInputs = ref({})
 const showPerQuestionBubble = ref(false)
+const isCheckingAi = ref(false)
 const errorMessage = ref('')
 
 const currentUser = ref(null)
@@ -76,10 +77,17 @@ function hasAnyTypedAnswer() {
 }
 
 function handleStudyMode() {
-  // Mode langsung melihat jawaban sesuai Desktop - 10
+  // Mode langsung melihat jawaban: tandai bahwa pengguna langsung lihat jawaban (tanpa poin XP!)
+  const email = currentUser.value?.email
+  if (email && currentTask.value) {
+    updateTask(email, taskId, {
+      directStudy: true,
+      hasSubmittedAnswer: false,
+    })
+  }
   router.push({
     path: '/answer',
-    query: { id: taskId, mode: 'study' },
+    query: { id: taskId, mode: 'study', direct: '1' },
   })
 }
 
@@ -92,6 +100,7 @@ async function handleContinue() {
   }
 
   errorMessage.value = ''
+  isCheckingAi.value = true
   const email = currentUser.value?.email
 
   if (email && currentTask.value) {
@@ -111,7 +120,7 @@ async function handleContinue() {
     let updatedQuestions = currentTask.value.questions || DEFAULT_DATABASE_QUESTIONS
 
     if (typed || rawTextFromAnswerFile) {
-      // Evaluasi jawaban yang diketik pengguna terhadap soal tugas tersebut
+      // Evaluasi awal jawaban yang diketik pengguna terhadap soal tugas tersebut
       updatedQuestions = applyUserAnswersToQuestions(
         updatedQuestions,
         rawTextFromAnswerFile,
@@ -131,6 +140,39 @@ async function handleContinue() {
       })
     }
 
+    // Periksa jawaban menggunakan AI di backend (/api/evaluate-answers) agar koreksi lebih cerdas
+    try {
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), 7000)
+
+      const res = await fetch('http://localhost:3000/api/evaluate-answers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ questions: updatedQuestions }),
+        signal: controller.signal,
+      })
+      clearTimeout(timer)
+
+      if (res.ok) {
+        const data = await res.json()
+        if (Array.isArray(data.evaluations) && data.evaluations.length > 0) {
+          updatedQuestions = updatedQuestions.map((q) => {
+            const found = data.evaluations.find((ev) => Number(ev.id) === Number(q.id))
+            if (found && q.userAnswer && q.userAnswer !== '(Belum diisi)') {
+              return {
+                ...q,
+                isCorrect: Boolean(found.isCorrect),
+                hint: found.hint || q.hint,
+              }
+            }
+            return q
+          })
+        }
+      }
+    } catch (_) {
+      // Gunakan hasil evaluasi lokal jika backend sedang tidak aktif
+    }
+
     const totalQ = updatedQuestions.length || 1
     const correctQ = updatedQuestions.filter((q) => q.isCorrect).length
     const calculatedScore = Math.round((correctQ / totalQ) * 100)
@@ -138,10 +180,14 @@ async function handleContinue() {
     updateTask(email, taskId, {
       questions: updatedQuestions,
       userScore: calculatedScore,
+      directStudy: false,
+      hasSubmittedAnswer: true,
     })
   }
 
-  // Mode periksa / evaluasi jawaban sesuai Desktop - 13
+  isCheckingAi.value = false
+
+  // Mode periksa / halaman koreksi jawaban sesuai Desktop - 13
   router.push({
     path: '/answer',
     query: { id: taskId, mode: 'eval' },
@@ -345,10 +391,11 @@ async function handleContinue() {
               <div>
                 <button
                   type="button"
+                  :disabled="isCheckingAi"
                   @click="handleContinue"
-                  class="rounded-xl bg-[#2D6BE4] px-8 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 cursor-pointer"
+                  class="rounded-xl bg-[#2D6BE4] px-8 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-60 cursor-pointer"
                 >
-                  Lanjutkan
+                  {{ isCheckingAi ? '🤖 AI Memeriksa Jawaban...' : 'Periksa Jawaban (AI)' }}
                 </button>
               </div>
             </div>

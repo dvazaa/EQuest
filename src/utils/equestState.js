@@ -1,6 +1,6 @@
 // State Management EQuest sesuai skema SDD dan Desain Figma
 const STORAGE_VERSION_KEY = 'equest_storage_version'
-const CURRENT_STORAGE_VERSION = 'equest_v5_accurate_qa'
+const CURRENT_STORAGE_VERSION = 'equest_v6_simple_ai'
 
 // Bersihkan cache lama yang tercampur agar setiap akun benar-benar terisolasi
 function ensureCleanStorageVersion() {
@@ -1126,7 +1126,7 @@ const KNOWLEDGE_BASE_QA = [
   },
 ]
 
-// Coba hitung ekspresi matematika jika soal berupa hitungan angka
+// Coba hitung ekspresi matematika jika soal berupa hitungan angka (dengan bahasa sederhana sehari-hari!)
 function trySolveMathQuestion(rawQuestion) {
   const cleaned = rawQuestion
     .toLowerCase()
@@ -1145,28 +1145,51 @@ function trySolveMathQuestion(rawQuestion) {
     .replace(/dibagi/g, '/')
     .trim()
 
-  // Cek apakah mengandung ekspresi aritmatika murni seperti "15 * 4 + 10" atau "25 + 75"
   const mathMatch = cleaned.match(/(-?\d+(?:\.\d+)?(?:\s*[\+\-\*\/]\s*-?\d+(?:\.\d+)?)+)/)
   if (!mathMatch) return null
 
   const expr = mathMatch[1].trim()
   try {
-    // Evaluasi aman hanya untuk angka dan operator +, -, *, /
     if (!/^[\d\s\.\+\-\*\/\(\)]+$/.test(expr)) return null
     // eslint-disable-next-line no-new-func
     const result = Function(`"use strict"; return (${expr})`)()
     if (typeof result === 'number' && Number.isFinite(result)) {
       const formattedResult = Number.isInteger(result) ? String(result) : result.toFixed(2)
+      const prettyExpr = expr.replace(/\*/g, '×').replace(/\//g, '÷')
+
+      // Buat penjelasan yang sangat sederhana dan ramah untuk semua kalangan
+      let simpleStory = `Jika kita menghitung ${prettyExpr} langkah demi langkah, maka hasil akhirnya adalah ${formattedResult}.`
+      const simpleAdd = expr.match(/^(\d+)\s*\+\s*(\d+)$/)
+      const simpleSub = expr.match(/^(\d+)\s*\-\s*(\d+)$/)
+      const simpleMul = expr.match(/^(\d+)\s*\*\s*(\d+)$/)
+      const simpleDiv = expr.match(/^(\d+)\s*\/\s*(\d+)$/)
+
+      if (simpleAdd) {
+        simpleStory = `Bayangkan kamu punya ${simpleAdd[1]} buah apel, lalu ditambah lagi ${simpleAdd[2]} buah apel. Kalau dihitung semuanya bersama-sama, sekarang kamu punya ${formattedResult} buah apel.`
+      } else if (simpleSub) {
+        simpleStory = `Bayangkan mula-mula kamu punya ${simpleSub[1]} permen, lalu diberikan kepada temanmu sebanyak ${simpleSub[2]} permen. Maka sisa permen yang kamu miliki sekarang adalah ${formattedResult}.`
+      } else if (simpleMul) {
+        simpleStory = `Perkalian ${simpleMul[1]} × ${simpleMul[2]} artinya kita menjumlahkan angka ${simpleMul[2]} sebanyak ${simpleMul[1]} kali, sehingga hasilnya menjadi ${formattedResult}.`
+      } else if (simpleDiv) {
+        simpleStory = `Pembagian ${simpleDiv[1]} ÷ ${simpleDiv[2]} artinya membagi ${simpleDiv[1]} benda sama rata ke dalam ${simpleDiv[2]} kelompok, sehingga masing-masing mendapat ${formattedResult}.`
+      }
+
       return {
         correctAnswer: formattedResult,
-        explanation: `Operasi perhitungan pada soal "${rawQuestion}" diselesaikan dengan menghitung ekspresi matematika (${expr}) sesuai aturan urutan operasi aritmatika (perkalian/pembagian dikerjakan lebih dahulu sebelum penjumlahan/pengurangan), sehingga diperoleh hasil akhir ${formattedResult}.`,
-        exampleCode: `${expr} = ${formattedResult}`,
-        exampleCaption: 'Langkah penyelesaian operasi hitung matematika.',
+        explanation: simpleStory,
+        exampleCode: `${prettyExpr} = ${formattedResult}`,
+        exampleCaption: 'Cara hitung singkat dan hasilnya.',
         terms: [
-          { name: 'Operasi Aritmatika', desc: 'Perhitungan dasar matematika yang meliputi kali, bagi, tambah, dan kurang.' },
-          { name: 'Prioritas Operator', desc: 'Perkalian (*) dan pembagian (/) dieksekusi lebih dulu daripada penjumlahan (+) dan pengurangan (-).' },
+          {
+            name: 'Langkah Hitung',
+            desc: `Menghitung ${prettyExpr} secara bertahap hingga mendapatkan angka ${formattedResult}.`,
+          },
+          {
+            name: 'Urutan Hitung Dasar',
+            desc: 'Jika ada tanda kali (×) atau bagi (÷), kerjakan lebih dulu sebelum tambah (+) dan kurang (-).',
+          },
         ],
-        memoryTip: 'Ingat aturan KABATAKU: Kali, Bagi, Tambah, Kurang!',
+        memoryTip: 'Supaya mudah dan tidak keliru, bayangkan angkanya seperti benda nyata di sekitar kita (seperti buah atau jari tangan)!',
       }
     }
   } catch (e) {
@@ -1276,9 +1299,9 @@ export function generateQuestionObject(rawQuestion, index = 0) {
     }
   }
 
-  // 4. Analisis pintar topik dari kalimat pertanyaan pengguna agar tetap 100% nyambung dengan soal yang diketik
+  // 4. Analisis pintar topik dari kalimat pertanyaan pengguna dengan bahasa sederhana sehari-hari
   const topicCleaned = qText
-    .replace(/^(apa\s+(itu|yang\s+dimaksud\s+dengan|fungsi\s+dari|fungsi|kepanjangan\s+dari|tujuan\s+dari|perbedaan\s+antara)|jelaskan\s+(tentang|apa\s+itu|mengenai|fungsi)?|sebutkan|bagaimana\s+cara|mengapa|siapa)\s+/i, '')
+    .replace(/^(apa\s+(itu|yang\s+dimaksud\s+dengan|fungsi\s+dari|fungsi|kepanjangan\s+dari|tujuan\s+dari|perbedaan\s+antara|arti\s+dari)|jelaskan\s+(tentang|apa\s+itu|mengenai|fungsi)?|sebutkan|bagaimana\s+cara|mengapa|siapa|dimana|kapan)\s+/i, '')
     .replace(/[?!.]+$/g, '')
     .trim()
 
@@ -1288,24 +1311,24 @@ export function generateQuestionObject(rawQuestion, index = 0) {
     id: index + 1,
     question: qText,
     userAnswer: '',
-    correctAnswer: `${subjectLabel} merupakan konsep/komponen penting yang berfungsi untuk mendukung proses secara terstruktur dan sistematis sesuai konteks materinya.`,
+    correctAnswer: `${subjectLabel} adalah hal penting yang menjadi inti dari pembahasan soal ini sesuai konteks pelajarannya.`,
     isCorrect: false,
     points: 10,
-    hint: `Pastikan jawabanmu menjelaskan inti dari "${subjectLabel}" dengan jelas.`,
-    explanation: `Pertanyaan "${qText}" membahas tentang "${subjectLabel}". Untuk menjawab soal ini dengan tepat, fokuskan pada definisi inti, fungsi utama, serta bagaimana "${subjectLabel}" diterapkan dalam menyelesaikan masalah pada materi terkait.`,
-    exampleCode: `Topik Utama : ${subjectLabel}\nFokus Kajian: Definisi, Fungsi, dan Penerapan Praktis`,
-    exampleCaption: `Ringkasan konsep inti untuk memahami materi ${subjectLabel}.`,
+    hint: `Coba ingat kembali pengertian dasar dari "${subjectLabel}" dengan kata-katamu sendiri.`,
+    explanation: `Soal ini menanyakan tentang "${subjectLabel}". Secara sederhana, cara paling gampang memahaminya adalah melihat apa pengertian dasarnya, apa kegunaannya, dan bagaimana contohnya dalam kehidupan sehari-hari.`,
+    exampleCode: `Inti pembahasan: memahami arti dan contoh nyata dari ${subjectLabel} di sekitar kita.`,
+    exampleCaption: `Gambaran sederhana mengenai ${subjectLabel}.`,
     terms: [
       {
         name: subjectLabel.slice(0, 40),
-        desc: `Pokok bahasan utama yang ditanyakan pada soal nomor ${index + 1}.`,
+        desc: `Topik utama yang sedang dibahas pada pertanyaan ini.`,
       },
       {
-        name: 'Konsep & Penerapan',
-        desc: 'Pemahaman definisi dasar beserta contoh implementasinya.',
+        name: 'Poin Utama',
+        desc: 'Memahami pengertian dasar dengan bahasa sendiri yang mudah diingat.',
       },
     ],
-    memoryTip: `Untuk mengingat "${subjectLabel}", pahami kata kuncinya lalu hubungkan dengan fungsi utamanya sehari-hari.`,
+    memoryTip: `Cara mudah mengingat "${subjectLabel}": bayangkan contoh nyatanya dalam kegiatan sehari-hari!`,
   }
 }
 
