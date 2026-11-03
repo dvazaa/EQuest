@@ -23,6 +23,7 @@ const navLinks = [
   { name: 'Blind Box', to: '/blind-box' },
   { name: 'Progress', to: '/progress' },
   { name: 'Riwayat', to: '/riwayat' },
+  { name: '👑 Premium', to: '/premium', isPremium: true },
 ]
 
 function isActive(path) {
@@ -62,17 +63,21 @@ function handleLogout() {
         <span class="text-2xl font-black tracking-tight text-black sm:text-3xl">EQuest</span>
       </RouterLink>
 
-      <!-- Nav Links sesuai Figma -->
-      <div class="hidden items-center gap-x-8 md:flex lg:gap-x-12">
+      <!-- Nav Links sesuai Figma + Tombol Premium yang Mudah Diakses -->
+      <div class="hidden items-center gap-x-6 md:flex lg:gap-x-9">
         <RouterLink
           v-for="link in navLinks"
           :key="link.to"
           :to="link.to"
           class="text-base font-bold transition-colors"
           :class="
-            isActive(link.to)
-              ? 'text-[#2D6BE4] font-extrabold'
-              : 'text-[#64748B] hover:text-[#0f2852]'
+            link.isPremium
+              ? isActive(link.to)
+                ? 'rounded-full bg-amber-400 px-3.5 py-1 text-xs font-black text-[#0A2540] shadow-2xs'
+                : 'rounded-full bg-amber-100 px-3.5 py-1 text-xs font-extrabold text-amber-900 hover:bg-amber-200'
+              : isActive(link.to)
+                ? 'text-[#2D6BE4] font-extrabold'
+                : 'text-[#64748B] hover:text-[#0f2852]'
           "
         >
           {{ link.name }}

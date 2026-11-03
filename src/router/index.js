@@ -63,6 +63,11 @@ const routes = [
     component: () => import('../views/HistoryView.vue'),
   },
   {
+    path: '/premium',
+    name: 'Premium',
+    component: () => import('../views/PremiumView.vue'),
+  },
+  {
     path: '/history',
     redirect: '/riwayat',
   },
