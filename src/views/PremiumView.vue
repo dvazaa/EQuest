@@ -1,11 +1,12 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Navbar from '../components/Navbar.vue'
 import {
   getCurrentUser,
   getUserStats,
   activatePremiumPlan,
+  cancelPremiumPlan,
 } from '../utils/equestState'
 
 const router = useRouter()
@@ -13,17 +14,41 @@ const router = useRouter()
 const currentUser = ref(null)
 const userStats = ref(null)
 
+// Modal & Alur Pembayaran Multi-Langkah
 const showCheckoutModal = ref(false)
-const checkoutStep = ref('form') // 'form' | 'success'
+const checkoutStep = ref('select_method') // 'select_method' | 'payment' | 'success'
 const selectedPlan = ref(null)
 const selectedPayment = ref('QRIS Instan')
+const selectedEwallet = ref('GoPay')
+const selectedBank = ref('BCA')
+
+// Data Tagihan & Bukti Pembayaran (Step 2)
+const invoiceId = ref('')
+const countdownSeconds = ref(900)
+let timerInterval = null
+
+const payerName = ref('')
+const ewalletPhone = ref('')
+const proofFileName = ref('')
+const hasConfirmedTransfer = ref(false)
+const copiedVa = ref(false)
+const isVerifying = ref(false)
+
 const checkoutResult = ref(null)
 const checkoutError = ref('')
 
 const paymentMethods = [
-  { id: 'QRIS Instan', label: 'QRIS Instan', desc: 'Scan cepat semua e-wallet & m-banking' },
-  { id: 'GoPay / OVO / DANA', label: 'GoPay / OVO / DANA', desc: 'Pembayaran dompet digital otomatis' },
-  { id: 'Virtual Account Bank', label: 'Virtual Account Bank', desc: 'BCA, BNI, BRI, Mandiri Virtual Account' },
+  { id: 'QRIS Instan', label: 'QRIS Instan', desc: 'Scan QRIS semua e-wallet & m-banking' },
+  { id: 'GoPay / OVO / DANA', label: 'GoPay / OVO / DANA', desc: 'Pilih GoPay, OVO, atau DANA' },
+  { id: 'Virtual Account Bank', label: 'Virtual Account Bank', desc: 'Transfer BCA, BNI, BRI, atau Mandiri VA' },
+]
+
+const ewalletProviders = ['GoPay', 'OVO', 'DANA']
+const bankProviders = [
+  { name: 'BCA', vaNumber: '8801 2026 9000 1124' },
+  { name: 'BNI', vaNumber: '8808 2026 9000 4412' },
+  { name: 'BRI', vaNumber: '8802 2026 9000 7781' },
+  { name: 'Mandiri', vaNumber: '8809 2026 9000 5539' },
 ]
 
 function loadUserData() {
@@ -39,12 +64,27 @@ onMounted(() => {
   loadUserData()
 })
 
+onUnmounted(() => {
+  stopCountdown()
+})
+
 const currentPlanId = computed(() => userStats.value?.premiumPlan || 'free')
 
 const activePlanName = computed(() => {
   if (currentPlanId.value === 'semester') return 'Premium Semesteran'
   if (currentPlanId.value === 'monthly') return 'Premium Pelajar'
   return 'Paket Gratis (Basic)'
+})
+
+const activeVaNumber = computed(() => {
+  const found = bankProviders.find((b) => b.name === selectedBank.value)
+  return found ? found.vaNumber : bankProviders[0].vaNumber
+})
+
+const formattedCountdown = computed(() => {
+  const mins = String(Math.floor(countdownSeconds.value / 60)).padStart(2, '0')
+  const secs = String(countdownSeconds.value % 60).padStart(2, '0')
+  return `${mins}:${secs}`
 })
 
 const plans = [
@@ -107,41 +147,158 @@ const plans = [
   },
 ]
 
+function startCountdown() {
+  stopCountdown()
+  countdownSeconds.value = 900
+  timerInterval = setInterval(() => {
+    if (countdownSeconds.value > 0) {
+      countdownSeconds.value -= 1
+    } else {
+      stopCountdown()
+    }
+  }, 1000)
+}
+
+function stopCountdown() {
+  if (timerInterval) {
+    clearInterval(timerInterval)
+    timerInterval = null
+  }
+}
+
 function openCheckout(plan) {
   if (plan.id === 'free') return
+  stopCountdown()
   selectedPlan.value = plan
-  checkoutStep.value = 'form'
+  checkoutStep.value = 'select_method'
   checkoutResult.value = null
   checkoutError.value = ''
+  payerName.value = ''
+  ewalletPhone.value = ''
+  proofFileName.value = ''
+  hasConfirmedTransfer.value = false
+  copiedVa.value = false
+  isVerifying.value = false
   showCheckoutModal.value = true
 }
 
-function handleConfirmPurchase() {
+function closeCheckoutModal() {
+  if (isVerifying.value) return
+  stopCountdown()
+  showCheckoutModal.value = false
+}
+
+function createInvoiceAndProceed() {
   if (!currentUser.value?.email) {
-    checkoutError.value = 'Silakan masuk ke akun EQuest terlebih dahulu sebelum membeli paket Premium.'
+    checkoutError.value = 'Silakan masuk ke akun EQuest terlebih dahulu sebelum membuat tagihan pembayaran.'
+    return
+  }
+  checkoutError.value = ''
+  hasConfirmedTransfer.value = false
+  copiedVa.value = false
+  invoiceId.value = `INV-EQ-${Math.floor(100000 + Math.random() * 900000)}`
+  checkoutStep.value = 'payment'
+  startCountdown()
+}
+
+function handleProofFileChange(event) {
+  const file = event.target.files?.[0]
+  if (file) {
+    proofFileName.value = file.name
+    checkoutError.value = ''
+  }
+}
+
+async function copyVaNumber() {
+  const cleanVa = activeVaNumber.value.replace(/\s+/g, '')
+  try {
+    if (navigator?.clipboard?.writeText) {
+      await navigator.clipboard.writeText(cleanVa)
+    }
+    copiedVa.value = true
+    setTimeout(() => {
+      copiedVa.value = false
+    }, 2000)
+  } catch {
+    copiedVa.value = true
+    setTimeout(() => {
+      copiedVa.value = false
+    }, 2000)
+  }
+}
+
+function handleVerifyPayment() {
+  checkoutError.value = ''
+
+  if (!currentUser.value?.email) {
+    checkoutError.value = 'Silakan masuk ke akun EQuest terlebih dahulu.'
     return
   }
   if (!selectedPlan.value) return
 
-  const res = activatePremiumPlan(
-    currentUser.value.email,
-    selectedPlan.value.id,
-    selectedPayment.value
-  )
+  const cleanPhone = ewalletPhone.value.replace(/\D/g, '')
+  const hasNameOrProof = payerName.value.trim().length >= 2 || Boolean(proofFileName.value)
 
-  if (!res.success) {
-    checkoutError.value = res.message || 'Gagal mengaktifkan paket Premium.'
+  if (selectedPayment.value === 'GoPay / OVO / DANA' && cleanPhone.length < 10) {
+    checkoutError.value =
+      'Kamu harus menyelesaikan pembayaran dan mengisi nomor HP akun e-wallet minimal 10 digit terlebih dahulu!'
     return
   }
 
-  checkoutResult.value = res
+  if (!hasNameOrProof || !hasConfirmedTransfer.value) {
+    checkoutError.value =
+      'Kamu harus menyelesaikan pembayaran dan mengisi data bukti bayar serta mencentang konfirmasi terlebih dahulu!'
+    return
+  }
+
+  let methodDetail = selectedPayment.value
+  let payerSummary = payerName.value.trim() || proofFileName.value
+
+  if (selectedPayment.value === 'GoPay / OVO / DANA') {
+    methodDetail = `${selectedEwallet.value} (${cleanPhone})`
+    payerSummary = payerName.value.trim()
+      ? `${payerName.value.trim()} • ${cleanPhone}`
+      : cleanPhone
+  } else if (selectedPayment.value === 'Virtual Account Bank') {
+    methodDetail = `Virtual Account ${selectedBank.value}`
+  }
+
+  isVerifying.value = true
+  setTimeout(() => {
+    const res = activatePremiumPlan(
+      currentUser.value.email,
+      selectedPlan.value.id,
+      methodDetail,
+      {
+        invoiceId: invoiceId.value,
+        payerInfo: payerSummary,
+      }
+    )
+
+    isVerifying.value = false
+    stopCountdown()
+
+    if (!res.success) {
+      checkoutError.value = res.message || 'Gagal memverifikasi pembayaran.'
+      return
+    }
+
+    checkoutResult.value = res
+    userStats.value = getUserStats(currentUser.value.email)
+    window.dispatchEvent(new Event('equest-stats-updated'))
+    checkoutStep.value = 'success'
+  }, 1200)
+}
+
+function handleCancelPremium() {
+  if (!currentUser.value?.email) return
+  cancelPremiumPlan(currentUser.value.email)
   userStats.value = getUserStats(currentUser.value.email)
   window.dispatchEvent(new Event('equest-stats-updated'))
-  checkoutStep.value = 'success'
 }
 
 function goToBlindBox() {
-  showCheckoutModal.value = false
+  closeCheckoutModal()
   router.push('/blind-box')
 }
 </script>
@@ -187,10 +344,10 @@ function goToBlindBox() {
             </div>
             <p class="mt-0.5 text-xs text-slate-600">
               <template v-if="userStats?.isPremium">
-                Bonus aktif: 2x XP &amp; +1 Tiket Blind Box ekstra di setiap latihan yang selesai{{ userStats?.premiumActivatedAt ? ` • Diaktifkan ${userStats.premiumActivatedAt}` : '' }}.
+                Bonus aktif: 2x XP &amp; +1 Tiket Blind Box ekstra di setiap latihan selesai{{ userStats?.premiumActivatedAt ? ` • Diaktifkan ${userStats.premiumActivatedAt}` : '' }}.
               </template>
               <template v-else>
-                Aktifkan paket Premium untuk langsung mendapatkan Tiket Mystery Blind Box, XP tambahan, dan fitur belajar tanpa batas.
+                Pilih paket dan selesaikan pembayaran untuk mengaktifkan Premium serta klaim bonus Tiket Mystery Blind Box.
               </template>
             </p>
           </div>
@@ -200,6 +357,14 @@ function goToBlindBox() {
           <div class="rounded-xl border border-purple-200 bg-purple-50 px-3.5 py-1.5 text-xs font-medium text-purple-800">
             Tiket Blind Box: <span class="font-semibold">{{ userStats?.tickets ?? 0 }} Tiket</span>
           </div>
+          <button
+            v-if="userStats?.isPremium"
+            type="button"
+            @click="handleCancelPremium"
+            class="rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50 cursor-pointer"
+          >
+            Batalkan / Reset ke Paket Gratis
+          </button>
           <RouterLink
             to="/blind-box"
             class="rounded-xl bg-purple-600 px-3.5 py-1.5 text-xs font-medium text-white shadow-2xs transition hover:bg-purple-700"
@@ -213,13 +378,13 @@ function goToBlindBox() {
       <section class="rounded-2xl border border-[#C5E4FA] bg-white p-6 shadow-2xs sm:p-8">
         <div class="max-w-2xl space-y-2.5">
           <span class="inline-flex items-center gap-1.5 rounded-full bg-purple-100 px-3.5 py-1 text-xs font-medium text-purple-700">
-            EQuest Premium Aktif
+            EQuest Premium
           </span>
           <h1 class="text-xl font-semibold text-[#0A2540] sm:text-2xl">
             Belajar Tanpa Batas Kuota &amp; Raih Tiket Blind Box Instan
           </h1>
           <p class="text-xs leading-relaxed text-slate-600 sm:text-sm">
-            Pilih paket EQuest Premium untuk mengunggah soal sepuasnya, menikmati bonus 2x XP setiap selesai latihan, serta langsung mendapatkan tambahan Tiket Mystery Blind Box di akunmu.
+            Pilih paket EQuest Premium, selesaikan pembayaran melalui QRIS, E-Wallet, atau Virtual Account Bank, lalu nikmati bonus 2x XP serta tambahan Tiket Mystery Blind Box di akunmu.
           </p>
         </div>
       </section>
@@ -327,10 +492,10 @@ function goToBlindBox() {
                 "
               >
                 <span v-if="currentPlanId === plan.id">
-                  Beli Lagi / Tambah +{{ plan.bonusTickets }} Tiket
+                  Perpanjang / Beli Lagi (+{{ plan.bonusTickets }} Tiket)
                 </span>
                 <span v-else>
-                  Beli &amp; Aktifkan (+{{ plan.bonusTickets }} Tiket)
+                  Pilih Paket &amp; Lanjut Bayar
                 </span>
               </button>
             </template>
@@ -351,53 +516,75 @@ function goToBlindBox() {
       </section>
     </main>
 
-    <!-- Modal Pembayaran & Klaim Tiket Premium -->
+    <!-- Modal Pembayaran Multi-Langkah -->
     <div
       v-if="showCheckoutModal && selectedPlan"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4 backdrop-blur-xs"
-      @click="showCheckoutModal = false"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs"
+      @click="closeCheckoutModal"
     >
       <div
-        class="w-full max-w-md rounded-2xl border border-purple-100 bg-white p-6 shadow-2xl space-y-4"
+        class="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-purple-100 bg-white p-6 shadow-2xl space-y-4"
         @click.stop
       >
-        <!-- Step 1: Konfirmasi Pembelian -->
-        <template v-if="checkoutStep === 'form'">
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <span class="rounded-full bg-purple-100 px-3 py-0.5 text-[11px] font-medium text-purple-700">
-                Aktivasi Langganan
-              </span>
-              <h3 class="mt-2 text-lg font-semibold text-[#0A2540]">
-                {{ selectedPlan.name }}
-              </h3>
-            </div>
-            <button
-              type="button"
-              @click="showCheckoutModal = false"
-              class="flex h-8 w-8 items-center justify-center rounded-lg text-sm text-slate-400 hover:bg-slate-100 hover:text-slate-700 cursor-pointer"
+        <!-- Indikator Langkah Pembayaran -->
+        <div v-if="checkoutStep !== 'success'" class="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
+          <div class="flex items-center gap-2 text-xs font-medium">
+            <span
+              class="flex h-6 w-6 items-center justify-center rounded-full text-[11px]"
+              :class="checkoutStep === 'select_method' ? 'bg-purple-600 text-white' : 'bg-emerald-100 text-emerald-700'"
             >
-              ✕
-            </button>
+              {{ checkoutStep === 'select_method' ? '1' : '✓' }}
+            </span>
+            <span :class="checkoutStep === 'select_method' ? 'text-[#0A2540] font-semibold' : 'text-slate-500'">
+              Pilih Metode
+            </span>
+            <span class="text-slate-300">→</span>
+            <span
+              class="flex h-6 w-6 items-center justify-center rounded-full text-[11px]"
+              :class="checkoutStep === 'payment' ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-500'"
+            >
+              2
+            </span>
+            <span :class="checkoutStep === 'payment' ? 'text-[#0A2540] font-semibold' : 'text-slate-500'">
+              Bayar &amp; Verifikasi
+            </span>
           </div>
 
-          <!-- Ringkasan Harga & Bonus Tiket -->
+          <button
+            type="button"
+            @click="closeCheckoutModal"
+            class="flex h-7 w-7 items-center justify-center rounded-lg text-sm text-slate-400 hover:bg-slate-100 hover:text-slate-700 cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+
+        <!-- STEP 1: PILIH METODE PEMBAYARAN -->
+        <template v-if="checkoutStep === 'select_method'">
+          <div>
+            <span class="rounded-full bg-purple-100 px-3 py-0.5 text-[11px] font-medium text-purple-700">
+              Rincian Pesanan
+            </span>
+            <h3 class="mt-2 text-lg font-semibold text-[#0A2540]">
+              {{ selectedPlan.name }}
+            </h3>
+          </div>
+
           <div class="rounded-xl border border-purple-200 bg-purple-50/80 p-4 space-y-2">
             <div class="flex items-center justify-between text-xs text-slate-600">
-              <span>Total Pembayaran</span>
+              <span>Nominal Tagihan</span>
               <span class="text-base font-semibold text-[#0A2540]">
                 {{ selectedPlan.price }} <span class="text-xs font-normal text-slate-500">{{ selectedPlan.period }}</span>
               </span>
             </div>
             <div class="flex items-center justify-between border-t border-purple-200/70 pt-2 text-xs">
-              <span class="text-purple-900 font-medium">Bonus Langsung Saat Beli</span>
+              <span class="font-medium text-purple-900">Bonus Setelah Pembayaran Lunas</span>
               <span class="rounded-full bg-purple-600 px-2.5 py-0.5 text-[11px] font-medium text-white">
                 +{{ selectedPlan.bonusTickets }} Tiket &amp; +{{ selectedPlan.bonusXp }} XP
               </span>
             </div>
           </div>
 
-          <!-- Pilih Metode Pembayaran -->
           <div class="space-y-2">
             <p class="text-xs font-medium text-slate-600">Pilih Metode Pembayaran</p>
             <div class="space-y-2">
@@ -431,6 +618,48 @@ function goToBlindBox() {
             </div>
           </div>
 
+          <!-- Pilihan Provider Jika E-Wallet -->
+          <div v-if="selectedPayment === 'GoPay / OVO / DANA'" class="space-y-1.5">
+            <p class="text-xs font-medium text-slate-600">Pilih Dompet Digital</p>
+            <div class="grid grid-cols-3 gap-2">
+              <button
+                v-for="ew in ewalletProviders"
+                :key="ew"
+                type="button"
+                @click="selectedEwallet = ew"
+                class="rounded-xl border py-2 text-xs font-medium transition cursor-pointer"
+                :class="
+                  selectedEwallet === ew
+                    ? 'border-purple-600 bg-purple-600 text-white'
+                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                "
+              >
+                {{ ew }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Pilihan Bank Jika Virtual Account -->
+          <div v-if="selectedPayment === 'Virtual Account Bank'" class="space-y-1.5">
+            <p class="text-xs font-medium text-slate-600">Pilih Bank Tujuan</p>
+            <div class="grid grid-cols-4 gap-2">
+              <button
+                v-for="bank in bankProviders"
+                :key="bank.name"
+                type="button"
+                @click="selectedBank = bank.name"
+                class="rounded-xl border py-2 text-xs font-medium transition cursor-pointer"
+                :class="
+                  selectedBank === bank.name
+                    ? 'border-purple-600 bg-purple-600 text-white'
+                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                "
+              >
+                {{ bank.name }}
+              </button>
+            </div>
+          </div>
+
           <div
             v-if="checkoutError"
             class="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs text-rose-700"
@@ -442,21 +671,21 @@ function goToBlindBox() {
             <button
               v-if="currentUser"
               type="button"
-              @click="handleConfirmPurchase"
+              @click="createInvoiceAndProceed"
               class="w-full rounded-xl bg-purple-600 py-2.5 text-xs font-medium text-white shadow-sm transition hover:bg-purple-700 cursor-pointer"
             >
-              Bayar &amp; Klaim +{{ selectedPlan.bonusTickets }} Tiket Sekarang
+              Buat Tagihan Pembayaran →
             </button>
             <RouterLink
               v-else
               to="/login"
               class="block w-full rounded-xl bg-[#2D6BE4] py-2.5 text-center text-xs font-medium text-white shadow-sm transition hover:bg-blue-700"
             >
-              Masuk Akun untuk Membeli Premium
+              Masuk Akun untuk Melanjutkan Pembayaran
             </RouterLink>
             <button
               type="button"
-              @click="showCheckoutModal = false"
+              @click="closeCheckoutModal"
               class="w-full rounded-xl border border-slate-200 py-2 text-xs font-medium text-slate-600 transition hover:bg-slate-50 cursor-pointer"
             >
               Batal
@@ -464,7 +693,217 @@ function goToBlindBox() {
           </div>
         </template>
 
-        <!-- Step 2: Berhasil Aktif & Dapat Tiket -->
+        <!-- STEP 2: INSTRUKSI TAGIHAN, BAYAR & VERIFIKASI -->
+        <template v-else-if="checkoutStep === 'payment'">
+          <!-- Header Tagihan & Countdown -->
+          <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-purple-200 bg-purple-50/70 px-4 py-3">
+            <div>
+              <p class="text-[11px] text-slate-500">Nomor Tagihan: <span class="font-semibold text-[#0A2540]">{{ invoiceId }}</span></p>
+              <p class="text-sm font-semibold text-[#0A2540]">
+                Total Bayar: {{ selectedPlan.price }}
+              </p>
+            </div>
+            <div class="text-right">
+              <p class="text-[11px] text-slate-500">Batas Waktu Bayar</p>
+              <p class="font-mono text-sm font-semibold text-purple-700">
+                {{ formattedCountdown }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Instruksi Spesifik QRIS -->
+          <div
+            v-if="selectedPayment === 'QRIS Instan'"
+            class="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 text-center space-y-2.5"
+          >
+            <div class="flex items-center justify-between text-xs">
+              <span class="rounded-md bg-[#0A2540] px-2 py-0.5 text-[10px] font-semibold text-white">QRIS</span>
+              <span class="text-[11px] font-medium text-slate-600">EQUEST EDU INDONESIA</span>
+            </div>
+            <p class="text-[11px] text-slate-500">NMID: ID102600091827</p>
+
+            <!-- Kode QR SVG -->
+            <div class="mx-auto flex h-40 w-40 items-center justify-center rounded-xl border border-slate-200 bg-white p-2.5 shadow-2xs">
+              <svg viewBox="0 0 100 100" class="h-full w-full text-[#0A2540]" fill="currentColor">
+                <rect x="6" y="6" width="26" height="26" rx="3" fill="none" stroke="currentColor" stroke-width="5" />
+                <rect x="13" y="13" width="12" height="12" rx="1" />
+                <rect x="68" y="6" width="26" height="26" rx="3" fill="none" stroke="currentColor" stroke-width="5" />
+                <rect x="75" y="13" width="12" height="12" rx="1" />
+                <rect x="6" y="68" width="26" height="26" rx="3" fill="none" stroke="currentColor" stroke-width="5" />
+                <rect x="13" y="75" width="12" height="12" rx="1" />
+                <rect x="40" y="8" width="6" height="6" />
+                <rect x="52" y="8" width="8" height="6" />
+                <rect x="40" y="20" width="8" height="8" />
+                <rect x="54" y="20" width="6" height="12" />
+                <rect x="8" y="40" width="8" height="6" />
+                <rect x="22" y="40" width="10" height="8" />
+                <rect x="38" y="38" width="10" height="10" />
+                <rect x="54" y="38" width="8" height="6" />
+                <rect x="68" y="40" width="10" height="8" />
+                <rect x="84" y="40" width="10" height="6" />
+                <rect x="8" y="54" width="12" height="6" />
+                <rect x="26" y="54" width="6" height="8" />
+                <rect x="40" y="54" width="8" height="10" />
+                <rect x="54" y="52" width="12" height="8" />
+                <rect x="74" y="54" width="6" height="10" />
+                <rect x="86" y="54" width="8" height="8" />
+                <rect x="40" y="70" width="6" height="8" />
+                <rect x="52" y="70" width="10" height="6" />
+                <rect x="68" y="68" width="8" height="8" />
+                <rect x="82" y="68" width="12" height="8" />
+                <rect x="40" y="84" width="10" height="10" />
+                <rect x="58" y="82" width="8" height="12" />
+                <rect x="72" y="82" width="10" height="12" />
+                <rect x="86" y="84" width="8" height="10" />
+              </svg>
+            </div>
+            <p class="text-[11px] text-slate-600">
+              Scan QRIS di atas dengan aplikasi GoPay, OVO, DANA, ShopeePay, atau Mobile Banking sesuai nominal <strong>{{ selectedPlan.price }}</strong>.
+            </p>
+          </div>
+
+          <!-- Instruksi Spesifik E-Wallet -->
+          <div
+            v-else-if="selectedPayment === 'GoPay / OVO / DANA'"
+            class="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 space-y-3"
+          >
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-[#0A2540]">Pembayaran via {{ selectedEwallet }}</span>
+              <span class="rounded-full bg-purple-100 px-2.5 py-0.5 text-[11px] font-medium text-purple-700">
+                {{ selectedEwallet }}
+              </span>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-600">
+                Nomor HP Terdaftar di {{ selectedEwallet }} <span class="text-rose-500">*</span>
+              </label>
+              <input
+                v-model="ewalletPhone"
+                type="tel"
+                placeholder="Contoh: 081234567890"
+                class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-[#0A2540] outline-none focus:border-purple-500"
+              />
+            </div>
+          </div>
+
+          <!-- Instruksi Spesifik Virtual Account Bank -->
+          <div
+            v-else
+            class="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 space-y-2.5"
+          >
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-[#0A2540]">Virtual Account {{ selectedBank }}</span>
+              <span class="rounded-full bg-blue-100 px-2.5 py-0.5 text-[11px] font-medium text-[#2D6BE4]">
+                a.n. EQuest Edu Indonesia
+              </span>
+            </div>
+            <div class="flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5">
+              <span class="font-mono text-sm font-semibold text-[#0A2540]">
+                {{ activeVaNumber }}
+              </span>
+              <button
+                type="button"
+                @click="copyVaNumber"
+                class="rounded-lg bg-purple-100 px-2.5 py-1 text-[11px] font-medium text-purple-700 transition hover:bg-purple-200 cursor-pointer"
+              >
+                {{ copiedVa ? '✓ Tersalin' : 'Salin Nomor VA' }}
+              </button>
+            </div>
+            <p class="text-[11px] text-slate-500">
+              Transfer tepat sebesar <strong>{{ selectedPlan.price }}</strong> melalui ATM / Mobile Banking {{ selectedBank }} ke nomor VA di atas.
+            </p>
+          </div>
+
+          <!-- Bukti / Referensi Pembayaran -->
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-600">
+                {{
+                  selectedPayment === 'QRIS Instan'
+                    ? 'Nama Pengirim / Nomor Referensi QRIS'
+                    : selectedPayment === 'GoPay / OVO / DANA'
+                      ? 'Nama Pemilik Akun / Catatan Transaksi'
+                      : 'Nama Pemilik Rekening Pengirim'
+                }}
+                <span class="text-rose-500">*</span>
+              </label>
+              <input
+                v-model="payerName"
+                type="text"
+                placeholder="Contoh: Diva Novaliza / Ref #8821"
+                class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-[#0A2540] outline-none focus:border-purple-500"
+              />
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-600">
+                Unggah Bukti Pembayaran (Opsional / Screenshot)
+              </label>
+              <label class="mt-1.5 flex cursor-pointer items-center justify-between rounded-xl border border-dashed border-purple-300 bg-purple-50/40 px-3.5 py-2 text-xs text-slate-600 hover:bg-purple-50">
+                <span class="truncate">
+                  {{ proofFileName || 'Pilih file gambar / screenshot bukti transfer...' }}
+                </span>
+                <span class="ml-2 shrink-0 rounded-lg bg-white px-2.5 py-1 text-[11px] font-medium text-purple-700 border border-purple-200">
+                  Pilih File
+                </span>
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  class="hidden"
+                  @change="handleProofFileChange"
+                />
+              </label>
+            </div>
+
+            <label class="flex items-start gap-2.5 rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-xs text-[#0A2540] cursor-pointer">
+              <input
+                v-model="hasConfirmedTransfer"
+                type="checkbox"
+                class="mt-0.5 h-4 w-4 rounded border-slate-300 accent-purple-600"
+              />
+              <span>
+                {{
+                  selectedPayment === 'QRIS Instan'
+                    ? 'Saya sudah scan QRIS dan menyelesaikan pembayaran sesuai nominal tagihan.'
+                    : selectedPayment === 'GoPay / OVO / DANA'
+                      ? 'Saya menyetujui pendebitan saldo e-wallet sesuai nominal tagihan di atas.'
+                      : 'Saya sudah mentransfer sesuai nominal ke Nomor Virtual Account di atas.'
+                }}
+              </span>
+            </label>
+          </div>
+
+          <div
+            v-if="checkoutError"
+            class="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs text-rose-700"
+          >
+            {{ checkoutError }}
+          </div>
+
+          <div class="flex flex-col gap-2 pt-1">
+            <button
+              type="button"
+              :disabled="isVerifying"
+              @click="handleVerifyPayment"
+              class="flex w-full items-center justify-center gap-2 rounded-xl bg-purple-600 py-2.5 text-xs font-medium text-white shadow-sm transition hover:bg-purple-700 disabled:opacity-60 cursor-pointer"
+            >
+              <span v-if="isVerifying" class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+              <span>
+                {{ isVerifying ? 'Memverifikasi pembayaran dengan sistem...' : 'Konfirmasi & Verifikasi Pembayaran' }}
+              </span>
+            </button>
+            <button
+              type="button"
+              :disabled="isVerifying"
+              @click="checkoutStep = 'select_method'; checkoutError = ''"
+              class="w-full rounded-xl border border-slate-200 py-2 text-xs font-medium text-slate-600 transition hover:bg-slate-50 cursor-pointer"
+            >
+              ← Ubah Metode Pembayaran
+            </button>
+          </div>
+        </template>
+
+        <!-- STEP 3: PEMBAYARAN TERVERIFIKASI & PAKET AKTIF -->
         <template v-else>
           <div class="text-center space-y-3">
             <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-100 text-purple-700">
@@ -474,10 +913,10 @@ function goToBlindBox() {
             </div>
 
             <h3 class="text-lg font-semibold text-[#0A2540]">
-              {{ checkoutResult?.planName }} Berhasil Aktif!
+              Pembayaran Terverifikasi &amp; {{ checkoutResult?.planName }} Aktif!
             </h3>
             <p class="text-xs leading-relaxed text-slate-600">
-              Pembayaran via <strong>{{ checkoutResult?.paymentMethod }}</strong> berhasil diproses. Keuntungan Premium kini langsung aktif di akunmu.
+              Tagihan <strong>{{ checkoutResult?.invoiceId }}</strong> melalui <strong>{{ checkoutResult?.paymentMethod }}</strong> ({{ checkoutResult?.payerInfo }}) berhasil diverifikasi.
             </p>
 
             <div class="grid grid-cols-2 gap-2.5 rounded-xl border border-purple-200 bg-purple-50/70 p-3.5 text-center">
@@ -510,7 +949,7 @@ function goToBlindBox() {
               </button>
               <button
                 type="button"
-                @click="showCheckoutModal = false"
+                @click="closeCheckoutModal"
                 class="w-full rounded-xl border border-slate-200 py-2 text-xs font-medium text-slate-600 transition hover:bg-slate-50 cursor-pointer"
               >
                 Selesai

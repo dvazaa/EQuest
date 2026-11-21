@@ -915,7 +915,12 @@ export const PREMIUM_PLANS = {
   },
 }
 
-export function activatePremiumPlan(email, planId, paymentMethod = 'QRIS Instan') {
+export function activatePremiumPlan(
+  email,
+  planId,
+  paymentMethod = 'QRIS Instan',
+  paymentDetails = {}
+) {
   if (!email) {
     return { success: false, message: 'Silakan masuk terlebih dahulu untuk mengaktifkan Premium.' }
   }
@@ -929,6 +934,9 @@ export function activatePremiumPlan(email, planId, paymentMethod = 'QRIS Instan'
   stats.isPremium = true
   stats.premiumActivatedAt = new Date().toLocaleDateString('id-ID')
   stats.premiumPaymentMethod = paymentMethod
+  stats.lastPremiumBonusTickets = planMeta.bonusTickets
+  stats.premiumInvoice = paymentDetails.invoiceId || null
+  stats.premiumPayerInfo = paymentDetails.payerInfo || null
   stats.tickets = (stats.tickets || 0) + planMeta.bonusTickets
   stats.xp = (stats.xp || 0) + planMeta.bonusXp
   stats.xpMonth = (stats.xpMonth || 0) + planMeta.bonusXp
@@ -936,10 +944,11 @@ export function activatePremiumPlan(email, planId, paymentMethod = 'QRIS Instan'
 
   saveUserStats(email, stats)
 
+  const invoiceInfo = paymentDetails.invoiceId ? ` (${paymentDetails.invoiceId})` : ''
   addHistoryItem(email, {
     type: 'badge',
     title: `Aktivasi ${planMeta.name}`,
-    subtitle: `Metode: ${paymentMethod} | Bonus +${planMeta.bonusTickets} Tiket Blind Box & +${planMeta.bonusXp} XP`,
+    subtitle: `Metode: ${paymentMethod}${invoiceInfo} | Bonus +${planMeta.bonusTickets} Tiket Blind Box & +${planMeta.bonusXp} XP`,
     badgeText: `+${planMeta.bonusTickets} Tiket`,
     badgeClass: 'bg-purple-100 text-purple-700',
     hasAction: false,
@@ -954,6 +963,31 @@ export function activatePremiumPlan(email, planId, paymentMethod = 'QRIS Instan'
     totalTickets: stats.tickets,
     totalXp: stats.xp,
     paymentMethod,
+    invoiceId: stats.premiumInvoice,
+    payerInfo: stats.premiumPayerInfo,
+  }
+}
+
+export function cancelPremiumPlan(email) {
+  if (!email) {
+    return { success: false, message: 'Akun tidak ditemukan.' }
+  }
+  const stats = getUserStats(email)
+  const deductedTickets = Number(stats.lastPremiumBonusTickets) || 0
+  stats.tickets = Math.max(0, (stats.tickets || 0) - deductedTickets)
+  stats.premiumPlan = 'free'
+  stats.isPremium = false
+  stats.premiumActivatedAt = null
+  stats.premiumPaymentMethod = null
+  stats.lastPremiumBonusTickets = 0
+  stats.premiumInvoice = null
+  stats.premiumPayerInfo = null
+
+  saveUserStats(email, stats)
+
+  return {
+    success: true,
+    tickets: stats.tickets,
   }
 }
 
