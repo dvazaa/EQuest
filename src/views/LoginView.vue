@@ -80,9 +80,23 @@ function handlePasswordResetSuccess(data) {
 
     <!-- Logo -->
     <div class="mb-8">
-      <RouterLink to="/" class="inline-flex items-center gap-3">
-        <span class="text-5xl">📚</span>
-        <span class="text-4xl font-extrabold text-blue-950">EQuest</span>
+      <RouterLink to="/" class="inline-flex items-center gap-3.5 group">
+        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#2D6BE4] to-[#1E40AF] text-white shadow-md shadow-blue-500/20 transition-transform group-hover:scale-105">
+          <svg
+            class="h-6 w-6"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M2 6.5A2.5 2.5 0 0 1 4.5 4H11a2 2 0 0 1 2 2v14a1.5 1.5 0 0 0-1.5-1.5H4.5A2.5 2.5 0 0 1 2 16V6.5Z" />
+            <path d="M22 6.5A2.5 2.5 0 0 0 19.5 4H13a2 2 0 0 0-2 2v14a1.5 1.5 0 0 1 1.5-1.5h7A2.5 2.5 0 0 0 22 16V6.5Z" />
+            <path d="M18 3l.7 1.3L20 5l-1.3.7L18 7l-.7-1.3L16 5l1.3-.7L18 3Z" fill="currentColor" stroke="none" />
+          </svg>
+        </div>
+        <span class="text-3xl font-black tracking-tight text-blue-950 sm:text-4xl">EQuest</span>
       </RouterLink>
     </div>
 

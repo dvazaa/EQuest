@@ -51,6 +51,8 @@ export function getCurrentUser() {
 export function setCurrentUser(user) {
   writeStorage('equestUser', user)
   if (user?.email) {
+    // Deteksi & perbarui streak login harian secara otomatis
+    checkAndUpdateDailyStreak(user.email)
     // Sinkronkan cadangan data akun ke server secara otomatis
     syncAccountToServer(user.email)
   }
@@ -394,6 +396,267 @@ export function unlockBadge(email, badgeId) {
   const stats = getUserStats(email)
   saveUserStats(email, stats)
   return true
+}
+
+// ============================================================================
+// SISTEM DETEKSI STREAK HARIAN BEDA HARI & PENGINGAT OTOMATIS
+// ============================================================================
+export function getLocalDateKey(date = new Date()) {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+export function checkAndUpdateDailyStreak(email) {
+  if (!email) {
+    return {
+      streak: 0,
+      increasedToday: false,
+      startedToday: false,
+      title: 'Mulai Streak Belajarmu!',
+      message: 'Login setiap hari untuk menambah streak harianmu.',
+    }
+  }
+
+  const today = getLocalDateKey()
+  const key = getStatsKey(email)
+  let stats = readStorage(key, null)
+  if (!stats) {
+    stats = initNewUserStats(email)
+  }
+
+  // Kasus 1: Akun sudah pernah punya streak (>= 1) dari hari sebelumnya (belum ada lastLoginDate atau lastLoginDate !== today)
+  if (
+    (stats.streak >= 1 && !stats.lastLoginDate && !isDemoAccount(email)) ||
+    (stats.lastLoginDate && stats.lastLoginDate !== today)
+  ) {
+    const prevStreak = Number(stats.streak) || 1
+    stats.streak = prevStreak + 1
+    stats.previousStreak = prevStreak
+    stats.lastLoginDate = today
+    stats.streakIncreasedDate = today
+    stats.activityMonth = (stats.activityMonth || 0) + 1
+
+    if (!Array.isArray(stats.loginDates)) stats.loginDates = []
+    if (!stats.loginDates.includes(today)) stats.loginDates.push(today)
+
+    saveUserStats(email, stats)
+
+    const timeStr = new Date().toLocaleTimeString('id-ID', {
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+    addHistoryItem(email, {
+      type: 'badge',
+      title: `🔥 Streak Bertambah: Hari ke-${stats.streak}!`,
+      subtitle: `Login di hari berbeda (${prevStreak} -> ${stats.streak} hari) | ${timeStr}`,
+      badgeText: `${stats.streak} Hari`,
+      badgeClass: 'bg-amber-100 text-amber-800',
+      hasAction: false,
+    })
+
+    return {
+      streak: stats.streak,
+      previousStreak: prevStreak,
+      increasedToday: true,
+      startedToday: false,
+      lastLoginDate: today,
+      title: `🔥 Streak Bertambah Jadi ${stats.streak} Hari!`,
+      message: `Selamat! Karena kamu login kembali di hari yang baru, streak belajarmu bertambah +1 (dari ${prevStreak} hari menjadi ${stats.streak} hari). Pertahankan login besok agar naik ke hari ke-${stats.streak + 1}!`,
+    }
+  }
+
+  // Kasus 2: Akun baru login hari pertama (streak masih 0 dan belum tercatat hari ini)
+  if ((stats.streak || 0) === 0 && !stats.lastLoginDate) {
+    stats.streak = 1
+    stats.previousStreak = 0
+    stats.lastLoginDate = today
+    stats.streakStartedDate = today
+    stats.loginDates = [today]
+    saveUserStats(email, stats)
+
+    return {
+      streak: 1,
+      previousStreak: 0,
+      increasedToday: false,
+      startedToday: true,
+      lastLoginDate: today,
+      title: '🔥 Streak Hari ke-1 Dimulai!',
+      message:
+        'Streak hari pertamamu (1 Hari) sudah aktif! Login kembali besok di hari yang berbeda agar streak-mu bertambah menjadi 2 Hari.',
+    }
+  }
+
+  // Kasus 3: Akun demo yang pertama kali dicek hari ini
+  if (isDemoAccount(email) && !stats.lastLoginDate) {
+    stats.lastLoginDate = today
+    saveUserStats(email, stats)
+  }
+
+  // Kasus 4: Sudah tercatat untuk hari ini
+  const wasIncreasedToday = stats.streakIncreasedDate === today
+  const wasStartedToday = stats.streakStartedDate === today
+
+  return {
+    streak: stats.streak || 1,
+    previousStreak: stats.previousStreak ?? Math.max(0, (stats.streak || 1) - 1),
+    increasedToday: wasIncreasedToday,
+    startedToday: wasStartedToday,
+    lastLoginDate: stats.lastLoginDate || today,
+    title: wasIncreasedToday
+      ? `🔥 Streak Hari ke-${stats.streak} Tercatat!`
+      : `🔥 Streak Aktif: ${stats.streak || 1} Hari`,
+    message: wasIncreasedToday
+      ? `Kamu sudah login di hari yang berbeda dan streak-mu naik menjadi ${stats.streak} hari! Jangan lupa login lagi besok untuk mencapai ${stats.streak + 1} hari.`
+      : `Streak hari ini (${stats.streak || 1} hari) sudah tercatat. Login lagi besok di hari berikutnya untuk menambah +1 hari streak!`,
+  }
+}
+
+export function simulateNextDayStreak(email) {
+  if (!email) return null
+  const key = getStatsKey(email)
+  const stats = readStorage(key, null) || initNewUserStats(email)
+  const yesterday = new Date()
+  yesterday.setDate(yesterday.getDate() - 1)
+  stats.lastLoginDate = getLocalDateKey(yesterday)
+  writeStorage(key, stats)
+  return checkAndUpdateDailyStreak(email)
+}
+
+// ============================================================================
+// SISTEM PERINGKAT (LEADERBOARD) UNTUK SETIAP USER
+// ============================================================================
+const COMMUNITY_PEERS = [
+  {
+    name: 'Nadia Putri',
+    email: 'nadia.putri@student.ac.id',
+    xp: 280,
+    streak: 9,
+    soalSelesai: 32,
+  },
+  {
+    name: 'Rizky Pratama',
+    email: 'rizky.pratama@student.ac.id',
+    xp: 190,
+    streak: 6,
+    soalSelesai: 20,
+  },
+  {
+    name: 'Alya Zahra',
+    email: 'alya.zahra@student.ac.id',
+    xp: 120,
+    streak: 4,
+    soalSelesai: 14,
+  },
+  {
+    name: 'Farhan Akbar',
+    email: 'farhan.akbar@student.ac.id',
+    xp: 60,
+    streak: 2,
+    soalSelesai: 6,
+  },
+  {
+    name: 'Salsabila',
+    email: 'salsabila@student.ac.id',
+    xp: 30,
+    streak: 1,
+    soalSelesai: 3,
+  },
+]
+
+export function getRankTier(xp = 0) {
+  if (xp >= 400) {
+    return {
+      label: 'Grandmaster',
+      badgeClass: 'bg-purple-100 text-purple-800 border-purple-200',
+    }
+  }
+  if (xp >= 250) {
+    return {
+      label: 'Master Scholar',
+      badgeClass: 'bg-amber-100 text-amber-800 border-amber-200',
+    }
+  }
+  if (xp >= 100) {
+    return {
+      label: 'Pejuang Aktif',
+      badgeClass: 'bg-blue-100 text-blue-800 border-blue-200',
+    }
+  }
+  if (xp >= 30) {
+    return {
+      label: 'Pelajar Tekun',
+      badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    }
+  }
+  return {
+    label: 'Pemula',
+    badgeClass: 'bg-slate-100 text-slate-700 border-slate-200',
+  }
+}
+
+export function getLeaderboard(currentUserEmail = '') {
+  const normalizedCurrent = (currentUserEmail || '').trim().toLowerCase()
+  const registeredUsers = getAllUsers()
+  const entriesMap = new Map()
+
+  // 1. Masukkan semua akun nyata yang terdaftar di aplikasi beserta statistik aslinya
+  registeredUsers.forEach((u) => {
+    const email = (u.email || '').trim().toLowerCase()
+    if (!email) return
+    const st = getUserStats(email)
+    entriesMap.set(email, {
+      name: u.name || email.split('@')[0],
+      email,
+      xp: Number(st.xp) || 0,
+      streak: Number(st.streak) || 0,
+      soalSelesai: Number(st.soalSelesai) || 0,
+      isCurrentUser: email === normalizedCurrent,
+    })
+  })
+
+  // 2. Pastikan pengguna yang sedang login selalu masuk dengan data terbarunya
+  if (normalizedCurrent && !entriesMap.has(normalizedCurrent)) {
+    const currentObj = getCurrentUser()
+    const st = getUserStats(normalizedCurrent)
+    entriesMap.set(normalizedCurrent, {
+      name: currentObj?.name || normalizedCurrent.split('@')[0],
+      email: normalizedCurrent,
+      xp: Number(st.xp) || 0,
+      streak: Number(st.streak) || 0,
+      soalSelesai: Number(st.soalSelesai) || 0,
+      isCurrentUser: true,
+    })
+  }
+
+  // 3. Tambahkan rekan pelajar komunitas agar papan peringkat selalu hidup
+  COMMUNITY_PEERS.forEach((peer) => {
+    const email = peer.email.toLowerCase()
+    if (!entriesMap.has(email)) {
+      entriesMap.set(email, {
+        ...peer,
+        isCurrentUser: email === normalizedCurrent,
+      })
+    }
+  })
+
+  // 4. Urutkan berdasarkan XP tertinggi -> Soal Selesai -> Hari Streak
+  const sorted = Array.from(entriesMap.values()).sort((a, b) => {
+    if (b.xp !== a.xp) return b.xp - a.xp
+    if (b.soalSelesai !== a.soalSelesai) return b.soalSelesai - a.soalSelesai
+    return b.streak - a.streak
+  })
+
+  return sorted.map((item, idx) => {
+    const tier = getRankTier(item.xp)
+    return {
+      ...item,
+      rank: idx + 1,
+      tierLabel: tier.label,
+      tierClass: tier.badgeClass,
+    }
+  })
 }
 
 // Pencatatan penyelesaian tugas secara utuh (Update Soal Selesai, Streak, XP, Tiket, Badge, & Riwayat)
