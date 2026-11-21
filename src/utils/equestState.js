@@ -179,7 +179,15 @@ export const DEFAULT_BADGES = [
     id: 'first_step',
     name: 'First Step',
     iconImage: 'badge_1.png',
-    desc: 'Selesaikan 1 Latihan',
+    desc: 'Selesaikan 1 latihan pertama',
+    unlocked: false,
+    unlockedAt: null,
+  },
+  {
+    id: 'task_explorer',
+    name: 'Task Explorer',
+    iconImage: 'badge_1.png',
+    desc: 'Selesaikan 10 latihan tugas',
     unlocked: false,
     unlockedAt: null,
   },
@@ -192,18 +200,26 @@ export const DEFAULT_BADGES = [
     unlockedAt: null,
   },
   {
-    id: 'problem_solver',
-    name: 'Problem Solver',
-    iconImage: 'badge_3.png',
-    desc: 'Selesaikan 50 soal',
+    id: 'streak_30',
+    name: '30 Days Consistency',
+    iconImage: 'badge_2.png',
+    desc: 'Pertahankan streak belajar 30 hari berturut-turut',
     unlocked: false,
     unlockedAt: null,
   },
   {
-    id: 'curious_mind',
-    name: 'Curious Mind',
-    iconImage: 'badge_4.png',
-    desc: 'Unggah 50 file untuk dipelajari',
+    id: 'streak_100',
+    name: '100 Days Unstoppable',
+    iconImage: 'badge_2.png',
+    desc: 'Capai streak belajar 100 hari berturut-turut',
+    unlocked: false,
+    unlockedAt: null,
+  },
+  {
+    id: 'problem_solver',
+    name: 'Problem Solver',
+    iconImage: 'badge_3.png',
+    desc: 'Selesaikan 50 soal dengan benar',
     unlocked: false,
     unlockedAt: null,
   },
@@ -211,7 +227,47 @@ export const DEFAULT_BADGES = [
     id: 'master_learner',
     name: 'Master Learner',
     iconImage: 'badge_5.png',
-    desc: 'Selesaikan 100 soal',
+    desc: 'Selesaikan 100 soal dengan benar',
+    unlocked: false,
+    unlockedAt: null,
+  },
+  {
+    id: 'grand_scholar',
+    name: 'Grand Scholar',
+    iconImage: 'badge_5.png',
+    desc: 'Selesaikan 250 soal dengan benar',
+    unlocked: false,
+    unlockedAt: null,
+  },
+  {
+    id: 'legend_1000',
+    name: 'EQuest Legend',
+    iconImage: 'badge_5.png',
+    desc: 'Selesaikan 500 soal & raih 2.000 XP',
+    unlocked: false,
+    unlockedAt: null,
+  },
+  {
+    id: 'curious_mind',
+    name: 'Curious Mind',
+    iconImage: 'badge_4.png',
+    desc: 'Unggah 50 file soal untuk dipelajari',
+    unlocked: false,
+    unlockedAt: null,
+  },
+  {
+    id: 'box_hunter',
+    name: 'Blind Box Hunter',
+    iconImage: 'badge_4.png',
+    desc: 'Buka 15 Mystery Blind Box',
+    unlocked: false,
+    unlockedAt: null,
+  },
+  {
+    id: 'figure_collector',
+    name: 'Figure Collector',
+    iconImage: 'badge_3.png',
+    desc: 'Kumpulkan seluruh 3 Figure 3D di Lemari Koleksi',
     unlocked: false,
     unlockedAt: null,
   },
@@ -223,20 +279,36 @@ export function evaluateBadges(stats) {
   const streak = stats.streak ?? 0
   const soalSelesai = stats.soalSelesai ?? 0
   const filesUploaded = stats.filesUploaded ?? 0
+  const openedBoxes = stats.openedBoxes ?? 0
+  const figureCount = Array.isArray(stats.unlockedFigures) ? stats.unlockedFigures.length : 0
+  const xp = stats.xp ?? 0
 
   return DEFAULT_BADGES.map((b) => {
     let isUnlocked = false
     if (b.id === 'first_step') {
       isUnlocked = completedLatihan >= 1 || soalSelesai >= 1
+    } else if (b.id === 'task_explorer') {
+      isUnlocked = completedLatihan >= 10
     } else if (b.id === 'streak_7') {
       isUnlocked = streak >= 7
+    } else if (b.id === 'streak_30') {
+      isUnlocked = streak >= 30
+    } else if (b.id === 'streak_100') {
+      isUnlocked = streak >= 100
     } else if (b.id === 'problem_solver') {
-      // Hanya terbuka jika soalSelesai >= 50! (Jika 45 masih terkunci!)
       isUnlocked = soalSelesai >= 50
-    } else if (b.id === 'curious_mind') {
-      isUnlocked = filesUploaded >= 50
     } else if (b.id === 'master_learner') {
       isUnlocked = soalSelesai >= 100
+    } else if (b.id === 'grand_scholar') {
+      isUnlocked = soalSelesai >= 250
+    } else if (b.id === 'legend_1000') {
+      isUnlocked = soalSelesai >= 500 && xp >= 2000
+    } else if (b.id === 'curious_mind') {
+      isUnlocked = filesUploaded >= 50
+    } else if (b.id === 'box_hunter') {
+      isUnlocked = openedBoxes >= 15
+    } else if (b.id === 'figure_collector') {
+      isUnlocked = figureCount >= 3
     }
 
     return {
@@ -269,6 +341,12 @@ export function initNewUserStats(email) {
       activityMonth: 24,
       xpMonth: 135,
       openedBoxes: 3,
+      premiumPlan: 'free',
+      isPremium: false,
+      premiumActivatedAt: null,
+      unlockedFigures: [],
+      unlockedThemes: ['blue'],
+      activeTheme: 'blue',
       badges: [],
       rewards: [
         {
@@ -296,6 +374,9 @@ export function initNewUserStats(email) {
     activityMonth: 0,
     xpMonth: 0,
     openedBoxes: 0,
+    premiumPlan: 'free',
+    isPremium: false,
+    premiumActivatedAt: null,
     unlockedFigures: [],
     unlockedThemes: ['blue'],
     activeTheme: 'blue',
@@ -399,6 +480,15 @@ function normalizeAccountCollections(stats) {
     stats.activeTheme = 'blue'
     changed = true
   }
+  if (!stats.premiumPlan) {
+    stats.premiumPlan = 'free'
+    changed = true
+  }
+  const computedPremium = Boolean(stats.premiumPlan && stats.premiumPlan !== 'free')
+  if (stats.isPremium !== computedPremium) {
+    stats.isPremium = computedPremium
+    changed = true
+  }
   return changed
 }
 
@@ -467,6 +557,9 @@ export function getUserStats(email) {
       activityMonth: 0,
       xpMonth: 0,
       openedBoxes: 0,
+      premiumPlan: 'free',
+      isPremium: false,
+      premiumActivatedAt: null,
       unlockedFigures: [],
       unlockedThemes: ['blue'],
       activeTheme: 'blue',
@@ -803,6 +896,67 @@ export function getLeaderboard(currentUserEmail = '') {
   })
 }
 
+export const PREMIUM_PLANS = {
+  monthly: {
+    id: 'monthly',
+    name: 'Premium Pelajar',
+    price: 'Rp 9.000',
+    period: '/ bulan',
+    bonusTickets: 3,
+    bonusXp: 50,
+  },
+  semester: {
+    id: 'semester',
+    name: 'Premium Semesteran',
+    price: 'Rp 54.000',
+    period: '/ 6 bulan',
+    bonusTickets: 10,
+    bonusXp: 150,
+  },
+}
+
+export function activatePremiumPlan(email, planId, paymentMethod = 'QRIS Instan') {
+  if (!email) {
+    return { success: false, message: 'Silakan masuk terlebih dahulu untuk mengaktifkan Premium.' }
+  }
+  const planMeta = PREMIUM_PLANS[planId]
+  if (!planMeta) {
+    return { success: false, message: 'Paket Premium tidak ditemukan.' }
+  }
+
+  const stats = getUserStats(email)
+  stats.premiumPlan = planId
+  stats.isPremium = true
+  stats.premiumActivatedAt = new Date().toLocaleDateString('id-ID')
+  stats.premiumPaymentMethod = paymentMethod
+  stats.tickets = (stats.tickets || 0) + planMeta.bonusTickets
+  stats.xp = (stats.xp || 0) + planMeta.bonusXp
+  stats.xpMonth = (stats.xpMonth || 0) + planMeta.bonusXp
+  stats.activityMonth = (stats.activityMonth || 0) + 1
+
+  saveUserStats(email, stats)
+
+  addHistoryItem(email, {
+    type: 'badge',
+    title: `Aktivasi ${planMeta.name}`,
+    subtitle: `Metode: ${paymentMethod} | Bonus +${planMeta.bonusTickets} Tiket Blind Box & +${planMeta.bonusXp} XP`,
+    badgeText: `+${planMeta.bonusTickets} Tiket`,
+    badgeClass: 'bg-purple-100 text-purple-700',
+    hasAction: false,
+  })
+
+  return {
+    success: true,
+    planId,
+    planName: planMeta.name,
+    bonusTickets: planMeta.bonusTickets,
+    bonusXp: planMeta.bonusXp,
+    totalTickets: stats.tickets,
+    totalXp: stats.xp,
+    paymentMethod,
+  }
+}
+
 // Pencatatan penyelesaian tugas secara utuh (Update Soal Selesai, Streak, XP, Tiket, Badge, & Riwayat)
 export function recordTaskCompletion(email, task, earnedXp = 80, earnedTickets = 1) {
   if (!email || !task) return
@@ -815,6 +969,9 @@ export function recordTaskCompletion(email, task, earnedXp = 80, earnedTickets =
     ? task.questions.filter((q) => q.isCorrect).length
     : Math.round(((task.userScore || 80) / 100) * qCount)
 
+  const finalXp = stats.isPremium ? earnedXp * 2 : earnedXp
+  const finalTickets = stats.isPremium ? earnedTickets + 1 : earnedTickets
+
   if (!wasAlreadyCompleted) {
     const prevFirstStep = stats.badges?.find((b) => b.id === 'first_step')?.unlocked
     const prevProblemSolver = stats.badges?.find((b) => b.id === 'problem_solver')?.unlocked
@@ -825,9 +982,9 @@ export function recordTaskCompletion(email, task, earnedXp = 80, earnedTickets =
     if ((stats.streak || 0) === 0) {
       stats.streak = 1
     }
-    stats.xp = (stats.xp || 0) + earnedXp
-    stats.xpMonth = (stats.xpMonth || 0) + earnedXp
-    stats.tickets = (stats.tickets || 0) + earnedTickets
+    stats.xp = (stats.xp || 0) + finalXp
+    stats.xpMonth = (stats.xpMonth || 0) + finalXp
+    stats.tickets = (stats.tickets || 0) + finalTickets
 
     saveUserStats(email, stats)
 
@@ -841,7 +998,7 @@ export function recordTaskCompletion(email, task, earnedXp = 80, earnedTickets =
       type: 'task',
       title: `Menyelesaikan ${task.fileName || task.name}`,
       subtitle: `${qCount} soal | ${correctCount} benar | ${timeStr}`,
-      badgeText: `+${earnedXp} XP`,
+      badgeText: `+${finalXp} XP`,
       badgeClass: 'bg-[#E1F7E9] text-[#16A34A]',
       hasAction: true,
       taskId: task.id,

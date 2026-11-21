@@ -102,7 +102,7 @@ function handleLogout() {
                 : 'text-slate-600 hover:text-[#0f2852]'
           "
         >
-          {{ link.name }}
+          {{ link.isPremium && userStats?.isPremium ? 'Premium ★' : link.name }}
         </RouterLink>
       </div>
 

@@ -50,17 +50,38 @@ const badges = computed(() => {
     let progressLabel = ''
     if (b.id === 'first_step') {
       progressLabel = `Latihan selesai: ${Math.min(st.completedLatihan ?? 0, 1)} / 1`
+    } else if (b.id === 'task_explorer') {
+      progressLabel = `Latihan selesai: ${st.completedLatihan ?? 0} / 10 latihan`
     } else if (b.id === 'streak_7') {
       progressLabel = `Streak saat ini: ${st.streak ?? 0} / 7 hari`
+    } else if (b.id === 'streak_30') {
+      progressLabel = `Streak saat ini: ${st.streak ?? 0} / 30 hari`
+    } else if (b.id === 'streak_100') {
+      progressLabel = `Streak saat ini: ${st.streak ?? 0} / 100 hari`
     } else if (b.id === 'problem_solver') {
       progressLabel = `Soal terkumpul: ${st.soalSelesai ?? 0} / 50 soal`
-    } else if (b.id === 'curious_mind') {
-      progressLabel = `File diunggah: ${st.filesUploaded ?? 0} / 50 file`
     } else if (b.id === 'master_learner') {
       progressLabel = `Soal terkumpul: ${st.soalSelesai ?? 0} / 100 soal`
+    } else if (b.id === 'grand_scholar') {
+      progressLabel = `Soal terkumpul: ${st.soalSelesai ?? 0} / 250 soal`
+    } else if (b.id === 'legend_1000') {
+      progressLabel = `Soal: ${st.soalSelesai ?? 0}/500 • XP: ${st.xp ?? 0}/2000`
+    } else if (b.id === 'curious_mind') {
+      progressLabel = `File diunggah: ${st.filesUploaded ?? 0} / 50 file`
+    } else if (b.id === 'box_hunter') {
+      progressLabel = `Blind Box dibuka: ${st.openedBoxes ?? 0} / 15 box`
+    } else if (b.id === 'figure_collector') {
+      progressLabel = `Figure 3D: ${st.unlockedFigures?.length ?? 0} / 3 figure`
     }
     return { ...b, progressLabel }
   })
+})
+
+const unlockedBadgesCount = computed(() => badges.value.filter((b) => b.unlocked).length)
+
+const badgeCompletionPercent = computed(() => {
+  if (!badges.value.length) return 0
+  return Math.round((unlockedBadgesCount.value / badges.value.length) * 100)
 })
 
 const currentUserRank = computed(() => {
@@ -74,10 +95,17 @@ const currentUserTier = computed(() => {
 
 const badgePalettes = {
   first_step: { bg: '#EFF6FF', fill: '#2D6BE4', border: '#1D4ED8' },
-  streak_7: { bg: '#EAF5FD', fill: '#0284C7', border: '#0369A1' },
+  task_explorer: { bg: '#E0F2FE', fill: '#0284C7', border: '#0369A1' },
+  streak_7: { bg: '#EAF5FD', fill: '#0EA5E9', border: '#0284C7' },
+  streak_30: { bg: '#EDE9FE', fill: '#7C3AED', border: '#5B21B6' },
+  streak_100: { bg: '#FAE8FF', fill: '#A21CAF', border: '#86198F' },
   problem_solver: { bg: '#ECFDF5', fill: '#059669', border: '#047857' },
-  curious_mind: { bg: '#F5F3FF', fill: '#7C3AED', border: '#6D28D9' },
   master_learner: { bg: '#EEF2FF', fill: '#4F46E5', border: '#4338CA' },
+  grand_scholar: { bg: '#F3E8FF', fill: '#6D28D9', border: '#5B21B6' },
+  legend_1000: { bg: '#FDF2F8', fill: '#BE185D', border: '#9D174D' },
+  curious_mind: { bg: '#F5F3FF', fill: '#7C3AED', border: '#6D28D9' },
+  box_hunter: { bg: '#ECFEFF', fill: '#0891B2', border: '#0E7490' },
+  figure_collector: { bg: '#F0FDFA', fill: '#0D9488', border: '#0F766E' },
 }
 </script>
 
@@ -186,21 +214,40 @@ const badgePalettes = {
 
       <!-- Achievement / Badge Card (Tervalidasi Akurat) -->
       <section class="rounded-2xl border border-[#C5E4FA] bg-white p-6 shadow-2xs sm:p-7">
-        <div class="border-b border-slate-100 pb-4">
-          <h2 class="text-base font-semibold text-[#0A2540] sm:text-lg">
-            Achievement / Badge
-          </h2>
-          <p class="mt-0.5 text-xs text-slate-500">
-            Badge hanya terbuka otomatis apabila syarat angka pencapaian akunmu sudah terpenuhi.
-          </p>
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+          <div>
+            <h2 class="text-base font-semibold text-[#0A2540] sm:text-lg">
+              Achievement / Badge
+            </h2>
+            <p class="mt-0.5 text-xs text-slate-500">
+              Badge hanya terbuka otomatis apabila syarat pencapaian akunmu sudah terpenuhi.
+            </p>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="text-right">
+              <p class="text-xs font-medium text-[#2D6BE4]">
+                Terbuka: {{ unlockedBadgesCount }} / {{ badges.length }} Badge
+              </p>
+              <div class="mt-1 h-2 w-36 overflow-hidden rounded-full bg-slate-100">
+                <div
+                  class="h-full rounded-full bg-[#2D6BE4] transition-all duration-300"
+                  :style="{ width: `${badgeCompletionPercent}%` }"
+                ></div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="mt-4 divide-y divide-slate-100">
+        <div class="mt-4 grid gap-3 sm:grid-cols-2">
           <div
             v-for="badge in badges"
             :key="badge.id"
-            class="flex items-center gap-4 py-3.5 transition"
-            :class="badge.unlocked ? 'opacity-100' : 'opacity-75'"
+            class="flex items-start gap-3.5 rounded-xl border p-3.5 transition"
+            :class="
+              badge.unlocked
+                ? 'border-[#C5E4FA] bg-[#F8FCFF]'
+                : 'border-slate-100 bg-slate-50/50 opacity-80'
+            "
           >
             <!-- HD Vector Shield Badge -->
             <div
@@ -229,16 +276,19 @@ const badgePalettes = {
                     fill="#FFFFFF"
                     fill-opacity="0.18"
                   />
+                  <!-- Star Icon (First Step & Task Explorer) -->
                   <path
-                    v-if="badge.id === 'first_step'"
+                    v-if="badge.id === 'first_step' || badge.id === 'task_explorer'"
                     d="M24 14L26.9 19.8L33.2 20.7L28.6 25.2L29.7 31.5L24 28.5L18.3 31.5L19.4 25.2L14.8 20.7L21.1 19.8L24 14Z"
                     fill="#FFFFFF"
                   />
+                  <!-- Flame Icon (Streaks) -->
                   <path
-                    v-else-if="badge.id === 'streak_7'"
+                    v-else-if="badge.id === 'streak_7' || badge.id === 'streak_30' || badge.id === 'streak_100'"
                     d="M24.8 14C24.8 14 29.8 18.6 29.8 24C29.8 27.6 27.2 30.5 24 30.5C20.8 30.5 18.2 27.9 18.2 24.5C18.2 22.1 19.6 20 20.8 18.9C20.8 21.1 22.1 22.1 23 22.1C22.3 19.1 23.4 16 24.8 14Z"
                     fill="#FFFFFF"
                   />
+                  <!-- Checkmark Icon (Problem Solver) -->
                   <path
                     v-else-if="badge.id === 'problem_solver'"
                     d="M17.5 24.5L22 29L31.5 19"
@@ -247,10 +297,17 @@ const badgePalettes = {
                     stroke-linecap="round"
                     stroke-linejoin="round"
                   />
+                  <!-- Book Icon (Curious Mind) -->
                   <g v-else-if="badge.id === 'curious_mind'">
                     <path d="M16 18.5C16 17.7 16.7 17 17.5 17H23V30H17.5C16.7 30 16 29.3 16 28.5V18.5Z" fill="#FFFFFF" />
                     <path d="M32 18.5C32 17.7 31.3 17 30.5 17H25V30H30.5C31.3 30 32 29.3 32 28.5V18.5Z" fill="#FFFFFF" fill-opacity="0.85" />
                   </g>
+                  <!-- Giftbox / Cube Icon (Blind Box Hunter & Figure Collector) -->
+                  <g v-else-if="badge.id === 'box_hunter' || badge.id === 'figure_collector'">
+                    <rect x="16.5" y="19" width="15" height="12" rx="2" fill="#FFFFFF" />
+                    <path d="M24 19V31M16.5 23.5H31.5" :stroke="badgePalettes[badge.id]?.fill || '#0891B2'" stroke-width="2" />
+                  </g>
+                  <!-- Crown Icon (Master Learner, Grand Scholar, Legend) -->
                   <path
                     v-else
                     d="M15.5 28L17.5 18.5L21.5 22L24 16L26.5 22L30.5 18.5L32.5 28H15.5Z"
@@ -278,32 +335,29 @@ const badgePalettes = {
             </div>
 
             <!-- Detail Badge & Progress Nyata -->
-            <div class="flex-1">
-              <div class="flex flex-wrap items-center justify-between gap-2">
-                <div class="flex flex-wrap items-center gap-2">
-                  <h3 class="text-sm font-semibold text-[#0A2540] sm:text-base">
-                    {{ badge.name }}
-                  </h3>
-                  <span
-                    v-if="badge.unlocked"
-                    class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-medium text-emerald-700"
-                  >
-                    ✓ Terbuka
-                  </span>
-                  <span
-                    v-else
-                    class="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-medium text-slate-600"
-                  >
-                    Terkunci
-                  </span>
-                </div>
-
-                <span class="text-xs font-medium text-[#2D6BE4]">
-                  {{ badge.progressLabel }}
+            <div class="min-w-0 flex-1">
+              <div class="flex flex-wrap items-center justify-between gap-1.5">
+                <h3 class="text-sm font-semibold text-[#0A2540]">
+                  {{ badge.name }}
+                </h3>
+                <span
+                  v-if="badge.unlocked"
+                  class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700"
+                >
+                  ✓ Terbuka
+                </span>
+                <span
+                  v-else
+                  class="rounded-full bg-slate-200/70 px-2 py-0.5 text-[10px] font-medium text-slate-600"
+                >
+                  Terkunci
                 </span>
               </div>
               <p class="mt-0.5 text-xs text-slate-500">
                 {{ badge.desc }}
+              </p>
+              <p class="mt-1.5 text-[11px] font-medium text-[#2D6BE4]">
+                {{ badge.progressLabel }}
               </p>
             </div>
           </div>
