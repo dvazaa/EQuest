@@ -13,6 +13,7 @@ import {
 const currentUser = ref(null)
 const userStats = ref(null)
 const streakReminder = ref(null)
+const showStreakNotice = ref(true)
 const leaderboard = ref([])
 
 function loadData() {
@@ -38,10 +39,29 @@ function handleSimulateNextDay() {
   streakReminder.value = simulateNextDayStreak(currentUser.value.email)
   userStats.value = getUserStats(currentUser.value.email)
   leaderboard.value = getLeaderboard(currentUser.value.email)
+  showStreakNotice.value = true
   window.dispatchEvent(new Event('equest-stats-updated'))
 }
 
-const badges = computed(() => userStats.value?.badges || [])
+const badges = computed(() => {
+  const list = userStats.value?.badges || []
+  const st = userStats.value || {}
+  return list.map((b) => {
+    let progressLabel = ''
+    if (b.id === 'first_step') {
+      progressLabel = `Latihan selesai: ${Math.min(st.completedLatihan ?? 0, 1)} / 1`
+    } else if (b.id === 'streak_7') {
+      progressLabel = `Streak saat ini: ${st.streak ?? 0} / 7 hari`
+    } else if (b.id === 'problem_solver') {
+      progressLabel = `Soal terkumpul: ${st.soalSelesai ?? 0} / 50 soal`
+    } else if (b.id === 'curious_mind') {
+      progressLabel = `File diunggah: ${st.filesUploaded ?? 0} / 50 file`
+    } else if (b.id === 'master_learner') {
+      progressLabel = `Soal terkumpul: ${st.soalSelesai ?? 0} / 100 soal`
+    }
+    return { ...b, progressLabel }
+  })
+})
 
 const currentUserRank = computed(() => {
   const found = leaderboard.value.find((u) => u.isCurrentUser)
@@ -53,11 +73,11 @@ const currentUserTier = computed(() => {
 })
 
 const badgePalettes = {
-  first_step: { bg: '#EFF6FF', fill: '#2D6BE4', border: '#1D4ED8', accent: '#DBEAFE' },
-  streak_7: { bg: '#FFF7ED', fill: '#EA580C', border: '#C2410C', accent: '#FED7AA' },
-  problem_solver: { bg: '#ECFDF5', fill: '#059669', border: '#047857', accent: '#A7F3D0' },
-  curious_mind: { bg: '#F5F3FF', fill: '#7C3AED', border: '#6D28D9', accent: '#DDD6FE' },
-  master_learner: { bg: '#FFFBEB', fill: '#D97706', border: '#B45309', accent: '#FDE68A' },
+  first_step: { bg: '#EFF6FF', fill: '#2D6BE4', border: '#1D4ED8' },
+  streak_7: { bg: '#EAF5FD', fill: '#0284C7', border: '#0369A1' },
+  problem_solver: { bg: '#ECFDF5', fill: '#059669', border: '#047857' },
+  curious_mind: { bg: '#F5F3FF', fill: '#7C3AED', border: '#6D28D9' },
+  master_learner: { bg: '#EEF2FF', fill: '#4F46E5', border: '#4338CA' },
 }
 </script>
 
@@ -65,15 +85,15 @@ const badgePalettes = {
   <div class="min-h-screen bg-[#D8EDFB] text-[#0f2852] font-sans antialiased">
     <Navbar />
 
-    <main class="mx-auto max-w-[1360px] px-6 pb-14 pt-6 space-y-8 sm:px-8">
+    <main class="mx-auto max-w-[1200px] px-6 pb-14 pt-6 space-y-6">
       <!-- Header -->
       <section class="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 class="text-3xl font-black text-[#0A2540] sm:text-4xl">
+          <h1 class="text-xl font-semibold text-[#0A2540] sm:text-2xl">
             Progress Belajar &amp; Peringkat
           </h1>
-          <p class="mt-1 text-base text-slate-600 sm:text-lg">
-            Lihat perkembangan streak harian, lencana pencapaian, dan posisimu di papan peringkat
+          <p class="mt-1 text-xs text-slate-600 sm:text-sm">
+            Pantau perkembangan streak harian, lencana pencapaian, dan posisimu di papan peringkat.
           </p>
         </div>
 
@@ -81,120 +101,110 @@ const badgePalettes = {
           v-if="currentUser"
           type="button"
           @click="handleSimulateNextDay"
-          class="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-xs font-extrabold text-amber-900 shadow-2xs transition hover:bg-amber-100 cursor-pointer"
+          class="rounded-xl border border-[#B8DCFA] bg-white px-4 py-2 text-xs font-medium text-[#2D6BE4] shadow-2xs transition hover:bg-[#EAF5FD] cursor-pointer"
         >
-          ⚡ Simulasi Login Besok (+1 Hari Streak)
+          Simulasi Hari Berikutnya (+1 Streak)
         </button>
       </section>
 
-      <!-- Pengingat Streak Harian -->
+      <!-- Notifikasi Streak Harian (Tema Biru & Bisa Di-Close) -->
       <section
-        v-if="currentUser && streakReminder"
-        class="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50 px-5 py-4 shadow-2xs"
+        v-if="currentUser && streakReminder && showStreakNotice"
+        class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#B8DCFA] bg-white px-5 py-3.5 shadow-2xs"
       >
-        <div class="flex items-center gap-3.5">
-          <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-xl text-white shadow-2xs">
-            🔥
-          </span>
+        <div class="flex items-start gap-3 sm:items-center">
+          <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#EAF5FD] text-[#2D6BE4]">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12.7 2.4c.2 2.4 1.8 4.1 3.3 5.7 1.3 1.4 2.5 2.8 2.5 5.1a6.5 6.5 0 1 1-13 0c0-1.9.8-3.6 2-5-.1 1.6.8 2.6 1.7 3 .2-2.9 1.6-5.7 3.5-8.8Z" />
+            </svg>
+          </div>
           <div>
-            <p class="text-sm font-black text-amber-950">
-              {{ streakReminder.title }}
+            <p class="text-xs font-semibold text-[#0A2540] sm:text-sm">
+              Streak Aktif: {{ userStats?.streak ?? 0 }} Hari
             </p>
-            <p class="text-xs text-amber-900/90">
+            <p class="text-xs text-slate-600">
               {{ streakReminder.message }}
             </p>
           </div>
         </div>
-        <span class="rounded-full bg-white px-3.5 py-1 text-xs font-extrabold text-orange-700 border border-orange-200">
-          Streak: {{ userStats?.streak ?? 0 }} Hari
-        </span>
-      </section>
 
-      <!-- 5 Top Cards -->
-      <section class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5 sm:gap-5">
-        <!-- 1. Total XP -->
-        <div class="rounded-2xl border border-[#C5E4FA] bg-white p-6 shadow-xs">
-          <p class="text-sm font-bold text-slate-600">
-            Total XP :
-          </p>
-          <p class="mt-2 text-4xl font-black text-[#0A2540]">
-            {{ userStats?.xp ?? 0 }}
-          </p>
-        </div>
-
-        <!-- 2. Tiket Blind Box -->
-        <div class="rounded-2xl border border-[#C5E4FA] bg-white p-6 shadow-xs">
-          <p class="text-sm font-bold text-slate-600">
-            Tiket Blind Box :
-          </p>
-          <p class="mt-2 text-4xl font-black text-[#0A2540]">
-            {{ userStats?.tickets ?? 0 }}
-          </p>
-        </div>
-
-        <!-- 3. Hari Streak -->
-        <div class="rounded-2xl border border-[#C5E4FA] bg-white p-6 shadow-xs">
-          <p class="text-sm font-bold text-slate-600">
-            Hari Streak :
-          </p>
-          <p class="mt-2 text-4xl font-black text-[#0A2540]">
-            {{ userStats?.streak ?? 0 }}
-          </p>
-          <p class="mt-1 text-[11px] font-bold text-orange-600">
-            Bertambah +1 setiap beda hari
-          </p>
-        </div>
-
-        <!-- 4. Soal Selesai -->
-        <div class="rounded-2xl border border-[#C5E4FA] bg-white p-6 shadow-xs">
-          <p class="text-sm font-bold text-slate-600">
-            Soal Selesai :
-          </p>
-          <p class="mt-2 text-4xl font-black text-[#0A2540]">
-            {{ userStats?.soalSelesai ?? 0 }}
-          </p>
-        </div>
-
-        <!-- 5. Peringkat Kamu -->
-        <div class="col-span-2 rounded-2xl border border-[#C5E4FA] bg-white p-6 shadow-xs sm:col-span-1">
-          <p class="text-sm font-bold text-slate-600">
-            Peringkat Kamu :
-          </p>
-          <p class="mt-2 text-4xl font-black text-[#2D6BE4]">
-            #{{ currentUserRank }}
-          </p>
-          <span
-            class="mt-1.5 inline-block rounded-full border px-2.5 py-0.5 text-[10px] font-extrabold"
-            :class="currentUserTier.badgeClass"
-          >
-            {{ currentUserTier.label }}
+        <div class="flex items-center gap-2">
+          <span class="rounded-full bg-[#EAF5FD] px-3 py-1 text-xs font-medium text-[#2D6BE4]">
+            {{ userStats?.streak ?? 0 }} Hari
           </span>
+          <button
+            type="button"
+            @click="showStreakNotice = false"
+            aria-label="Tutup pengingat streak"
+            class="flex h-7 w-7 items-center justify-center rounded-lg text-xs text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 cursor-pointer"
+          >
+            ✕
+          </button>
         </div>
       </section>
 
-      <!-- Achievement / Badge Card dengan Ikon Shield Vektor HD (Tidak Terpotong) -->
-      <section class="rounded-3xl border border-[#C5E4FA] bg-white p-8 shadow-xs sm:p-10">
-        <h2 class="text-lg font-black text-[#0A2540] sm:text-xl">
-          Achievement / Badge
-        </h2>
-        <p class="mt-1 text-xs text-slate-500">
-          Selesaikan latihan soal, jaga streak login harianmu, dan unggah materi untuk membuka semua lencana.
-        </p>
+      <!-- Bar Ringkasan Statistik (1 Container Simpel) -->
+      <section class="rounded-2xl border border-[#C5E4FA] bg-white px-6 py-4 shadow-2xs">
+        <div class="grid grid-cols-2 divide-y divide-slate-100 sm:grid-cols-3 sm:divide-y-0 sm:divide-x lg:grid-cols-5">
+          <div class="py-2 sm:px-4 first:pl-0">
+            <p class="text-xs text-slate-500">Total XP</p>
+            <p class="mt-0.5 text-xl font-semibold text-[#0A2540] sm:text-2xl">
+              {{ userStats?.xp ?? 0 }}
+            </p>
+          </div>
 
-        <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+          <div class="py-2 sm:px-4">
+            <p class="text-xs text-slate-500">Tiket Blind Box</p>
+            <p class="mt-0.5 text-xl font-semibold text-[#0A2540] sm:text-2xl">
+              {{ userStats?.tickets ?? 0 }}
+            </p>
+          </div>
+
+          <div class="py-2 sm:px-4">
+            <p class="text-xs text-slate-500">Hari Streak</p>
+            <p class="mt-0.5 text-xl font-semibold text-[#2D6BE4] sm:text-2xl">
+              {{ userStats?.streak ?? 0 }} Hari
+            </p>
+          </div>
+
+          <div class="py-2 sm:px-4">
+            <p class="text-xs text-slate-500">Soal Selesai</p>
+            <p class="mt-0.5 text-xl font-semibold text-[#0A2540] sm:text-2xl">
+              {{ userStats?.soalSelesai ?? 0 }}
+            </p>
+          </div>
+
+          <div class="col-span-2 py-2 sm:col-span-1 sm:px-4">
+            <p class="text-xs text-slate-500">Peringkat Kamu</p>
+            <p class="mt-0.5 text-xl font-semibold text-[#2D6BE4] sm:text-2xl">
+              #{{ currentUserRank }}
+              <span class="text-xs font-normal text-slate-500">({{ currentUserTier.label }})</span>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Achievement / Badge Card (Tervalidasi Akurat) -->
+      <section class="rounded-2xl border border-[#C5E4FA] bg-white p-6 shadow-2xs sm:p-7">
+        <div class="border-b border-slate-100 pb-4">
+          <h2 class="text-base font-semibold text-[#0A2540] sm:text-lg">
+            Achievement / Badge
+          </h2>
+          <p class="mt-0.5 text-xs text-slate-500">
+            Badge hanya terbuka otomatis apabila syarat angka pencapaian akunmu sudah terpenuhi.
+          </p>
+        </div>
+
+        <div class="mt-4 divide-y divide-slate-100">
           <div
             v-for="badge in badges"
             :key="badge.id"
-            class="flex items-center gap-5 rounded-2xl border p-4 transition hover:translate-x-1"
-            :class="
-              badge.unlocked
-                ? 'border-[#C5E4FA] bg-[#F8FBFF]'
-                : 'border-slate-100 bg-slate-50/70 opacity-75'
-            "
+            class="flex items-center gap-4 py-3.5 transition"
+            :class="badge.unlocked ? 'opacity-100' : 'opacity-75'"
           >
-            <!-- HD Vector Shield Badge (Zero Cropping) -->
+            <!-- HD Vector Shield Badge -->
             <div
-              class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl p-2"
+              class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl p-1.5"
               :style="{
                 backgroundColor: badge.unlocked
                   ? (badgePalettes[badge.id]?.bg || '#EFF6FF')
@@ -202,12 +212,11 @@ const badgePalettes = {
               }"
             >
               <svg
-                class="h-12 w-12"
+                class="h-9 w-9"
                 viewBox="0 0 48 52"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
               >
-                <!-- Unlocked Shield -->
                 <template v-if="badge.unlocked">
                   <path
                     d="M24 3L41 9.5V23.5C41 34.8 33.6 43.9 24 48C14.4 43.9 7 34.8 7 23.5V9.5L24 3Z"
@@ -220,7 +229,6 @@ const badgePalettes = {
                     fill="#FFFFFF"
                     fill-opacity="0.18"
                   />
-                  <!-- Badge-specific Emblem -->
                   <path
                     v-if="badge.id === 'first_step'"
                     d="M24 14L26.9 19.8L33.2 20.7L28.6 25.2L29.7 31.5L24 28.5L18.3 31.5L19.4 25.2L14.8 20.7L21.1 19.8L24 14Z"
@@ -250,7 +258,6 @@ const badgePalettes = {
                   />
                 </template>
 
-                <!-- Locked Shield -->
                 <template v-else>
                   <path
                     d="M24 3L41 9.5V23.5C41 34.8 33.6 43.9 24 48C14.4 43.9 7 34.8 7 23.5V9.5L24 3Z"
@@ -270,26 +277,32 @@ const badgePalettes = {
               </svg>
             </div>
 
-            <!-- Detail Badge -->
+            <!-- Detail Badge & Progress Nyata -->
             <div class="flex-1">
-              <div class="flex flex-wrap items-center gap-2">
-                <h3 class="text-base font-extrabold text-[#0A2540] sm:text-lg">
-                  {{ badge.name }}
-                </h3>
-                <span
-                  v-if="badge.unlocked"
-                  class="rounded-full bg-green-100 px-2.5 py-0.5 text-[11px] font-bold text-green-700"
-                >
-                  ✓ Terbuka
-                </span>
-                <span
-                  v-else
-                  class="rounded-full bg-slate-200/80 px-2.5 py-0.5 text-[11px] font-bold text-slate-600"
-                >
-                  🔒 Terkunci
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h3 class="text-sm font-semibold text-[#0A2540] sm:text-base">
+                    {{ badge.name }}
+                  </h3>
+                  <span
+                    v-if="badge.unlocked"
+                    class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-medium text-emerald-700"
+                  >
+                    ✓ Terbuka
+                  </span>
+                  <span
+                    v-else
+                    class="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-medium text-slate-600"
+                  >
+                    Terkunci
+                  </span>
+                </div>
+
+                <span class="text-xs font-medium text-[#2D6BE4]">
+                  {{ badge.progressLabel }}
                 </span>
               </div>
-              <p class="mt-0.5 text-sm text-slate-500">
+              <p class="mt-0.5 text-xs text-slate-500">
                 {{ badge.desc }}
               </p>
             </div>
@@ -298,73 +311,59 @@ const badgePalettes = {
       </section>
 
       <!-- Papan Peringkat Pengguna (Leaderboard) -->
-      <section id="peringkat" class="rounded-3xl border border-[#C5E4FA] bg-white p-6 shadow-xs sm:p-10">
-        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-5">
+      <section id="peringkat" class="rounded-2xl border border-[#C5E4FA] bg-white p-6 shadow-2xs sm:p-7">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
           <div>
-            <h2 class="text-xl font-black text-[#0A2540] sm:text-2xl">
-              🏆 Papan Peringkat Pengguna
+            <h2 class="text-base font-semibold text-[#0A2540] sm:text-lg">
+              Papan Peringkat Pengguna
             </h2>
-            <p class="mt-1 text-xs text-slate-500 sm:text-sm">
-              Peringkat disusun berdasarkan Total XP, soal yang diselesaikan, dan streak belajar harian.
+            <p class="mt-0.5 text-xs text-slate-500">
+              Peringkat disusun berdasarkan Total XP, soal selesai, dan streak belajar harian.
             </p>
           </div>
-          <div class="rounded-2xl border border-[#C5E4FA] bg-[#EAF5FD] px-4 py-2 text-xs font-extrabold text-[#0A2540]">
-            Peringkat Kamu: <span class="text-[#2D6BE4]">#{{ currentUserRank }}</span> ({{ currentUserTier.label }})
-          </div>
+          <span class="rounded-full bg-[#EAF5FD] px-3.5 py-1 text-xs font-medium text-[#2D6BE4]">
+            Peringkat Kamu: #{{ currentUserRank }} ({{ currentUserTier.label }})
+          </span>
         </div>
 
-        <div class="mt-5 space-y-2.5">
+        <div class="mt-4 divide-y divide-slate-100">
           <div
             v-for="item in leaderboard"
             :key="item.email"
-            class="flex flex-wrap items-center justify-between gap-4 rounded-2xl border px-4 py-3.5 transition sm:px-6"
-            :class="
-              item.isCurrentUser
-                ? 'border-2 border-[#2D6BE4] bg-[#EAF5FD]/70 shadow-2xs'
-                : 'border-slate-100 bg-slate-50/60 hover:border-[#C5E4FA] hover:bg-white'
-            "
+            class="flex flex-wrap items-center justify-between gap-3 rounded-xl px-3.5 py-3 transition"
+            :class="item.isCurrentUser ? 'bg-[#EAF5FD]/80' : 'hover:bg-slate-50/70'"
           >
-            <div class="flex items-center gap-3.5">
-              <div
-                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-black"
+            <div class="flex items-center gap-3">
+              <span
+                class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-semibold"
                 :class="
-                  item.rank === 1
-                    ? 'bg-amber-100 text-amber-700'
-                    : item.rank === 2
-                      ? 'bg-slate-200 text-slate-700'
-                      : item.rank === 3
-                        ? 'bg-orange-100 text-orange-700'
-                        : 'bg-white text-slate-500 border border-slate-200'
+                  item.rank <= 3
+                    ? 'bg-[#2D6BE4] text-white'
+                    : 'bg-slate-100 text-slate-600'
                 "
               >
-                <span v-if="item.rank === 1">🥇</span>
-                <span v-else-if="item.rank === 2">🥈</span>
-                <span v-else-if="item.rank === 3">🥉</span>
-                <span v-else>#{{ item.rank }}</span>
-              </div>
+                #{{ item.rank }}
+              </span>
 
               <div
-                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-black text-white"
-                :class="item.isCurrentUser ? 'bg-[#2D6BE4]' : 'bg-slate-600'"
+                class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white"
+                :class="item.isCurrentUser ? 'bg-[#2D6BE4]' : 'bg-slate-500'"
               >
                 {{ item.name?.charAt(0).toUpperCase() || 'U' }}
               </div>
 
               <div>
-                <div class="flex flex-wrap items-center gap-2">
-                  <p class="text-sm font-extrabold text-[#0A2540]">
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <p class="text-sm font-medium text-[#0A2540]">
                     {{ item.name }}
                   </p>
                   <span
                     v-if="item.isCurrentUser"
-                    class="rounded-full bg-[#2D6BE4] px-2.5 py-0.5 text-[10px] font-extrabold text-white"
+                    class="rounded-full bg-[#2D6BE4] px-2 py-0.5 text-[10px] font-medium text-white"
                   >
                     Kamu
                   </span>
-                  <span
-                    class="rounded-full border px-2.5 py-0.5 text-[10px] font-bold"
-                    :class="item.tierClass"
-                  >
+                  <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-600">
                     {{ item.tierLabel }}
                   </span>
                 </div>
@@ -374,14 +373,14 @@ const badgePalettes = {
               </div>
             </div>
 
-            <div class="flex flex-wrap items-center gap-3 text-xs font-bold sm:gap-5">
-              <span class="rounded-xl bg-orange-50 px-3 py-1.5 text-orange-700">
-                🔥 {{ item.streak }} hari
+            <div class="flex flex-wrap items-center gap-2.5 text-xs">
+              <span class="rounded-lg bg-[#EAF5FD] px-2.5 py-1 font-medium text-[#2D6BE4]">
+                {{ item.streak }} hari streak
               </span>
-              <span class="rounded-xl bg-emerald-50 px-3 py-1.5 text-emerald-700">
-                ✓ {{ item.soalSelesai }} soal
+              <span class="rounded-lg bg-emerald-50 px-2.5 py-1 font-medium text-emerald-700">
+                {{ item.soalSelesai }} soal
               </span>
-              <span class="min-w-[82px] rounded-xl bg-white px-3.5 py-1.5 text-right text-sm font-black text-[#2D6BE4] shadow-2xs border border-[#C5E4FA]">
+              <span class="min-w-[72px] text-right text-sm font-semibold text-[#0A2540]">
                 {{ item.xp }} XP
               </span>
             </div>

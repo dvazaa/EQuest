@@ -328,6 +328,33 @@ export function getUserStats(email) {
     return initNewUserStats(email)
   }
 
+  // Untuk akun reguler, sinkronkan jumlah soal selesai & latihan selesai dari data tugas nyata
+  if (!isDemoAccount(email)) {
+    const tasks = readStorage(getTaskKey(email), null)
+    if (Array.isArray(tasks)) {
+      const completedTasks = tasks.filter(
+        (t) => t.status === 'Selesai' && !t.directStudy && t.hasSubmittedAnswer !== false
+      )
+      const actualCorrectQuestions = completedTasks.reduce((sum, t) => {
+        if (Array.isArray(t.questions)) {
+          return sum + t.questions.filter((q) => q.isCorrect).length
+        }
+        return sum + (Number(t.questionCount) || 1)
+      }, 0)
+
+      if (
+        saved.soalSelesai !== actualCorrectQuestions ||
+        saved.completedLatihan !== completedTasks.length
+      ) {
+        saved.soalSelesai = actualCorrectQuestions
+        saved.completedLatihan = completedTasks.length
+        saved.badges = evaluateBadges(saved)
+        writeStorage(key, saved)
+        return saved
+      }
+    }
+  }
+
   // Selalu sinkronkan status terbuka/terkunci badge berdasarkan capaian nyata
   saved.badges = evaluateBadges(saved)
   return saved
@@ -452,7 +479,7 @@ export function checkAndUpdateDailyStreak(email) {
       title: `🔥 Streak Bertambah: Hari ke-${stats.streak}!`,
       subtitle: `Login di hari berbeda (${prevStreak} -> ${stats.streak} hari) | ${timeStr}`,
       badgeText: `${stats.streak} Hari`,
-      badgeClass: 'bg-amber-100 text-amber-800',
+      badgeClass: 'bg-[#EAF5FD] text-[#2D6BE4]',
       hasAction: false,
     })
 
@@ -675,7 +702,7 @@ export function recordTaskCompletion(email, task, earnedXp = 80, earnedTickets =
     const prevFirstStep = stats.badges?.find((b) => b.id === 'first_step')?.unlocked
     const prevProblemSolver = stats.badges?.find((b) => b.id === 'problem_solver')?.unlocked
 
-    stats.soalSelesai = (stats.soalSelesai || 0) + qCount
+    stats.soalSelesai = (stats.soalSelesai || 0) + correctCount
     stats.completedLatihan = (stats.completedLatihan || 0) + 1
     stats.activityMonth = (stats.activityMonth || 0) + 1
     if ((stats.streak || 0) === 0) {
