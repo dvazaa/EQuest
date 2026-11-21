@@ -173,26 +173,26 @@ async function handleContinue() {
   <div class="min-h-screen bg-[#D8EDFB] text-[#0f2852] font-sans antialiased">
     <Navbar />
 
-    <main class="mx-auto max-w-[1360px] px-8 pb-12 pt-6">
-      <!-- Judul Halaman sesuai Desktop - 4 & 5 -->
+    <main class="mx-auto max-w-[1280px] px-6 pb-12 pt-6 sm:px-8">
+      <!-- Judul Halaman -->
       <section class="mb-6">
-        <h1 class="text-3xl font-black text-[#0A2540] sm:text-4xl">
+        <h1 class="text-2xl font-semibold text-[#0A2540]">
           Upload Soal
         </h1>
-        <p class="mt-1 text-base text-slate-600 sm:text-lg">
+        <p class="mt-1 text-xs text-slate-600 sm:text-sm">
           Unggah soal yang ingin kamu kerjakan dan pahami bersama AI
         </p>
       </section>
 
       <!-- Main Box Container Card -->
-      <div class="rounded-3xl border border-[#C5E4FA] bg-white p-8 shadow-xs sm:p-12">
-        <div class="grid items-center gap-10 lg:grid-cols-[400px_1fr]">
-          <!-- Robot Mascot (Desktop - 4 & 5) -->
+      <div class="rounded-3xl border border-[#C5E4FA] bg-white p-7 shadow-2xs sm:p-10">
+        <div class="grid items-center gap-10 lg:grid-cols-[360px_1fr]">
+          <!-- Robot Mascot -->
           <div class="flex items-center justify-center">
             <img
               src="../assets/images/robot_nunjuk.png"
               alt="Mascot EQuest"
-              class="max-h-[380px] w-auto object-contain"
+              class="max-h-[340px] w-auto object-contain"
             />
           </div>
 
@@ -207,22 +207,22 @@ async function handleContinue() {
               @change="handleFileChange"
             />
 
-            <!-- Kondisi 1: Tampilan File Berhasil Diunggah (Desktop - 5) -->
+            <!-- Kondisi 1: Tampilan File Berhasil Diunggah -->
             <div v-if="isUploaded" class="space-y-6">
               <div>
-                <h2 class="text-2xl font-black text-[#0A2540] sm:text-3xl">
+                <h2 class="text-lg font-semibold text-[#0A2540] sm:text-xl">
                   Soal Berhasil Diunggah
                 </h2>
-                <p class="mt-1 text-sm text-slate-500 sm:text-base">
+                <p class="mt-1 text-xs text-slate-500 sm:text-sm">
                   File kamu siap diperiksa
                 </p>
               </div>
 
-              <!-- File Info Card (Desktop - 5) -->
-              <div class="flex items-center gap-5 rounded-2xl bg-[#EAF5FD] p-6 sm:p-8">
-                <div class="flex h-16 w-14 shrink-0 items-center justify-center rounded-xl border border-slate-300 bg-white shadow-2xs">
+              <!-- File Info Card -->
+              <div class="flex items-center gap-5 rounded-2xl bg-[#EAF5FD] p-6">
+                <div class="flex h-14 w-12 shrink-0 items-center justify-center rounded-xl border border-slate-300 bg-white shadow-2xs">
                   <svg
-                    class="h-8 w-8 text-slate-700"
+                    class="h-7 w-7 text-slate-700"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -232,43 +232,43 @@ async function handleContinue() {
                 </div>
 
                 <div>
-                  <p class="text-base font-bold text-[#0A2540] sm:text-lg">
+                  <p class="text-sm font-semibold text-[#0A2540] sm:text-base">
                     {{ selectedFile?.name }} &bull; {{ selectedFile?.type }} &bull; {{ selectedFile?.size }}
                   </p>
                 </div>
               </div>
 
-              <!-- Tombol Aksi (Desktop - 5) -->
-              <div class="flex justify-end gap-4 pt-6">
+              <!-- Tombol Aksi -->
+              <div class="flex justify-end gap-4 pt-4">
                 <button
                   type="button"
                   @click="handleReset"
-                  class="rounded-xl border border-[#2D6BE4] bg-white px-7 py-3 text-sm font-bold text-[#2D6BE4] transition hover:bg-sky-50"
+                  class="rounded-xl border border-[#2D6BE4] bg-white px-6 py-2.5 text-sm font-medium text-[#2D6BE4] transition hover:bg-sky-50 cursor-pointer"
                 >
                   Kembali
                 </button>
                 <button
                   type="button"
                   @click="handleContinue"
-                  class="rounded-xl bg-[#2D6BE4] px-8 py-3 text-sm font-bold text-white shadow-md shadow-blue-500/20 transition hover:bg-blue-700"
+                  class="rounded-xl bg-[#2D6BE4] px-7 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 cursor-pointer"
                 >
                   Lanjutkan
                 </button>
               </div>
             </div>
 
-            <!-- Kondisi 2: Form Upload Awal (Desktop - 4) -->
+            <!-- Kondisi 2: Form Upload Awal -->
             <div v-else class="space-y-6">
               <div>
-                <h2 class="text-2xl font-black text-[#0A2540] sm:text-3xl">
+                <h2 class="text-lg font-semibold text-[#0A2540] sm:text-xl">
                   Unggah Soal Kamu
                 </h2>
-                <p class="mt-1 text-sm text-slate-500 sm:text-base">
+                <p class="mt-1 text-xs text-slate-500 sm:text-sm">
                   Pilih foto atau file tugas dari perangkatmu
                 </p>
               </div>
 
-              <!-- Dashed Drop Area (Desktop - 4) -->
+              <!-- Dashed Drop Area -->
               <div
                 @dragover.prevent
                 @drop="handleDrop"
@@ -276,7 +276,7 @@ async function handleContinue() {
               >
                 <!-- Upload Cloud Icon -->
                 <svg
-                  class="h-14 w-14 text-[#2D6BE4]"
+                  class="h-12 w-12 text-[#2D6BE4]"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -284,7 +284,7 @@ async function handleContinue() {
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
 
-                <p class="mt-3 text-base font-bold text-[#2D6BE4]">
+                <p class="mt-3 text-sm font-semibold text-[#2D6BE4] sm:text-base">
                   Tarik dan letakkan file di sini
                 </p>
                 <p class="mt-0.5 text-xs text-slate-500">
@@ -294,19 +294,19 @@ async function handleContinue() {
                 <button
                   type="button"
                   @click="triggerFileInput"
-                  class="mt-4 rounded-xl bg-[#2D6BE4] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 cursor-pointer"
+                  class="mt-4 rounded-xl bg-[#2D6BE4] px-6 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 cursor-pointer"
                 >
                   Pilih File
                 </button>
 
-                <p class="mt-4 text-xs font-semibold text-slate-400">
+                <p class="mt-4 text-xs font-medium text-slate-400">
                   JPG, PNG, PDF &nbsp;|&nbsp; Maks 10 MB
                 </p>
               </div>
 
-              <!-- Input Alternatif Teks Soal (Desktop - 4) -->
+              <!-- Input Alternatif Teks Soal -->
               <div class="space-y-2">
-                <label class="text-xs font-bold text-[#0A2540]">
+                <label class="text-xs font-medium text-[#0A2540]">
                   Atau tempel teks soal
                 </label>
                 <textarea
@@ -319,7 +319,7 @@ async function handleContinue() {
 
               <p
                 v-if="errorMessage"
-                class="rounded-xl bg-red-50 px-4 py-2.5 text-xs font-bold text-red-600"
+                class="rounded-xl bg-red-50 px-4 py-2.5 text-xs font-medium text-red-600"
               >
                 ⚠️ {{ errorMessage }}
               </p>
@@ -330,7 +330,7 @@ async function handleContinue() {
                   type="button"
                   :disabled="isAnalyzing"
                   @click="handleContinue"
-                  class="rounded-xl px-8 py-3 text-sm font-bold text-white transition shadow-sm"
+                  class="rounded-xl px-7 py-2.5 text-sm font-medium text-white transition shadow-sm"
                   :class="
                     selectedFile || questionText.trim()
                       ? 'bg-[#2D6BE4] hover:bg-blue-700 cursor-pointer'

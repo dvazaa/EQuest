@@ -70,149 +70,12 @@ function scrollToLeaderboard() {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#D8EDFB] text-[#0f2852] font-sans antialiased">
+  <div class="min-h-screen bg-[#D8EDFB] text-[#0f2852] font-sans antialiased transition-colors duration-300">
     <!-- Sticky Navbar EQuest -->
     <Navbar />
 
-    <!-- Hero Banner Gaya Simpel & Seamless (Langit Malam Berbintang + Bulan + Awan Menyatu ke Latar) -->
-    <section class="relative flex min-h-[370px] w-full items-center overflow-hidden bg-gradient-to-b from-[#0B3568] via-[#134E94] to-[#1E62B0] text-white sm:min-h-[410px]">
-      <!-- Latar Belakang Vektor HD (Bintang, Bulan Bersinar, & Awan Berlapis) -->
-      <svg
-        class="pointer-events-none absolute inset-0 h-full w-full object-cover"
-        viewBox="0 0 1440 460"
-        preserveAspectRatio="xMidYMid slice"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <defs>
-          <radialGradient id="moonHalo" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stop-color="#E0F2FE" stop-opacity="0.45" />
-            <stop offset="55%" stop-color="#93C5FD" stop-opacity="0.16" />
-            <stop offset="100%" stop-color="#0B3568" stop-opacity="0" />
-          </radialGradient>
-          <radialGradient id="moonBody" cx="35%" cy="35%" r="68%">
-            <stop offset="0%" stop-color="#FFFFFF" />
-            <stop offset="70%" stop-color="#EFF6FF" />
-            <stop offset="100%" stop-color="#DBEAFE" />
-          </radialGradient>
-        </defs>
-
-        <!-- Bintang-bintang halus di langit -->
-        <g fill="#FFFFFF">
-          <circle cx="95" cy="65" r="1.4" opacity="0.7" />
-          <circle cx="170" cy="115" r="1" opacity="0.5" />
-          <circle cx="230" cy="52" r="1.6" opacity="0.8" />
-          <circle cx="385" cy="82" r="1.2" opacity="0.6" />
-          <circle cx="465" cy="145" r="1" opacity="0.45" />
-          <circle cx="540" cy="48" r="1.5" opacity="0.7" />
-          <circle cx="635" cy="96" r="1.2" opacity="0.55" />
-          <circle cx="725" cy="42" r="1.4" opacity="0.65" />
-          <circle cx="810" cy="120" r="1" opacity="0.45" />
-          <circle cx="915" cy="68" r="1.6" opacity="0.75" />
-          <circle cx="1010" cy="44" r="1.1" opacity="0.5" />
-          <circle cx="1085" cy="110" r="1.5" opacity="0.65" />
-          <circle cx="1175" cy="62" r="1.2" opacity="0.6" />
-          <circle cx="1265" cy="95" r="1.6" opacity="0.75" />
-          <circle cx="1350" cy="55" r="1.3" opacity="0.55" />
-          <circle cx="1395" cy="140" r="1" opacity="0.5" />
-          <circle cx="130" cy="240" r="1.1" opacity="0.4" />
-          <circle cx="430" cy="245" r="1.3" opacity="0.5" />
-          <circle cx="595" cy="215" r="1" opacity="0.4" />
-          <circle cx="965" cy="230" r="1.2" opacity="0.45" />
-          <circle cx="1235" cy="220" r="1.4" opacity="0.5" />
-        </g>
-
-        <!-- Cahaya & Bulan di sebelah kiri -->
-        <circle cx="270" cy="185" r="175" fill="url(#moonHalo)" />
-        <circle cx="270" cy="185" r="76" fill="url(#moonBody)" />
-        <!-- Kawah bulan halus -->
-        <circle cx="244" cy="162" r="12" fill="#BFDBFE" opacity="0.45" />
-        <circle cx="294" cy="176" r="16" fill="#BFDBFE" opacity="0.35" />
-        <circle cx="262" cy="212" r="9" fill="#BFDBFE" opacity="0.4" />
-        <circle cx="288" cy="145" r="6" fill="#BFDBFE" opacity="0.35" />
-
-        <!-- Lapisan Awan Belakang -->
-        <g fill="#5B93D3" opacity="0.72">
-          <circle cx="60" cy="415" r="65" />
-          <circle cx="165" cy="400" r="78" />
-          <circle cx="285" cy="418" r="66" />
-          <circle cx="410" cy="405" r="75" />
-          <circle cx="540" cy="415" r="68" />
-          <circle cx="670" cy="400" r="82" />
-          <circle cx="805" cy="418" r="70" />
-          <circle cx="935" cy="402" r="76" />
-          <circle cx="1065" cy="415" r="68" />
-          <circle cx="1195" cy="400" r="80" />
-          <circle cx="1320" cy="412" r="72" />
-          <circle cx="1420" cy="405" r="65" />
-        </g>
-
-        <!-- Lapisan Awan Tengah -->
-        <g fill="#94C2F2" opacity="0.88">
-          <circle cx="25" cy="435" r="55" />
-          <circle cx="115" cy="422" r="64" />
-          <circle cx="220" cy="434" r="56" />
-          <circle cx="340" cy="424" r="65" />
-          <circle cx="465" cy="436" r="58" />
-          <circle cx="595" cy="422" r="68" />
-          <circle cx="730" cy="434" r="60" />
-          <circle cx="860" cy="425" r="64" />
-          <circle cx="990" cy="435" r="58" />
-          <circle cx="1125" cy="420" r="68" />
-          <circle cx="1260" cy="434" r="62" />
-          <circle cx="1385" cy="424" r="64" />
-        </g>
-
-        <!-- Lapisan Awan Depan (Menyatu dengan #D8EDFB di bawahnya) -->
-        <g fill="#D8EDFB">
-          <circle cx="40" cy="458" r="52" />
-          <circle cx="140" cy="446" r="58" />
-          <circle cx="255" cy="456" r="50" />
-          <circle cx="375" cy="448" r="56" />
-          <circle cx="495" cy="458" r="52" />
-          <circle cx="625" cy="445" r="60" />
-          <circle cx="760" cy="456" r="54" />
-          <circle cx="890" cy="448" r="58" />
-          <circle cx="1020" cy="456" r="52" />
-          <circle cx="1150" cy="446" r="60" />
-          <circle cx="1285" cy="455" r="54" />
-          <circle cx="1405" cy="448" r="58" />
-          <rect x="0" y="444" width="1440" height="20" />
-        </g>
-      </svg>
-
-      <!-- Konten Hero Sederhana di Tengah-Kanan seperti Referensi -->
-      <div class="relative z-10 mx-auto w-full max-w-[1200px] px-6 pb-14 pt-8">
-        <div class="mx-auto max-w-xl text-center lg:ml-[38%] lg:text-left">
-          <p class="text-sm font-normal text-sky-200">
-            Halo, {{ currentUser?.name || 'Selamat Datang' }}
-          </p>
-          <h1 class="mt-2 text-2xl font-normal leading-snug tracking-normal text-white sm:text-4xl">
-            Belajar &amp; Pahami Tugas Lebih Mudah dengan EQuest
-          </h1>
-          <p class="mt-3 text-sm font-normal leading-relaxed text-sky-100/85">
-            Unggah soalmu, pahami langkah penyelesaiannya dengan bahasa sederhana, dan kumpulkan XP setiap hari.
-          </p>
-
-          <div class="mt-6 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
-            <RouterLink
-              to="/upload"
-              class="inline-flex items-center justify-center rounded-xl bg-white px-7 py-2.5 text-sm font-medium text-[#134E94] shadow-sm transition hover:bg-sky-50"
-            >
-              Mulai Belajar
-            </RouterLink>
-            <RouterLink
-              to="/tasks"
-              class="inline-flex items-center justify-center rounded-xl border border-white/30 bg-white/10 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-white/20"
-            >
-              Lihat Tugas Saya
-            </RouterLink>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <main class="mx-auto max-w-[1200px] px-6 pb-14 pt-3 space-y-6">
-      <!-- Notifikasi / Pengingat Streak Harian (Tema Biru & Bisa Di-Close) -->
+    <main class="mx-auto max-w-[1280px] px-6 pb-14 pt-6 space-y-6">
+      <!-- Notifikasi Streak Harian (Tema Biru & Bisa Di-Close) -->
       <section
         v-if="currentUser && streakReminder && showStreakBanner"
         class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#B8DCFA] bg-white/95 px-4 py-3 shadow-2xs"
@@ -259,157 +122,297 @@ function scrollToLeaderboard() {
         </div>
       </section>
 
-      <!-- Bar Ringkasan Terpadu (Simple, Bersih, Tanpa Kartu Berlebihan) -->
-      <section class="rounded-2xl border border-[#C5E4FA] bg-white px-6 py-4 shadow-2xs">
-        <div class="grid grid-cols-2 divide-y divide-slate-100 sm:grid-cols-3 sm:divide-y-0 sm:divide-x lg:grid-cols-5">
-          <RouterLink to="/progress" class="py-2 sm:px-4 first:pl-0 transition hover:opacity-80">
-            <p class="text-xs text-slate-500">Total XP</p>
-            <p class="mt-0.5 text-xl font-semibold text-[#0A2540]">{{ userStats?.xp ?? 0 }} XP</p>
-          </RouterLink>
-
-          <RouterLink to="/blind-box" class="py-2 sm:px-4 transition hover:opacity-80">
-            <p class="text-xs text-slate-500">Tiket Blind Box</p>
-            <p class="mt-0.5 text-xl font-semibold text-[#0A2540]">{{ userStats?.tickets ?? 0 }} Tiket</p>
-          </RouterLink>
-
-          <RouterLink to="/progress" class="py-2 sm:px-4 transition hover:opacity-80">
-            <p class="text-xs text-slate-500">Hari Streak</p>
-            <p class="mt-0.5 text-xl font-semibold text-[#2D6BE4]">{{ userStats?.streak ?? 0 }} Hari</p>
-          </RouterLink>
-
-          <RouterLink to="/riwayat" class="py-2 sm:px-4 transition hover:opacity-80">
-            <p class="text-xs text-slate-500">Soal Selesai</p>
-            <p class="mt-0.5 text-xl font-semibold text-[#0A2540]">{{ userStats?.soalSelesai ?? 0 }} Soal</p>
-          </RouterLink>
-
-          <button
-            type="button"
-            @click="scrollToLeaderboard"
-            class="col-span-2 py-2 text-left sm:col-span-1 sm:px-4 transition hover:opacity-80 cursor-pointer"
+      <!-- Hero Banner Konsep Awal EQuest (2 Kolom: Ilustrasi Ruang Belajar HD + Sapaan & CTA) -->
+      <section class="grid items-center gap-8 rounded-3xl border border-[#C5E4FA] bg-white p-6 shadow-2xs sm:p-8 lg:grid-cols-[1.05fr_0.95fr]">
+        <!-- Kiri: Kartu Ilustrasi Workspace Belajar HD -->
+        <div class="relative flex min-h-[250px] flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-br from-[#2D6BE4] via-[#3B82F6] to-[#60A5FA] p-6 text-white sm:min-h-[280px]">
+          <!-- Latar Belakang Ilustrasi HD Vector (Buku, Grafik Progres, Gelembung Pembahasan, & Centang) -->
+          <svg
+            class="pointer-events-none absolute inset-0 h-full w-full"
+            viewBox="0 0 600 320"
+            preserveAspectRatio="xMidYMid slice"
+            xmlns="http://www.w3.org/2000/svg"
           >
-            <p class="text-xs text-slate-500">Peringkat Kamu</p>
-            <p class="mt-0.5 text-xl font-semibold text-[#2D6BE4]">
-              #{{ currentUserRank }} <span class="text-xs font-normal text-slate-500">({{ currentUserTier.label }})</span>
-            </p>
-          </button>
-        </div>
-      </section>
+            <defs>
+              <radialGradient id="eqGlow1" cx="82%" cy="22%" r="52%">
+                <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.28" />
+                <stop offset="100%" stop-color="#2D6BE4" stop-opacity="0" />
+              </radialGradient>
+              <radialGradient id="eqGlow2" cx="15%" cy="88%" r="48%">
+                <stop offset="0%" stop-color="#93C5FD" stop-opacity="0.35" />
+                <stop offset="100%" stop-color="#2D6BE4" stop-opacity="0" />
+              </radialGradient>
+            </defs>
 
-      <!-- Bagian Terpadu: Lanjutkan Belajar & Akses Fitur -->
-      <section class="rounded-2xl border border-[#C5E4FA] bg-white p-6 shadow-2xs space-y-6">
-        <!-- Aktivitas Terakhir -->
-        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-5">
-          <div>
-            <p class="text-xs font-medium text-[#2D6BE4]">
-              {{ currentTask ? 'Lanjutkan Belajar' : 'Mulai Latihan Pertama' }}
-            </p>
-            <h2 class="mt-0.5 text-base font-semibold text-[#0A2540] sm:text-lg">
-              {{ currentTask?.name || 'Belum ada tugas yang diunggah' }}
-            </h2>
-            <p v-if="currentTask" class="mt-0.5 text-xs text-slate-500">
-              Status: {{ currentTask.status }} &bull; {{ currentTask.questionCount || 10 }} soal
-            </p>
+            <rect width="600" height="320" fill="url(#eqGlow1)" />
+            <rect width="600" height="320" fill="url(#eqGlow2)" />
+
+            <!-- Lengkung lembut latar belakang -->
+            <path d="M0 245 Q150 205 310 248 T600 225 L600 320 L0 320 Z" fill="#1E40AF" fill-opacity="0.22" />
+
+            <!-- Kartu Mockup Catatan Soal di Tengah-Kanan Background -->
+            <g transform="translate(275, 42) rotate(3)">
+              <rect x="0" y="0" width="270" height="175" rx="18" fill="#FFFFFF" fill-opacity="0.16" stroke="#FFFFFF" stroke-opacity="0.28" stroke-width="1.5" />
+              <circle cx="32" cy="34" r="12" fill="#FFFFFF" fill-opacity="0.28" />
+              <path d="M27 34l3.5 3.5L38 30" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+              <rect x="54" y="26" width="120" height="8" rx="4" fill="#FFFFFF" fill-opacity="0.65" />
+              <rect x="54" y="40" width="84" height="6" rx="3" fill="#E0F2FE" fill-opacity="0.55" />
+
+              <!-- Garis pembahasan -->
+              <rect x="24" y="68" width="218" height="36" rx="10" fill="#FFFFFF" fill-opacity="0.14" />
+              <rect x="36" y="79" width="150" height="6" rx="3" fill="#FFFFFF" fill-opacity="0.65" />
+              <rect x="36" y="90" width="110" height="5" rx="2.5" fill="#DBEAFE" fill-opacity="0.55" />
+
+              <!-- Bar progress mini -->
+              <rect x="24" y="120" width="218" height="8" rx="4" fill="#FFFFFF" fill-opacity="0.2" />
+              <rect x="24" y="120" width="158" height="8" rx="4" fill="#93C5FD" />
+              <rect x="24" y="142" width="76" height="18" rx="9" fill="#FFFFFF" fill-opacity="0.24" />
+              <rect x="110" y="142" width="90" height="18" rx="9" fill="#FFFFFF" fill-opacity="0.16" />
+            </g>
+
+            <!-- Ikon Buku Terbuka HD di Kiri -->
+            <g transform="translate(52, 85)" opacity="0.28">
+              <path d="M12 20C12 12 22 8 36 8H74C79 8 82 11 82 16V102C76 96 64 94 48 94H20C15 94 12 91 12 86V20Z" fill="#FFFFFF" />
+              <path d="M152 20C152 12 142 8 128 8H90C85 8 82 11 82 16V102C88 96 100 94 116 94H144C149 94 152 91 152 86V20Z" fill="#DBEAFE" />
+            </g>
+
+            <!-- Bintang & aksen bersih -->
+            <circle cx="220" cy="48" r="4" fill="#FFFFFF" fill-opacity="0.45" />
+            <circle cx="540" cy="245" r="6" fill="#DBEAFE" fill-opacity="0.4" />
+            <circle cx="48" cy="44" r="3" fill="#FFFFFF" fill-opacity="0.5" />
+          </svg>
+
+          <!-- Konten Ringkas di Atas Ilustrasi Card -->
+          <div class="relative z-10 flex items-center justify-between">
+            <span class="rounded-full bg-white/20 px-3 py-1 text-xs font-medium text-white backdrop-blur-xs">
+              Pendamping Tugas Interaktif
+            </span>
+            <span class="rounded-full bg-white/20 px-3 py-1 text-xs font-medium text-white backdrop-blur-xs">
+              {{ userStats?.xp ?? 0 }} XP &bull; Rank #{{ currentUserRank }}
+            </span>
           </div>
 
-          <RouterLink
-            v-if="currentTask"
-            :to="
-              currentTask.status === 'Selesai'
-                ? {
-                    path: '/answer',
-                    query: {
-                      id: currentTask.id,
-                      mode: currentTask.directStudy && !currentTask.hasSubmittedAnswer ? 'study' : 'score',
-                    },
-                  }
-                : { path: '/answer-upload', query: { taskId: currentTask.id } }
-            "
-            class="rounded-xl bg-[#2D6BE4] px-5 py-2.5 text-xs font-medium text-white shadow-2xs transition hover:bg-blue-700 sm:text-sm"
-          >
-            {{ currentTask.status === 'Selesai' ? 'Lihat Hasil' : 'Lanjutkan' }}
-          </RouterLink>
-          <RouterLink
-            v-else
-            to="/upload"
-            class="rounded-xl bg-[#2D6BE4] px-5 py-2.5 text-xs font-medium text-white shadow-2xs transition hover:bg-blue-700 sm:text-sm"
-          >
-            Upload Soal Sekarang
-          </RouterLink>
+          <div class="relative z-10 mt-10 max-w-xs space-y-1.5">
+            <p class="text-sm font-semibold text-white sm:text-base">
+              Pahami Konsep, Bukan Sekadar Jawaban
+            </p>
+            <p class="text-xs leading-relaxed text-sky-100">
+              Setiap langkah soal dijelaskan dengan bahasa sederhana agar kamu makin paham sebelum mengumpulkan tugas.
+            </p>
+          </div>
         </div>
 
-        <!-- 4 Menu Utama Bersih dalam Satu Area -->
-        <div class="grid grid-cols-2 gap-3.5 sm:grid-cols-4">
-          <RouterLink
-            to="/upload"
-            class="flex items-center gap-3 rounded-xl border border-slate-100 bg-[#F8FBFF] p-3.5 transition hover:border-[#2D6BE4] hover:bg-[#EAF5FD]/60"
-          >
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAF5FD] text-[#2D6BE4]">
-              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="17 8 12 3 7 8" />
-                <line x1="12" y1="3" x2="12" y2="15" />
-              </svg>
-            </div>
-            <div>
-              <p class="text-sm font-medium text-[#0A2540]">Upload Soal</p>
-              <p class="text-xs text-slate-500">File atau teks</p>
-            </div>
-          </RouterLink>
+        <!-- Kanan: Sapaan, Judul Utama, & Tombol Mulai Belajar -->
+        <div class="flex flex-col justify-center space-y-4">
+          <p class="text-sm font-medium text-slate-600 sm:text-base">
+            Halo, {{ currentUser?.name || 'Selamat Datang' }}! 👋
+          </p>
 
-          <RouterLink
-            to="/tasks"
-            class="flex items-center gap-3 rounded-xl border border-slate-100 bg-[#F8FBFF] p-3.5 transition hover:border-[#2D6BE4] hover:bg-[#EAF5FD]/60"
-          >
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAF5FD] text-[#2D6BE4]">
-              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="4" y="3" width="16" height="18" rx="3" />
-                <path d="M9 10l2 2 4-4" />
-                <line x1="9" y1="16" x2="15" y2="16" />
-              </svg>
-            </div>
-            <div>
-              <p class="text-sm font-medium text-[#0A2540]">List Tugas</p>
-              <p class="text-xs text-slate-500">{{ tasks.length }} tugas</p>
-            </div>
-          </RouterLink>
+          <h1 class="text-2xl font-semibold leading-snug tracking-tight text-[#0A2540] sm:text-3xl">
+            Belajar Jadi Lebih Seru dengan EQuest
+          </h1>
 
-          <RouterLink
-            to="/blind-box"
-            class="flex items-center gap-3 rounded-xl border border-slate-100 bg-[#F8FBFF] p-3.5 transition hover:border-[#2D6BE4] hover:bg-[#EAF5FD]/60"
-          >
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAF5FD] text-[#2D6BE4]">
-              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="8" width="18" height="4" rx="1" />
-                <path d="M12 8v13" />
-                <path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" />
-              </svg>
-            </div>
-            <div>
-              <p class="text-sm font-medium text-[#0A2540]">Blind Box</p>
-              <p class="text-xs text-slate-500">{{ userStats?.tickets ?? 0 }} tiket</p>
-            </div>
-          </RouterLink>
+          <p class="text-sm leading-relaxed text-slate-600">
+            Unggah soal atau tugasmu, dapatkan penjelasan langkah demi langkah yang mudah dipahami, dan kumpulkan XP, Tiket Blind Box, serta peringkat belajarmu.
+          </p>
 
-          <RouterLink
-            to="/progress"
-            class="flex items-center gap-3 rounded-xl border border-slate-100 bg-[#F8FBFF] p-3.5 transition hover:border-[#2D6BE4] hover:bg-[#EAF5FD]/60"
-          >
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAF5FD] text-[#2D6BE4]">
-              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="18" y1="20" x2="18" y2="10" />
-                <line x1="12" y1="20" x2="12" y2="4" />
-                <line x1="6" y1="20" x2="6" y2="14" />
-              </svg>
-            </div>
-            <div>
-              <p class="text-sm font-medium text-[#0A2540]">Progress</p>
-              <p class="text-xs text-slate-500">{{ currentUserTier.label }}</p>
-            </div>
-          </RouterLink>
+          <div class="flex flex-wrap items-center gap-3 pt-1">
+            <RouterLink
+              to="/upload"
+              class="inline-flex items-center justify-center rounded-xl bg-[#2D6BE4] px-7 py-2.5 text-sm font-medium text-white shadow-xs transition hover:bg-blue-700"
+            >
+              Mulai Belajar
+            </RouterLink>
+            <RouterLink
+              to="/tasks"
+              class="inline-flex items-center justify-center rounded-xl border border-[#C5E4FA] bg-[#F8FBFF] px-6 py-2.5 text-sm font-medium text-[#2D6BE4] transition hover:bg-[#EAF5FD]"
+            >
+              Lihat Tugas Saya
+            </RouterLink>
+          </div>
         </div>
       </section>
 
-      <!-- Papan Peringkat Pengguna (Tema Biru Bersih) -->
+      <!-- 4 Kartu Statistik Sesuai Konsep Awal (Font Konsisten) -->
+      <section class="grid grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-4">
+        <RouterLink
+          to="/progress"
+          class="rounded-2xl border border-[#C5E4FA] bg-white p-5 shadow-2xs transition hover:border-[#2D6BE4]"
+        >
+          <p class="text-xs font-medium text-slate-500 sm:text-sm">Total XP</p>
+          <p class="mt-1.5 text-2xl font-semibold text-[#0A2540] sm:text-3xl">
+            {{ userStats?.xp ?? 0 }}
+          </p>
+        </RouterLink>
+
+        <RouterLink
+          to="/blind-box"
+          class="rounded-2xl border border-[#C5E4FA] bg-white p-5 shadow-2xs transition hover:border-[#2D6BE4]"
+        >
+          <p class="text-xs font-medium text-slate-500 sm:text-sm">Tiket Blind Box</p>
+          <p class="mt-1.5 text-2xl font-semibold text-[#0A2540] sm:text-3xl">
+            {{ userStats?.tickets ?? 0 }}
+          </p>
+        </RouterLink>
+
+        <RouterLink
+          to="/progress"
+          class="rounded-2xl border border-[#C5E4FA] bg-white p-5 shadow-2xs transition hover:border-[#2D6BE4]"
+        >
+          <p class="text-xs font-medium text-slate-500 sm:text-sm">Hari Streak</p>
+          <p class="mt-1.5 text-2xl font-semibold text-[#2D6BE4] sm:text-3xl">
+            {{ userStats?.streak ?? 0 }} Hari
+          </p>
+        </RouterLink>
+
+        <RouterLink
+          to="/riwayat"
+          class="rounded-2xl border border-[#C5E4FA] bg-white p-5 shadow-2xs transition hover:border-[#2D6BE4]"
+        >
+          <p class="text-xs font-medium text-slate-500 sm:text-sm">Soal Selesai</p>
+          <p class="mt-1.5 text-2xl font-semibold text-[#0A2540] sm:text-3xl">
+            {{ userStats?.soalSelesai ?? 0 }}
+          </p>
+        </RouterLink>
+      </section>
+
+      <!-- Baris Bawah Konsep Awal: Lanjutkan Belajar (Kiri) & 4 Fitur (Kanan) -->
+      <section class="grid gap-6 lg:grid-cols-[1.05fr_2.35fr]">
+        <!-- Kolom Lanjutkan Belajar -->
+        <div>
+          <h2 class="mb-3 text-base font-semibold text-[#0A2540]">
+            Lanjutkan Belajar
+          </h2>
+
+          <div class="flex min-h-[165px] flex-col justify-between rounded-2xl border border-[#C5E4FA] bg-white p-5 shadow-2xs">
+            <div>
+              <span class="rounded-full bg-[#EAF5FD] px-3 py-1 text-xs font-medium text-[#2D6BE4]">
+                {{ currentTask ? 'Aktivitas Terakhir' : 'Mulai Tugas Baru' }}
+              </span>
+              <h3 class="mt-3 text-base font-semibold text-[#0A2540]">
+                {{ currentTask?.name || 'Belum ada tugas yang kamu buat' }}
+              </h3>
+              <p v-if="currentTask" class="mt-1 text-xs text-slate-500">
+                Status: {{ currentTask.status }} &bull; {{ currentTask.questionCount || 10 }} soal
+              </p>
+            </div>
+
+            <div class="mt-4 flex justify-end">
+              <RouterLink
+                v-if="currentTask"
+                :to="
+                  currentTask.status === 'Selesai'
+                    ? {
+                        path: '/answer',
+                        query: {
+                          id: currentTask.id,
+                          mode: currentTask.directStudy && !currentTask.hasSubmittedAnswer ? 'study' : 'score',
+                        },
+                      }
+                    : { path: '/answer-upload', query: { taskId: currentTask.id } }
+                "
+                class="rounded-xl bg-[#2D6BE4] px-5 py-2 text-xs font-medium text-white shadow-2xs transition hover:bg-blue-700 sm:text-sm"
+              >
+                {{ currentTask.status === 'Selesai' ? 'Lihat Hasil' : 'Lanjutkan' }}
+              </RouterLink>
+              <RouterLink
+                v-else
+                to="/upload"
+                class="rounded-xl bg-[#2D6BE4] px-5 py-2 text-xs font-medium text-white shadow-2xs transition hover:bg-blue-700 sm:text-sm"
+              >
+                Upload Soal Sekarang
+              </RouterLink>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kolom 4 Fitur Utama -->
+        <div>
+          <h2 class="mb-3 text-base font-semibold text-[#0A2540]">
+            Fitur
+          </h2>
+
+          <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <RouterLink
+              to="/upload"
+              class="flex flex-col items-center justify-center rounded-2xl border border-[#C5E4FA] bg-white p-5 text-center shadow-2xs transition hover:border-[#2D6BE4]"
+            >
+              <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EAF5FD] text-[#2D6BE4]">
+                <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+              </div>
+              <p class="mt-3 text-sm font-semibold text-[#0A2540]">
+                Upload Soal
+              </p>
+              <p class="mt-0.5 text-xs text-slate-500">
+                Dari file atau teks
+              </p>
+            </RouterLink>
+
+            <RouterLink
+              to="/tasks"
+              class="flex flex-col items-center justify-center rounded-2xl border border-[#C5E4FA] bg-white p-5 text-center shadow-2xs transition hover:border-[#2D6BE4]"
+            >
+              <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EAF5FD] text-[#2D6BE4]">
+                <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="4" y="3" width="16" height="18" rx="3" />
+                  <path d="M9 10l2 2 4-4" />
+                  <line x1="9" y1="16" x2="15" y2="16" />
+                </svg>
+              </div>
+              <p class="mt-3 text-sm font-semibold text-[#0A2540]">
+                List Tugas
+              </p>
+              <p class="mt-0.5 text-xs text-slate-500">
+                Kerjakan soalmu
+              </p>
+            </RouterLink>
+
+            <RouterLink
+              to="/blind-box"
+              class="flex flex-col items-center justify-center rounded-2xl border border-[#C5E4FA] bg-white p-5 text-center shadow-2xs transition hover:border-[#2D6BE4]"
+            >
+              <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EAF5FD] text-[#2D6BE4]">
+                <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="8" width="18" height="4" rx="1" />
+                  <path d="M12 8v13" />
+                  <path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" />
+                </svg>
+              </div>
+              <p class="mt-3 text-sm font-semibold text-[#0A2540]">
+                Blind Box
+              </p>
+              <p class="mt-0.5 text-xs text-slate-500">
+                Tukar tiketmu
+              </p>
+            </RouterLink>
+
+            <RouterLink
+              to="/progress"
+              class="flex flex-col items-center justify-center rounded-2xl border border-[#C5E4FA] bg-white p-5 text-center shadow-2xs transition hover:border-[#2D6BE4]"
+            >
+              <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EAF5FD] text-[#2D6BE4]">
+                <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="20" x2="18" y2="10" />
+                  <line x1="12" y1="20" x2="12" y2="4" />
+                  <line x1="6" y1="20" x2="6" y2="14" />
+                </svg>
+              </div>
+              <p class="mt-3 text-sm font-semibold text-[#0A2540]">
+                Progress
+              </p>
+              <p class="mt-0.5 text-xs text-slate-500">
+                Pantau hasilmu
+              </p>
+            </RouterLink>
+          </div>
+        </div>
+      </section>
+
+      <!-- Papan Peringkat Akun Pengguna Nyata (#peringkat) -->
       <section id="peringkat" class="rounded-2xl border border-[#C5E4FA] bg-white p-6 shadow-2xs">
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
           <div>
@@ -417,7 +420,7 @@ function scrollToLeaderboard() {
               Peringkat Pengguna
             </h2>
             <p class="mt-0.5 text-xs text-slate-500">
-              Urutan berdasarkan Total XP, soal yang diselesaikan benar, dan streak harian.
+              Urutan peringkat akun pengguna yang terdaftar di EQuest berdasarkan Total XP, soal selesai, dan streak harian.
             </p>
           </div>
           <span class="rounded-full bg-[#EAF5FD] px-3.5 py-1 text-xs font-medium text-[#2D6BE4]">
@@ -425,7 +428,7 @@ function scrollToLeaderboard() {
           </span>
         </div>
 
-        <div class="mt-4 divide-y divide-slate-100">
+        <div v-if="leaderboard.length > 0" class="mt-4 divide-y divide-slate-100">
           <div
             v-for="item in leaderboard"
             :key="item.email"
@@ -485,6 +488,10 @@ function scrollToLeaderboard() {
             </div>
           </div>
         </div>
+
+        <p v-else class="py-6 text-center text-xs text-slate-500">
+          Masuk dengan akunmu untuk melihat posisi peringkat di EQuest.
+        </p>
       </section>
     </main>
   </div>

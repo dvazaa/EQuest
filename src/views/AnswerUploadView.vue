@@ -199,49 +199,49 @@ async function handleContinue() {
   <div class="min-h-screen bg-[#D8EDFB] text-[#0f2852] font-sans antialiased">
     <Navbar />
 
-    <main class="mx-auto max-w-[1360px] px-8 pb-12 pt-6">
-      <!-- Back Arrow + Header sesuai Desktop - 6 -->
+    <main class="mx-auto max-w-[1280px] px-6 pb-12 pt-6 sm:px-8">
+      <!-- Back Arrow + Header -->
       <section class="mb-6 flex items-start gap-4">
         <button
           type="button"
           @click="router.back()"
-          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white shadow-xs transition hover:bg-slate-50 cursor-pointer"
+          class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#C5E4FA] bg-white shadow-2xs transition hover:bg-slate-50 cursor-pointer"
         >
-          <svg class="h-6 w-6 text-slate-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          <svg class="h-5 w-5 text-slate-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
         </button>
 
         <div>
-          <h1 class="text-3xl font-black text-[#0A2540] sm:text-4xl">
+          <h1 class="text-2xl font-semibold text-[#0A2540]">
             Upload Jawaban
           </h1>
-          <p class="mt-1 text-base text-slate-600 sm:text-lg">
-            Unggah atau ketik jawabanmu jika kamu ingin mendapatkan poin!
+          <p class="mt-1 text-xs text-slate-600 sm:text-sm">
+            Unggah atau ketik jawabanmu jika kamu ingin mendapatkan poin
           </p>
         </div>
       </section>
 
-      <!-- Main Box Card sesuai Desktop - 6 -->
-      <div class="rounded-3xl border border-[#C5E4FA] bg-white p-8 shadow-xs sm:p-12">
-        <div class="grid items-center gap-10 lg:grid-cols-[380px_1fr]">
-          <!-- Robot Mascot (Desktop - 6) -->
+      <!-- Main Box Card -->
+      <div class="rounded-3xl border border-[#C5E4FA] bg-white p-7 shadow-2xs sm:p-10">
+        <div class="grid items-center gap-10 lg:grid-cols-[360px_1fr]">
+          <!-- Robot Mascot -->
           <div class="flex items-center justify-center">
             <img
               src="../assets/images/robot_nunjuk.png"
               alt="Mascot EQuest"
-              class="max-h-[380px] w-auto object-contain"
+              class="max-h-[340px] w-auto object-contain"
             />
           </div>
 
           <!-- Kanan: Upload & Bubble Ketik Jawaban Area -->
           <div class="space-y-6">
             <div>
-              <h2 class="text-2xl font-black text-[#0A2540] sm:text-3xl">
+              <h2 class="text-lg font-semibold text-[#0A2540] sm:text-xl">
                 Unggah atau Ketik Jawaban Kamu
               </h2>
-              <p class="mt-1 text-sm text-slate-500 sm:text-base">
-                Pilih file jawaban dari perangkatmu atau ketik langsung pada bubble di bawah
+              <p class="mt-1 text-xs text-slate-500 sm:text-sm">
+                Pilih file jawaban dari perangkatmu atau ketik langsung pada kolom di bawah
               </p>
             </div>
 
@@ -251,16 +251,16 @@ async function handleContinue() {
               class="rounded-2xl border border-[#C5E4FA] bg-[#EAF5FD] p-4 space-y-2"
             >
               <div class="flex items-center justify-between">
-                <p class="text-xs font-extrabold uppercase tracking-wider text-[#2D6BE4]">
-                  📋 Soal yang Sedang Kamu Kerjakan ({{ taskQuestions.length }} Soal)
+                <p class="text-xs font-semibold uppercase tracking-wider text-[#2D6BE4]">
+                  Soal yang Sedang Kamu Kerjakan ({{ taskQuestions.length }} Soal)
                 </p>
-                <span class="text-[11px] font-bold text-slate-500">
+                <span class="text-[11px] font-medium text-slate-500">
                   {{ currentTask?.fileName || 'Latihan' }}
                 </span>
               </div>
-              <ul class="max-h-28 overflow-y-auto space-y-1 text-xs font-semibold text-[#0A2540] pr-2">
+              <ul class="max-h-28 overflow-y-auto space-y-1 text-xs font-medium text-[#0A2540] pr-2">
                 <li v-for="(q, idx) in taskQuestions" :key="q.id || idx">
-                  <span class="font-black text-[#2D6BE4]">{{ idx + 1 }}.</span> {{ q.question }}
+                  <span class="font-semibold text-[#2D6BE4]">{{ idx + 1 }}.</span> {{ q.question }}
                 </li>
               </ul>
             </div>
@@ -290,7 +290,7 @@ async function handleContinue() {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
 
-              <p class="mt-2.5 text-base font-bold text-[#2D6BE4]">
+              <p class="mt-2.5 text-sm font-semibold text-[#2D6BE4] sm:text-base">
                 Tarik dan letakkan file jawaban di sini
               </p>
               <p class="mt-0.5 text-xs text-slate-500">
@@ -300,16 +300,16 @@ async function handleContinue() {
               <button
                 type="button"
                 @click="triggerFileInput"
-                class="mt-3.5 rounded-xl bg-[#2D6BE4] px-7 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 cursor-pointer"
+                class="mt-3.5 rounded-xl bg-[#2D6BE4] px-6 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 cursor-pointer"
               >
                 Pilih File
               </button>
 
-              <p class="mt-3 text-xs font-semibold text-slate-400">
+              <p class="mt-3 text-xs font-medium text-slate-400">
                 JPG, PNG, PDF &nbsp;|&nbsp; Maks 10 MB
               </p>
 
-              <p v-if="selectedFile" class="mt-2 rounded-xl bg-green-50 px-4 py-1.5 text-xs font-bold text-green-700">
+              <p v-if="selectedFile" class="mt-2 rounded-xl bg-green-50 px-4 py-1.5 text-xs font-medium text-green-700">
                 ✓ File terpilih: {{ selectedFile.name }} ({{ selectedFile.size }})
               </p>
             </div>
@@ -317,7 +317,7 @@ async function handleContinue() {
             <!-- BUBBLE KETIK JAWABAN LANGSUNG -->
             <div class="space-y-3 rounded-2xl border border-[#C5E4FA] bg-[#F4FAFF] p-5">
               <div class="flex flex-wrap items-center justify-between gap-2">
-                <label class="flex items-center gap-2 text-xs font-black text-[#0A2540] sm:text-sm">
+                <label class="flex items-center gap-2 text-xs font-semibold text-[#0A2540] sm:text-sm">
                   <span class="flex h-6 w-6 items-center justify-center rounded-full bg-[#2D6BE4] text-xs text-white">💬</span>
                   Atau ketik jawaban kamu di sini
                 </label>
@@ -326,7 +326,7 @@ async function handleContinue() {
                   v-if="taskQuestions.length > 1"
                   type="button"
                   @click="showPerQuestionBubble = !showPerQuestionBubble"
-                  class="text-xs font-bold text-[#2D6BE4] underline hover:text-blue-700 cursor-pointer"
+                  class="text-xs font-medium text-[#2D6BE4] underline hover:text-blue-700 cursor-pointer"
                 >
                   {{ showPerQuestionBubble ? 'Gunakan 1 kolom teks gabungan' : 'Ketik per nomor soal (' + taskQuestions.length + ' soal)' }}
                 </button>
@@ -339,7 +339,7 @@ async function handleContinue() {
                   :key="q.id || idx"
                   class="rounded-xl border border-slate-200 bg-white p-3 space-y-1.5"
                 >
-                  <p class="text-xs font-bold text-[#0A2540]">
+                  <p class="text-xs font-semibold text-[#0A2540]">
                     {{ idx + 1 }}. {{ q.question }}
                   </p>
                   <input
@@ -368,7 +368,7 @@ async function handleContinue() {
 
             <p
               v-if="errorMessage"
-              class="rounded-xl bg-red-50 px-4 py-2.5 text-xs font-bold text-red-600"
+              class="rounded-xl bg-red-50 px-4 py-2.5 text-xs font-medium text-red-600"
             >
               ⚠️ {{ errorMessage }}
             </p>
@@ -376,13 +376,13 @@ async function handleContinue() {
             <!-- Bagian Bawah: Opsi Langsung Lihat Jawaban & Tombol Lanjutkan -->
             <div class="flex flex-wrap items-center justify-between gap-4 pt-2">
               <div>
-                <p class="text-xs font-bold text-[#0A2540]">
+                <p class="text-xs font-medium text-[#0A2540]">
                   Atau mau langsung melihat jawaban
                 </p>
                 <button
                   type="button"
                   @click="handleStudyMode"
-                  class="mt-2 rounded-xl border border-[#2D6BE4] bg-white px-6 py-2.5 text-xs font-bold text-[#2D6BE4] transition hover:bg-sky-50 cursor-pointer"
+                  class="mt-2 rounded-xl border border-[#2D6BE4] bg-white px-5 py-2 text-xs font-medium text-[#2D6BE4] transition hover:bg-sky-50 cursor-pointer"
                 >
                   Lihat jawaban
                 </button>
@@ -393,9 +393,9 @@ async function handleContinue() {
                   type="button"
                   :disabled="isCheckingAi"
                   @click="handleContinue"
-                  class="rounded-xl bg-[#2D6BE4] px-8 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-60 cursor-pointer"
+                  class="rounded-xl bg-[#2D6BE4] px-7 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-60 cursor-pointer"
                 >
-                  {{ isCheckingAi ? '🤖 AI Memeriksa Jawaban...' : 'Periksa Jawaban (AI)' }}
+                  {{ isCheckingAi ? 'AI Memeriksa Jawaban...' : 'Periksa Jawaban (AI)' }}
                 </button>
               </div>
             </div>

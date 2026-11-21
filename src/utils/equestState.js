@@ -53,6 +53,8 @@ export function setCurrentUser(user) {
   if (user?.email) {
     // Deteksi & perbarui streak login harian secara otomatis
     checkAndUpdateDailyStreak(user.email)
+    // Terapkan tema spesial milik akun ini
+    applySavedTheme(user.email)
     // Sinkronkan cadangan data akun ke server secara otomatis
     syncAccountToServer(user.email)
   }
@@ -60,6 +62,9 @@ export function setCurrentUser(user) {
 
 export function logoutUser() {
   localStorage.removeItem('equestUser')
+  if (typeof document !== 'undefined') {
+    document.documentElement.setAttribute('data-equest-theme', 'blue')
+  }
 }
 
 // Registered users management
@@ -291,12 +296,159 @@ export function initNewUserStats(email) {
     activityMonth: 0,
     xpMonth: 0,
     openedBoxes: 0,
+    unlockedFigures: [],
+    unlockedThemes: ['blue'],
+    activeTheme: 'blue',
     badges: [],
     rewards: [],
   }
   freshStats.badges = evaluateBadges(freshStats)
   writeStorage(key, freshStats)
   return freshStats
+}
+
+export const COLLECTIBLE_FIGURES = [
+  {
+    id: 'apple',
+    name: 'Apple Boy Figure',
+    series: 'Hirono Collection #01',
+    rarity: 'Rare',
+    desc: 'Figur karakter bertudung apel merah dengan daun hijau, kacamata hitam di dahi, kaos merah, dan celana pendek denim.',
+  },
+  {
+    id: 'warrior',
+    name: 'Star Fort Figure',
+    series: 'Hirono Shelter #02',
+    rarity: 'Epic',
+    desc: 'Figur karakter dengan tudung bintang kardus jahit dan kostum kotak benteng bertuliskan Keep Out.',
+  },
+  {
+    id: 'rose',
+    name: 'Rose Prince Figure',
+    series: 'Hirono Le Petit Prince #03',
+    rarity: 'Legendary',
+    desc: 'Figur karakter bertudung kelopak mawar merah berlapis dengan jubah putih dan tangkai berduri di atas kawah bulan.',
+  },
+]
+
+export const SPECIAL_THEMES = [
+  {
+    id: 'blue',
+    name: 'Biru Klasik',
+    bgHex: '#D8EDFB',
+    previewClass: 'bg-[#D8EDFB]',
+    isDefault: true,
+  },
+  {
+    id: 'purple',
+    name: 'Ungu Lavender',
+    bgHex: '#EDE9FE',
+    previewClass: 'bg-[#EDE9FE]',
+    isDefault: false,
+  },
+  {
+    id: 'pink',
+    name: 'Pink Sakura',
+    bgHex: '#FCE7F3',
+    previewClass: 'bg-[#FCE7F3]',
+    isDefault: false,
+  },
+  {
+    id: 'mint',
+    name: 'Hijau Mint',
+    bgHex: '#D1FAE5',
+    previewClass: 'bg-[#D1FAE5]',
+    isDefault: false,
+  },
+]
+
+function normalizeAccountCollections(stats) {
+  let changed = false
+  if (!Array.isArray(stats.unlockedFigures)) {
+    const derived = []
+    ;(stats.rewards || []).forEach((r) => {
+      const n = String(r.name || '').toLowerCase()
+      if ((n.includes('apple') || n.includes('astro')) && !derived.includes('apple')) derived.push('apple')
+      if ((n.includes('star fort') || n.includes('warrior') || n.includes('scholar')) && !derived.includes('warrior')) derived.push('warrior')
+      if ((n.includes('rose') || n.includes('owl')) && !derived.includes('rose')) derived.push('rose')
+    })
+    stats.unlockedFigures = derived
+    changed = true
+  }
+  if (!Array.isArray(stats.unlockedThemes)) {
+    const themes = ['blue']
+    ;(stats.rewards || []).forEach((r) => {
+      const n = String(r.name || '').toLowerCase()
+      if (n.includes('ungu') || n.includes('lavender')) {
+        if (!themes.includes('purple')) themes.push('purple')
+      } else if (n.includes('pink') || n.includes('sakura')) {
+        if (!themes.includes('pink')) themes.push('pink')
+      } else if (n.includes('mint') || n.includes('hijau')) {
+        if (!themes.includes('mint')) themes.push('mint')
+      } else if (n.includes('tema spesial')) {
+        if (!themes.includes('purple')) themes.push('purple')
+      }
+    })
+    stats.unlockedThemes = themes
+    changed = true
+  } else if (!stats.unlockedThemes.includes('blue')) {
+    stats.unlockedThemes.unshift('blue')
+    changed = true
+  }
+  if (!stats.activeTheme) {
+    stats.activeTheme = 'blue'
+    changed = true
+  }
+  return changed
+}
+
+export function applySavedTheme(email) {
+  if (typeof document === 'undefined') return 'blue'
+  if (!email) {
+    document.documentElement.setAttribute('data-equest-theme', 'blue')
+    return 'blue'
+  }
+  const saved = readStorage(getStatsKey(email), null)
+  const themeId = saved?.activeTheme || 'blue'
+  document.documentElement.setAttribute('data-equest-theme', themeId)
+  return themeId
+}
+
+export function unlockFigureForUser(email, figureId) {
+  if (!email || !figureId) return []
+  const stats = getUserStats(email)
+  if (!Array.isArray(stats.unlockedFigures)) stats.unlockedFigures = []
+  if (!stats.unlockedFigures.includes(figureId)) {
+    stats.unlockedFigures.push(figureId)
+    saveUserStats(email, stats)
+  }
+  return stats.unlockedFigures
+}
+
+export function unlockThemeForUser(email, themeId) {
+  if (!email || !themeId) return ['blue']
+  const stats = getUserStats(email)
+  if (!Array.isArray(stats.unlockedThemes)) stats.unlockedThemes = ['blue']
+  if (!stats.unlockedThemes.includes(themeId)) {
+    stats.unlockedThemes.push(themeId)
+    saveUserStats(email, stats)
+  }
+  return stats.unlockedThemes
+}
+
+export function setActiveThemeForUser(email, themeId) {
+  if (typeof document !== 'undefined') {
+    document.documentElement.setAttribute('data-equest-theme', themeId || 'blue')
+  }
+  if (!email) return 'blue'
+  const stats = getUserStats(email)
+  if (!Array.isArray(stats.unlockedThemes)) stats.unlockedThemes = ['blue']
+  if (themeId !== 'blue' && !stats.unlockedThemes.includes(themeId)) {
+    return stats.activeTheme || 'blue'
+  }
+  stats.activeTheme = themeId
+  saveUserStats(email, stats)
+  return stats.activeTheme
 }
 
 export function initUserStats(email) {
@@ -315,6 +467,9 @@ export function getUserStats(email) {
       activityMonth: 0,
       xpMonth: 0,
       openedBoxes: 0,
+      unlockedFigures: [],
+      unlockedThemes: ['blue'],
+      activeTheme: 'blue',
       badges: evaluateBadges({}),
       rewards: [],
     }
@@ -327,6 +482,8 @@ export function getUserStats(email) {
   if (!saved) {
     return initNewUserStats(email)
   }
+
+  let dirty = normalizeAccountCollections(saved)
 
   // Untuk akun reguler, sinkronkan jumlah soal selesai & latihan selesai dari data tugas nyata
   if (!isDemoAccount(email)) {
@@ -348,15 +505,22 @@ export function getUserStats(email) {
       ) {
         saved.soalSelesai = actualCorrectQuestions
         saved.completedLatihan = completedTasks.length
-        saved.badges = evaluateBadges(saved)
-        writeStorage(key, saved)
-        return saved
+        dirty = true
       }
     }
   }
 
   // Selalu sinkronkan status terbuka/terkunci badge berdasarkan capaian nyata
   saved.badges = evaluateBadges(saved)
+  if (dirty) {
+    writeStorage(key, saved)
+  }
+  if (typeof document !== 'undefined') {
+    const currentSession = getCurrentUser()
+    if (currentSession?.email?.trim().toLowerCase() === email.trim().toLowerCase()) {
+      document.documentElement.setAttribute('data-equest-theme', saved.activeTheme || 'blue')
+    }
+  }
   return saved
 }
 
@@ -552,46 +716,8 @@ export function simulateNextDayStreak(email) {
 }
 
 // ============================================================================
-// SISTEM PERINGKAT (LEADERBOARD) UNTUK SETIAP USER
+// SISTEM PERINGKAT (LEADERBOARD) HANYA UNTUK AKUN PENGGUNA NYATA
 // ============================================================================
-const COMMUNITY_PEERS = [
-  {
-    name: 'Nadia Putri',
-    email: 'nadia.putri@student.ac.id',
-    xp: 280,
-    streak: 9,
-    soalSelesai: 32,
-  },
-  {
-    name: 'Rizky Pratama',
-    email: 'rizky.pratama@student.ac.id',
-    xp: 190,
-    streak: 6,
-    soalSelesai: 20,
-  },
-  {
-    name: 'Alya Zahra',
-    email: 'alya.zahra@student.ac.id',
-    xp: 120,
-    streak: 4,
-    soalSelesai: 14,
-  },
-  {
-    name: 'Farhan Akbar',
-    email: 'farhan.akbar@student.ac.id',
-    xp: 60,
-    streak: 2,
-    soalSelesai: 6,
-  },
-  {
-    name: 'Salsabila',
-    email: 'salsabila@student.ac.id',
-    xp: 30,
-    streak: 1,
-    soalSelesai: 3,
-  },
-]
-
 export function getRankTier(xp = 0) {
   if (xp >= 400) {
     return {
@@ -602,7 +728,7 @@ export function getRankTier(xp = 0) {
   if (xp >= 250) {
     return {
       label: 'Master Scholar',
-      badgeClass: 'bg-amber-100 text-amber-800 border-amber-200',
+      badgeClass: 'bg-indigo-100 text-indigo-800 border-indigo-200',
     }
   }
   if (xp >= 100) {
@@ -628,10 +754,12 @@ export function getLeaderboard(currentUserEmail = '') {
   const registeredUsers = getAllUsers()
   const entriesMap = new Map()
 
-  // 1. Masukkan semua akun nyata yang terdaftar di aplikasi beserta statistik aslinya
+  // 1. Masukkan akun nyata yang terdaftar di aplikasi beserta statistik aslinya (tanpa akun dummy komunitas!)
   registeredUsers.forEach((u) => {
     const email = (u.email || '').trim().toLowerCase()
     if (!email) return
+    // Jangan tampilkan akun seed demo saat pengguna menggunakan akun nyata
+    if (isDemoAccount(email) && !isDemoAccount(normalizedCurrent)) return
     const st = getUserStats(email)
     entriesMap.set(email, {
       name: u.name || email.split('@')[0],
@@ -657,18 +785,7 @@ export function getLeaderboard(currentUserEmail = '') {
     })
   }
 
-  // 3. Tambahkan rekan pelajar komunitas agar papan peringkat selalu hidup
-  COMMUNITY_PEERS.forEach((peer) => {
-    const email = peer.email.toLowerCase()
-    if (!entriesMap.has(email)) {
-      entriesMap.set(email, {
-        ...peer,
-        isCurrentUser: email === normalizedCurrent,
-      })
-    }
-  })
-
-  // 4. Urutkan berdasarkan XP tertinggi -> Soal Selesai -> Hari Streak
+  // 3. Urutkan berdasarkan XP tertinggi -> Soal Selesai -> Hari Streak
   const sorted = Array.from(entriesMap.values()).sort((a, b) => {
     if (b.xp !== a.xp) return b.xp - a.xp
     if (b.soalSelesai !== a.soalSelesai) return b.soalSelesai - a.soalSelesai

@@ -121,55 +121,55 @@ async function handleAskAi() {
   <div class="min-h-screen bg-[#D8EDFB] text-[#0f2852] font-sans antialiased">
     <Navbar />
 
-    <main class="mx-auto max-w-[1360px] px-8 pb-12 pt-6">
-      <!-- Header sesuai Desktop - 15 -->
+    <main class="mx-auto max-w-[1280px] px-6 pb-12 pt-6 sm:px-8">
+      <!-- Header -->
       <section class="mb-6">
-        <h1 class="text-3xl font-black text-[#0A2540] sm:text-4xl">
+        <h1 class="text-2xl font-semibold text-[#0A2540]">
           Penjelasan Soal
         </h1>
-        <p class="mt-1 text-base text-slate-600 sm:text-lg">
+        <p class="mt-1 text-xs text-slate-600 sm:text-sm">
           {{ task.fileName || 'jawaban_latihan.pdf' }} &nbsp;|&nbsp; Soal {{ currentIndex + 1 }} dari {{ questions.length }}
         </p>
       </section>
 
       <!-- Layout 3 Kolom: Robot | Main Card | Sidebar Info -->
-      <div class="grid items-start gap-8 lg:grid-cols-[280px_1fr_320px]">
+      <div class="grid items-start gap-7 lg:grid-cols-[260px_1fr_300px]">
         <!-- 1. Robot Mascot (Kiri) -->
         <div class="hidden lg:flex items-center justify-center pt-8">
           <img
             src="../assets/images/robot_nunjuk.png"
             alt="Mascot EQuest"
-            class="max-h-[380px] w-auto object-contain"
+            class="max-h-[340px] w-auto object-contain"
           />
         </div>
 
         <!-- 2. Kartu Utama Penjelasan Soal (Tengah) -->
-        <div class="rounded-3xl bg-white p-7 shadow-xs space-y-6">
+        <div class="rounded-3xl border border-[#C5E4FA] bg-white p-6 shadow-2xs space-y-6 sm:p-7">
           <!-- Soal & Jawaban Singkat -->
           <div>
             <div class="flex items-start gap-3">
-              <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#EAF5FD] text-xs font-black text-[#2D6BE4]">
+              <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#EAF5FD] text-xs font-semibold text-[#2D6BE4]">
                 {{ currentIndex + 1 }}
               </span>
-              <h2 class="text-base font-extrabold text-[#0A2540] sm:text-lg">
+              <h2 class="text-base font-semibold text-[#0A2540]">
                 {{ currentQuestion.question }}
               </h2>
             </div>
 
-            <div class="mt-3 ml-10 inline-flex items-center gap-2 rounded-xl bg-[#E1F7E9] px-3.5 py-1.5 text-xs font-bold text-[#16A34A]">
+            <div class="mt-3 ml-10 inline-flex items-center gap-2 rounded-xl bg-[#E1F7E9] px-3.5 py-1.5 text-xs font-medium text-[#16A34A]">
               <span>Jawaban</span>
-              <span class="font-extrabold text-[#0F6F32]">{{ currentQuestion.correctAnswer }}</span>
+              <span class="font-semibold text-[#0F6F32]">{{ currentQuestion.correctAnswer }}</span>
             </div>
           </div>
 
           <!-- AI Explanation Block -->
           <div class="rounded-2xl bg-[#EAF5FD] p-5">
             <div class="flex items-start gap-3">
-              <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#2D6BE4] text-xs font-black text-white">
+              <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#2D6BE4] text-xs font-semibold text-white">
                 AI
               </span>
               <div>
-                <h3 class="text-sm font-black text-[#0A2540]">
+                <h3 class="text-sm font-semibold text-[#0A2540]">
                   Kenapa jawabannya begitu?
                 </h3>
                 <p class="mt-1.5 text-xs sm:text-sm leading-relaxed text-slate-700">
@@ -181,7 +181,7 @@ async function handleAskAi() {
 
           <!-- Contoh Penggunaan / Contoh Sederhana -->
           <div v-if="currentQuestion.exampleCode" class="space-y-2">
-            <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-700">
+            <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-700">
               {{ isCodeExample ? 'Contoh penggunaan' : 'Contoh sederhana' }}
             </h3>
 
@@ -193,7 +193,7 @@ async function handleAskAi() {
             </div>
             <div
               v-else
-              class="rounded-2xl border border-[#C5E4FA] bg-[#F8FBFF] p-5 text-sm font-bold text-[#0A2540]"
+              class="rounded-2xl border border-[#C5E4FA] bg-[#F8FBFF] p-5 text-sm font-medium text-[#0A2540]"
             >
               <p class="whitespace-pre-wrap leading-relaxed">{{ currentQuestion.exampleCode }}</p>
             </div>
@@ -210,7 +210,7 @@ async function handleAskAi() {
               :key="cIdx"
               class="space-y-2 rounded-2xl bg-slate-50 border border-slate-200 p-4 text-xs"
             >
-              <p class="font-bold text-[#2D6BE4]">
+              <p class="font-semibold text-[#2D6BE4]">
                 💬 Pertanyaanmu: {{ chat.user }}
               </p>
               <p class="leading-relaxed text-slate-700 whitespace-pre-wrap">
@@ -232,7 +232,7 @@ async function handleAskAi() {
               type="button"
               @click="handleAskAi"
               :disabled="isAskingAi || !userPrompt.trim()"
-              class="rounded-xl bg-[#2D6BE4] px-6 py-2.5 text-xs font-bold text-white transition hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
+              class="rounded-xl bg-[#2D6BE4] px-6 py-2.5 text-xs font-medium text-white transition hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
             >
               {{ isAskingAi ? '...' : 'Tanya' }}
             </button>
@@ -243,7 +243,7 @@ async function handleAskAi() {
             <button
               type="button"
               @click="goBackToAnswer"
-              class="rounded-xl border border-slate-300 bg-white px-6 py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 cursor-pointer"
+              class="rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 cursor-pointer"
             >
               Kembali ke Daftar
             </button>
@@ -251,7 +251,7 @@ async function handleAskAi() {
             <button
               type="button"
               @click="goToNextQuestion"
-              class="rounded-xl bg-[#2D6BE4] px-7 py-2.5 text-xs font-bold text-white transition hover:bg-blue-700 cursor-pointer"
+              class="rounded-xl bg-[#2D6BE4] px-6 py-2.5 text-xs font-medium text-white transition hover:bg-blue-700 cursor-pointer"
             >
               {{ currentIndex < questions.length - 1 ? `Soal ${currentIndex + 2} →` : 'Selesai Pembahasan ✓' }}
             </button>
@@ -259,10 +259,10 @@ async function handleAskAi() {
         </div>
 
         <!-- 3. Sidebar Kanan (Istilah Penting & Cara Mudah Mengingat) -->
-        <div class="space-y-6">
+        <div class="space-y-5">
           <!-- Card: Istilah Penting -->
-          <div class="rounded-3xl bg-white p-6 shadow-xs space-y-4">
-            <h3 class="text-sm font-black text-[#0A2540]">
+          <div class="rounded-3xl border border-[#C5E4FA] bg-white p-6 shadow-2xs space-y-4">
+            <h3 class="text-sm font-semibold text-[#0A2540]">
               Istilah Penting
             </h3>
 
@@ -272,7 +272,7 @@ async function handleAskAi() {
                 :key="tIdx"
                 class="pt-2.5 first:pt-0"
               >
-                <p class="font-extrabold text-[#0A2540]">
+                <p class="font-semibold text-[#0A2540]">
                   {{ term.name }}
                 </p>
                 <p class="mt-0.5 text-slate-500 leading-relaxed">
@@ -283,8 +283,8 @@ async function handleAskAi() {
           </div>
 
           <!-- Card: Cara Mudah Mengingat -->
-          <div class="rounded-3xl bg-white p-6 shadow-xs space-y-3">
-            <h3 class="text-sm font-black text-[#0A2540]">
+          <div class="rounded-3xl border border-[#C5E4FA] bg-white p-6 shadow-2xs space-y-3">
+            <h3 class="text-sm font-semibold text-[#0A2540]">
               Cara Mudah Mengingat
             </h3>
             <p class="text-xs leading-relaxed text-slate-600">

@@ -75,21 +75,21 @@ function handleTaskAction(task) {
   <div class="min-h-screen bg-[#D8EDFB] text-[#0f2852] font-sans antialiased">
     <Navbar />
 
-    <main class="mx-auto max-w-[1360px] px-8 pb-12 pt-6">
-      <!-- Header dan Bar Pencarian sesuai Desktop - 2 -->
+    <main class="mx-auto max-w-[1280px] px-6 pb-12 pt-6 sm:px-8">
+      <!-- Header dan Bar Pencarian -->
       <section class="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 class="text-3xl font-black text-[#0A2540] sm:text-4xl">
+          <h1 class="text-2xl font-semibold text-[#0A2540]">
             Tugas Saya
           </h1>
-          <p class="mt-1 text-base text-slate-600 sm:text-lg">
+          <p class="mt-1 text-xs text-slate-600 sm:text-sm">
             Lihat dan lanjutkan tugas yang sedang atau pernah kamu kerjakan
           </p>
         </div>
 
         <div class="flex flex-wrap items-center gap-4">
           <!-- Search input -->
-          <div class="flex items-center gap-2 rounded-2xl bg-white px-4 py-2.5 shadow-2xs w-64 sm:w-80">
+          <div class="flex items-center gap-2 rounded-2xl border border-[#C5E4FA] bg-white px-4 py-2.5 shadow-2xs w-64 sm:w-80">
             <svg
               class="h-5 w-5 text-slate-400"
               fill="none"
@@ -110,7 +110,7 @@ function handleTaskAction(task) {
           <div class="relative">
             <select
               v-model="selectedStatus"
-              class="appearance-none rounded-2xl bg-white px-5 py-2.5 pr-10 text-sm font-bold text-[#0f2852] shadow-2xs outline-none cursor-pointer"
+              class="appearance-none rounded-2xl border border-[#C5E4FA] bg-white px-5 py-2.5 pr-10 text-xs font-medium text-[#0f2852] shadow-2xs outline-none cursor-pointer sm:text-sm"
             >
               <option v-for="opt in statusOptions" :key="opt" :value="opt">
                 {{ opt }}
@@ -123,30 +123,30 @@ function handleTaskAction(task) {
         </div>
       </section>
 
-      <!-- Empty State sesuai Desktop - 3 -->
+      <!-- Empty State -->
       <section
         v-if="filteredTasks.length === 0 && tasks.length === 0"
-        class="flex min-h-[500px] flex-col items-center justify-center rounded-3xl bg-white p-12 shadow-xs lg:flex-row lg:justify-around"
+        class="flex min-h-[460px] flex-col items-center justify-center rounded-3xl border border-[#C5E4FA] bg-white p-10 shadow-2xs lg:flex-row lg:justify-around"
       >
         <div class="max-w-md text-center lg:text-left">
           <img
             src="../assets/images/robot_bingung.png"
             alt="Belum ada tugas"
-            class="mx-auto max-h-[320px] object-contain"
+            class="mx-auto max-h-[280px] object-contain"
           />
         </div>
 
-        <div class="mt-8 max-w-lg space-y-5 text-center lg:mt-0 lg:text-left">
-          <h2 class="text-3xl font-extrabold text-[#0A2540]">
+        <div class="mt-8 max-w-lg space-y-4 text-center lg:mt-0 lg:text-left">
+          <h2 class="text-xl font-semibold text-[#0A2540] sm:text-2xl">
             Belum ada tugas
           </h2>
-          <p class="text-base leading-relaxed text-slate-600 sm:text-lg">
+          <p class="text-xs leading-relaxed text-slate-600 sm:text-sm">
             Mulai dengan mengunggah soal atau tugas untuk mendapatkan bantuan AI dan mulai belajar.
           </p>
           <div>
             <RouterLink
               to="/upload"
-              class="inline-block rounded-2xl bg-[#2D6BE4] px-8 py-3.5 text-base font-bold text-white shadow-md shadow-blue-500/20 transition hover:bg-blue-700"
+              class="inline-block rounded-xl bg-[#2D6BE4] px-7 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700"
             >
               Upload Soal Sekarang
             </RouterLink>
@@ -154,27 +154,27 @@ function handleTaskAction(task) {
         </div>
       </section>
 
-      <!-- Daftar Tugas sesuai Desktop - 2 -->
-      <section v-else class="space-y-4">
+      <!-- Daftar Tugas -->
+      <section v-else class="space-y-3.5">
         <div
           v-for="task in filteredTasks"
           :key="task.id"
-          class="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#C5E4FA] bg-white px-7 py-5 shadow-xs transition hover:border-[#2D6BE4]"
+          class="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#C5E4FA] bg-white px-6 py-4 shadow-2xs transition hover:border-[#2D6BE4]"
         >
           <!-- Info Tugas -->
           <div>
-            <h2 class="text-lg font-black text-[#0A2540] sm:text-xl">
+            <h2 class="text-base font-semibold text-[#0A2540]">
               {{ task.name || task.fileName }}
             </h2>
-            <p class="mt-1 text-sm text-slate-500">
+            <p class="mt-0.5 text-xs text-slate-500">
               {{ task.questionCount || 10 }} soal &nbsp;|&nbsp; Diunggah {{ task.uploadDate || '12 Okt 2026' }}
             </p>
           </div>
 
-          <!-- Status & Action Buttons sesuai Figma -->
-          <div class="flex items-center gap-4">
+          <!-- Status & Action Buttons -->
+          <div class="flex items-center gap-3.5">
             <span
-              class="rounded-full px-4 py-1.5 text-xs font-bold"
+              class="rounded-full px-3.5 py-1 text-xs font-medium"
               :class="
                 task.status === 'Selesai'
                   ? 'bg-[#BFF0D2] text-[#0A6C35]'
@@ -187,7 +187,7 @@ function handleTaskAction(task) {
             <button
               type="button"
               @click="handleTaskAction(task)"
-              class="rounded-xl px-7 py-2.5 text-sm font-bold transition shadow-xs cursor-pointer"
+              class="rounded-xl px-6 py-2 text-xs font-medium transition shadow-2xs cursor-pointer sm:text-sm"
               :class="
                 task.status === 'Selesai'
                   ? 'bg-[#DDF0FD] text-[#2D6BE4] hover:bg-[#c9e8fb]'
@@ -201,7 +201,7 @@ function handleTaskAction(task) {
 
         <p
           v-if="filteredTasks.length === 0"
-          class="rounded-2xl bg-white p-8 text-center text-sm font-bold text-slate-500"
+          class="rounded-2xl border border-[#C5E4FA] bg-white p-8 text-center text-xs font-medium text-slate-500 sm:text-sm"
         >
           Tidak ada tugas dengan filter atau kata kunci tersebut.
         </p>

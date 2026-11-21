@@ -1,1 +1,25 @@
 @import "tailwindcss";
+
+html[data-equest-theme="purple"] .min-h-screen {
+  background-color: #EDE9FE !important;
+}
+html[data-equest-theme="purple"] header {
+  background-color: rgba(237, 233, 254, 0.92) !important;
+  border-color: #DDD6FE !important;
+}
+
+html[data-equest-theme="pink"] .min-h-screen {
+  background-color: #FCE7F3 !important;
+}
+html[data-equest-theme="pink"] header {
+  background-color: rgba(252, 231, 243, 0.92) !important;
+  border-color: #FBCFE8 !important;
+}
+
+html[data-equest-theme="mint"] .min-h-screen {
+  background-color: #D1FAE5 !important;
+}
+html[data-equest-theme="mint"] header {
+  background-color: rgba(209, 250, 229, 0.92) !important;
+  border-color: #A7F3D0 !important;
+}
