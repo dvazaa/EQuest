@@ -1,10 +1,8 @@
--- =====================================================================
 -- PERANCANGAN BASIS DATA FISIK (PHYSICAL DATABASE DESIGN / PDM)
 -- APLIKASI: EQuest (Sistem Pendamping Pengerjaan Tugas Berbasis AI)
 -- Dokumen Acuan: Software Requirements Specification (SRS) v1.0
 -- Penyusun SRS: 11241026 - Diva Novaliza Fitriyani
 -- Database Engine: MySQL / MariaDB (InnoDB, utf8mb4)
--- =====================================================================
 
 CREATE DATABASE IF NOT EXISTS `equest_db` 
 CHARACTER SET utf8mb4 
