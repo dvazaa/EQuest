@@ -479,5 +479,277 @@ const floatingPetals = [
         </div>
       </div>
     </template>
+
+    <!-- ===================== TEMA PINK STRAWBERRY MANIS ===================== -->
+    <template v-else-if="activeTheme === 'strawberry'">
+      <div class="fixed inset-0 z-10 overflow-hidden">
+        <div class="absolute -left-24 top-16 h-72 w-72 rounded-full bg-pink-300/25 blur-3xl"></div>
+        <div class="absolute -right-24 bottom-12 h-80 w-80 rounded-full bg-rose-300/25 blur-3xl"></div>
+      </div>
+      <div class="fixed inset-0 z-30 overflow-hidden">
+        <!-- Strawberry Kiri Atas -->
+        <svg viewBox="0 0 220 220" class="theme-sway-slow absolute -left-3 top-12 h-44 w-44 opacity-85 sm:h-52 sm:w-52" fill="none">
+          <path d="M12 42 C60 48, 114 66, 166 96" stroke="#16A34A" stroke-width="3.2" stroke-linecap="round" />
+          <g transform="translate(88, 108) rotate(-12)">
+            <path d="M0,-24 C18,-26 30,-10 24,10 C18,28 6,34 0,34 C-6,34 -18,28 -24,10 C-30,-10 -18,-26 0,-24Z" fill="#FB7185" stroke="#E11D48" stroke-width="1.5" />
+            <circle cx="-10" cy="-6" r="1.8" fill="#FEF08A" />
+            <circle cx="0" cy="-10" r="1.8" fill="#FEF08A" />
+            <circle cx="10" cy="-4" r="1.8" fill="#FEF08A" />
+            <circle cx="-6" cy="8" r="1.8" fill="#FEF08A" />
+            <circle cx="7" cy="10" r="1.8" fill="#FEF08A" />
+            <circle cx="0" cy="20" r="1.8" fill="#FEF08A" />
+            <path d="M-16,-22 L-6,-15 L0,-27 L6,-15 L16,-22 L10,-28 L0,-24 L-10,-28Z" fill="#4ADE80" stroke="#16A34A" stroke-width="1.2" />
+          </g>
+          <g transform="translate(154, 60) scale(0.85)">
+            <circle cx="0" cy="-9" r="6" fill="#FFF1F2" stroke="#F472B6" stroke-width="1" />
+            <circle cx="8.5" cy="-3" r="6" fill="#FFF1F2" stroke="#F472B6" stroke-width="1" />
+            <circle cx="5.5" cy="7.5" r="6" fill="#FFF1F2" stroke="#F472B6" stroke-width="1" />
+            <circle cx="-5.5" cy="7.5" r="6" fill="#FFF1F2" stroke="#F472B6" stroke-width="1" />
+            <circle cx="-8.5" cy="-3" r="6" fill="#FFF1F2" stroke="#F472B6" stroke-width="1" />
+            <circle cx="0" cy="0" r="4" fill="#FACC15" />
+          </g>
+        </svg>
+        <!-- Strawberry Kanan Bawah -->
+        <svg viewBox="0 0 220 220" class="theme-sway-slow absolute -bottom-2 -right-2 h-48 w-48 opacity-85 sm:h-56 sm:w-56" fill="none">
+          <g transform="translate(154, 148) rotate(10)">
+            <path d="M0,-24 C18,-26 30,-10 24,10 C18,28 6,34 0,34 C-6,34 -18,28 -24,10 C-30,-10 -18,-26 0,-24Z" fill="#EC4899" stroke="#BE185D" stroke-width="1.5" />
+            <circle cx="-9" cy="-5" r="1.8" fill="#FEF08A" />
+            <circle cx="2" cy="-9" r="1.8" fill="#FEF08A" />
+            <circle cx="10" cy="-2" r="1.8" fill="#FEF08A" />
+            <circle cx="-5" cy="10" r="1.8" fill="#FEF08A" />
+            <circle cx="6" cy="12" r="1.8" fill="#FEF08A" />
+            <path d="M-16,-22 L-6,-15 L0,-27 L6,-15 L16,-22 L10,-28 L0,-24 L-10,-28Z" fill="#4ADE80" stroke="#16A34A" stroke-width="1.2" />
+          </g>
+          <g transform="translate(96, 174) scale(0.75) rotate(-16)">
+            <path d="M0,-24 C18,-26 30,-10 24,10 C18,28 6,34 0,34 C-6,34 -18,28 -24,10 C-30,-10 -18,-26 0,-24Z" fill="#F472B6" stroke="#DB2777" stroke-width="1.5" />
+            <circle cx="-6" cy="2" r="2" fill="#FEF08A" />
+            <circle cx="6" cy="2" r="2" fill="#FEF08A" />
+            <path d="M-14,-21 L0,-16 L14,-21 L0,-28Z" fill="#4ADE80" />
+          </g>
+        </svg>
+        <div v-for="(p, idx) in floatingPetals" :key="'str-' + idx" class="theme-petal-drift absolute top-0 opacity-75" :style="{ left: p.left, animationDelay: p.delay, animationDuration: p.duration }">
+          <svg :width="p.size" :height="p.size" viewBox="0 0 24 24" fill="none" :style="{ transform: `rotate(${p.rotate})` }">
+            <path d="M12 5 C17 5, 19 10, 16 16 C14 20, 13 21, 12 21 C11 21, 10 20, 8 16 C5 10, 7 5, 12 5Z" fill="#F472B6" fill-opacity="0.8" />
+            <path d="M8 5 L12 8 L16 5 L12 3Z" fill="#4ADE80" />
+          </svg>
+        </div>
+      </div>
+    </template>
+
+    <!-- ===================== TEMA KUNING LEMON SEGAR ===================== -->
+    <template v-else-if="activeTheme === 'lemon'">
+      <div class="fixed inset-0 z-10 overflow-hidden">
+        <div class="absolute -left-24 top-16 h-72 w-72 rounded-full bg-yellow-300/30 blur-3xl"></div>
+        <div class="absolute -right-24 bottom-12 h-80 w-80 rounded-full bg-amber-300/25 blur-3xl"></div>
+      </div>
+      <div class="fixed inset-0 z-30 overflow-hidden">
+        <!-- Lemon Kiri Atas -->
+        <svg viewBox="0 0 220 220" class="theme-sway-slow absolute -left-3 top-12 h-44 w-44 opacity-85 sm:h-52 sm:w-52" fill="none">
+          <path d="M12 48 C62 58, 114 76, 168 104" stroke="#65A30D" stroke-width="3.2" stroke-linecap="round" />
+          <g transform="translate(88, 104) rotate(-20)">
+            <ellipse cx="0" cy="0" rx="30" ry="22" fill="#FACC15" stroke="#CA8A04" stroke-width="1.6" />
+            <circle cx="-30" cy="0" r="4" fill="#FACC15" stroke="#CA8A04" stroke-width="1.2" />
+            <circle cx="30" cy="0" r="4" fill="#FACC15" stroke="#CA8A04" stroke-width="1.2" />
+            <ellipse cx="-8" cy="-8" rx="9" ry="4" fill="#FEF9C3" opacity="0.7" />
+            <path d="M4,-22 C18,-36 32,-30 24,-14 C16,-10 8,-14 4,-22Z" fill="#4ADE80" stroke="#16A34A" stroke-width="1.2" />
+          </g>
+          <!-- Irisan Lemon Bulat -->
+          <g transform="translate(152, 68)">
+            <circle cx="0" cy="0" r="22" fill="#FEF08A" stroke="#EAB308" stroke-width="2.5" />
+            <circle cx="0" cy="0" r="18" fill="#FFFFFF" />
+            <circle cx="0" cy="0" r="15" fill="#FDE047" />
+            <path d="M0,-15 L0,15 M-15,0 L15,0 M-11,-11 L11,11 M-11,11 L11,-11" stroke="#FFFFFF" stroke-width="1.6" />
+          </g>
+        </svg>
+        <!-- Lemon Kanan Bawah -->
+        <svg viewBox="0 0 220 220" class="theme-sway-slow absolute -bottom-2 -right-2 h-48 w-48 opacity-85 sm:h-56 sm:w-56" fill="none">
+          <g transform="translate(152, 154) rotate(16)">
+            <ellipse cx="0" cy="0" rx="30" ry="22" fill="#FDE047" stroke="#CA8A04" stroke-width="1.6" />
+            <circle cx="-30" cy="0" r="4" fill="#FDE047" stroke="#CA8A04" stroke-width="1.2" />
+            <circle cx="30" cy="0" r="4" fill="#FDE047" stroke="#CA8A04" stroke-width="1.2" />
+            <path d="M-4,-22 C-16,-36 -30,-30 -22,-14 C-14,-10 -6,-14 -4,-22Z" fill="#4ADE80" stroke="#16A34A" stroke-width="1.2" />
+          </g>
+          <g transform="translate(96, 178)">
+            <circle cx="0" cy="0" r="20" fill="#FEF08A" stroke="#EAB308" stroke-width="2" />
+            <circle cx="0" cy="0" r="14" fill="#FACC15" />
+            <path d="M0,-14 L0,14 M-14,0 L14,0" stroke="#FFFFFF" stroke-width="1.5" />
+          </g>
+        </svg>
+        <div v-for="(p, idx) in floatingPetals" :key="'lmn-' + idx" class="theme-petal-drift absolute top-0 opacity-75" :style="{ left: p.left, animationDelay: p.delay, animationDuration: p.duration }">
+          <svg :width="p.size" :height="p.size" viewBox="0 0 24 24" fill="none" :style="{ transform: `rotate(${p.rotate})` }">
+            <circle cx="12" cy="12" r="8" fill="#FDE047" stroke="#EAB308" stroke-width="1.2" />
+            <path d="M12 5 L12 19 M5 12 L19 12" stroke="#FFFFFF" stroke-width="1.2" />
+          </svg>
+        </div>
+      </div>
+    </template>
+
+    <!-- ===================== TEMA MERAH CHERRY LUCU ===================== -->
+    <template v-else-if="activeTheme === 'cherry'">
+      <div class="fixed inset-0 z-10 overflow-hidden">
+        <div class="absolute -left-24 top-16 h-72 w-72 rounded-full bg-rose-300/25 blur-3xl"></div>
+        <div class="absolute -right-24 bottom-12 h-80 w-80 rounded-full bg-red-300/25 blur-3xl"></div>
+      </div>
+      <div class="fixed inset-0 z-30 overflow-hidden">
+        <!-- Cherry Kiri Atas -->
+        <svg viewBox="0 0 220 220" class="theme-sway-slow absolute -left-3 top-12 h-44 w-44 opacity-85 sm:h-52 sm:w-52" fill="none">
+          <g transform="translate(96, 108)">
+            <path d="M-24,22 C-22,-18 -4,-48 16,-64 C6,-36 10,-6 24,18" stroke="#16A34A" stroke-width="3.2" stroke-linecap="round" />
+            <path d="M16,-64 C38,-72 52,-56 38,-44 C26,-40 16,-48 16,-64Z" fill="#4ADE80" stroke="#15803D" stroke-width="1.2" />
+            <circle cx="-24" cy="28" r="20" fill="#E11D48" stroke="#9F1239" stroke-width="1.5" />
+            <ellipse cx="-30" cy="20" rx="5" ry="7" transform="rotate(-24 -30 20)" fill="#FDA4AF" opacity="0.7" />
+            <circle cx="24" cy="24" r="20" fill="#BE123C" stroke="#881337" stroke-width="1.5" />
+            <ellipse cx="18" cy="16" rx="5" ry="7" transform="rotate(-24 18 16)" fill="#FDA4AF" opacity="0.65" />
+          </g>
+        </svg>
+        <!-- Cherry Kanan Bawah -->
+        <svg viewBox="0 0 220 220" class="theme-sway-slow absolute -bottom-2 -right-2 h-48 w-48 opacity-85 sm:h-56 sm:w-56" fill="none">
+          <g transform="translate(132, 136)">
+            <path d="M-22,22 C-18,-18 2,-48 22,-64 C8,-34 12,-6 24,20" stroke="#16A34A" stroke-width="3.2" stroke-linecap="round" />
+            <path d="M22,-64 C4,-76 -10,-62 2,-48 C14,-44 22,-50 22,-64Z" fill="#4ADE80" stroke="#15803D" stroke-width="1.2" />
+            <circle cx="-22" cy="28" r="19" fill="#E11D48" stroke="#9F1239" stroke-width="1.5" />
+            <ellipse cx="-28" cy="20" rx="4.5" ry="6.5" transform="rotate(-24 -28 20)" fill="#FDA4AF" opacity="0.7" />
+            <circle cx="24" cy="24" r="19" fill="#BE123C" stroke="#881337" stroke-width="1.5" />
+            <ellipse cx="18" cy="16" rx="4.5" ry="6.5" transform="rotate(-24 18 16)" fill="#FDA4AF" opacity="0.65" />
+          </g>
+        </svg>
+        <div v-for="(p, idx) in floatingPetals" :key="'chr-' + idx" class="theme-petal-drift absolute top-0 opacity-75" :style="{ left: p.left, animationDelay: p.delay, animationDuration: p.duration }">
+          <svg :width="p.size" :height="p.size" viewBox="0 0 24 24" fill="none" :style="{ transform: `rotate(${p.rotate})` }">
+            <path d="M7 14 C8 7 12 4 15 3 C14 7 15 10 17 14" stroke="#16A34A" stroke-width="1.6" stroke-linecap="round" />
+            <circle cx="7" cy="16" r="4" fill="#E11D48" />
+            <circle cx="17" cy="16" r="4" fill="#BE123C" />
+          </svg>
+        </div>
+      </div>
+    </template>
+
+    <!-- ===================== TEMA SEGAR SEMANGKA LUCU ===================== -->
+    <template v-else-if="activeTheme === 'watermelon'">
+      <div class="fixed inset-0 z-10 overflow-hidden">
+        <div class="absolute -left-24 top-16 h-72 w-72 rounded-full bg-green-300/25 blur-3xl"></div>
+        <div class="absolute -right-24 bottom-12 h-80 w-80 rounded-full bg-rose-300/20 blur-3xl"></div>
+      </div>
+      <div class="fixed inset-0 z-30 overflow-hidden">
+        <!-- Semangka Kiri Atas -->
+        <svg viewBox="0 0 220 220" class="theme-sway-slow absolute -left-2 top-14 h-44 w-44 opacity-85 sm:h-52 sm:w-52" fill="none">
+          <g transform="translate(96, 98) rotate(-18)">
+            <path d="M-42,0 A42,42 0 0,0 42,0 Z" fill="#16A34A" stroke="#15803D" stroke-width="1.5" />
+            <path d="M-36,0 A36,36 0 0,0 36,0 Z" fill="#ECFDF5" />
+            <path d="M-32,0 A32,32 0 0,0 32,0 Z" fill="#F43F5E" />
+            <circle cx="-14" cy="10" r="2.1" fill="#4C0519" />
+            <circle cx="0" cy="18" r="2.1" fill="#4C0519" />
+            <circle cx="14" cy="10" r="2.1" fill="#4C0519" />
+            <circle cx="-7" cy="6" r="2.0" fill="#4C0519" />
+            <circle cx="7" cy="6" r="2.0" fill="#4C0519" />
+          </g>
+        </svg>
+        <!-- Semangka Kanan Bawah -->
+        <svg viewBox="0 0 220 220" class="theme-sway-slow absolute -bottom-2 -right-2 h-48 w-48 opacity-85 sm:h-56 sm:w-56" fill="none">
+          <g transform="translate(132, 152) rotate(14)">
+            <path d="M-44,0 A44,44 0 0,0 44,0 Z" fill="#16A34A" stroke="#15803D" stroke-width="1.5" />
+            <path d="M-38,0 A38,38 0 0,0 38,0 Z" fill="#ECFDF5" />
+            <path d="M-34,0 A34,34 0 0,0 34,0 Z" fill="#FB7185" />
+            <circle cx="-15" cy="10" r="2.2" fill="#4C0519" />
+            <circle cx="0" cy="20" r="2.2" fill="#4C0519" />
+            <circle cx="15" cy="10" r="2.2" fill="#4C0519" />
+          </g>
+        </svg>
+        <div v-for="(p, idx) in floatingPetals" :key="'wm-' + idx" class="theme-petal-drift absolute top-0 opacity-75" :style="{ left: p.left, animationDelay: p.delay, animationDuration: p.duration }">
+          <svg :width="p.size" :height="p.size" viewBox="0 0 24 24" fill="none" :style="{ transform: `rotate(${p.rotate})` }">
+            <path d="M3 8 A9 9 0 0 0 21 8 Z" fill="#16A34A" />
+            <path d="M5 8 A7 7 0 0 0 19 8 Z" fill="#F43F5E" />
+            <circle cx="10" cy="11" r="1" fill="#4C0519" />
+            <circle cx="14" cy="11" r="1" fill="#4C0519" />
+          </svg>
+        </div>
+      </div>
+    </template>
+
+    <!-- ===================== TEMA CYBER MECHA (COWO) ===================== -->
+    <template v-else-if="activeTheme === 'cyber_navy'">
+      <div class="fixed inset-0 z-10 overflow-hidden">
+        <div class="absolute -left-24 top-16 h-72 w-72 rounded-full bg-blue-400/25 blur-3xl"></div>
+        <div class="absolute -right-24 bottom-12 h-80 w-80 rounded-full bg-cyan-400/20 blur-3xl"></div>
+      </div>
+      <div class="fixed inset-0 z-30 overflow-hidden">
+        <svg viewBox="0 0 240 240" class="absolute -left-2 top-14 h-44 w-44 opacity-60 sm:h-52 sm:w-52" fill="none">
+          <path d="M12 24 H96 L124 52 H188" stroke="#1D4ED8" stroke-width="2.2" />
+          <path d="M12 58 H70 L98 86 H154" stroke="#0284C7" stroke-width="1.8" />
+          <path d="M24 12 V112 L52 140" stroke="#1D4ED8" stroke-width="1.8" />
+          <circle cx="188" cy="52" r="4.5" fill="#1D4ED8" />
+          <circle cx="154" cy="86" r="4" fill="#06B6D4" />
+          <polygon points="48,18 60,25 60,39 48,46 36,39 36,25" stroke="#1D4ED8" stroke-width="2" />
+        </svg>
+        <svg viewBox="0 0 240 240" class="absolute bottom-2 right-2 h-44 w-44 opacity-60 sm:h-52 sm:w-52" fill="none">
+          <path d="M228 212 H140 L110 182 H52" stroke="#1D4ED8" stroke-width="2.2" />
+          <path d="M228 176 H162 L134 148 H84" stroke="#0284C7" stroke-width="1.8" />
+          <circle cx="52" cy="182" r="4.5" fill="#1D4ED8" />
+          <circle cx="84" cy="148" r="4" fill="#06B6D4" />
+          <polygon points="184,180 198,188 198,204 184,212 170,204 170,188" stroke="#1D4ED8" stroke-width="2" />
+        </svg>
+      </div>
+    </template>
+
+    <!-- ===================== TEMA EMERALD GAMER (COWO) ===================== -->
+    <template v-else-if="activeTheme === 'emerald_matrix'">
+      <div class="fixed inset-0 z-10 overflow-hidden">
+        <div class="absolute -left-24 top-16 h-72 w-72 rounded-full bg-teal-400/25 blur-3xl"></div>
+        <div class="absolute -right-24 bottom-12 h-80 w-80 rounded-full bg-emerald-400/20 blur-3xl"></div>
+      </div>
+      <div class="fixed inset-0 z-30 overflow-hidden">
+        <svg viewBox="0 0 220 220" class="absolute -left-2 top-14 h-44 w-44 opacity-60 sm:h-52 sm:w-52" fill="none">
+          <polygon points="48,22 72,36 72,64 48,78 24,64 24,36" stroke="#0F766E" stroke-width="2.2" />
+          <polygon points="96,50 120,64 120,92 96,106 72,92 72,64" stroke="#14B8A6" stroke-width="2" />
+          <polygon points="48,78 72,92 72,120 48,134 24,120 24,92" stroke="#0F766E" stroke-width="1.8" />
+          <path d="M48 44 L48 56 M42 50 L54 50" stroke="#0F766E" stroke-width="2" stroke-linecap="round" />
+        </svg>
+        <svg viewBox="0 0 220 220" class="absolute bottom-2 right-2 h-44 w-44 opacity-60 sm:h-52 sm:w-52" fill="none">
+          <polygon points="168,142 192,156 192,184 168,198 144,184 144,156" stroke="#0F766E" stroke-width="2.2" />
+          <polygon points="120,114 144,128 144,156 120,170 96,156 96,128" stroke="#14B8A6" stroke-width="2" />
+          <circle cx="168" cy="170" r="6" stroke="#0F766E" stroke-width="2" />
+        </svg>
+      </div>
+    </template>
+
+    <!-- ===================== TEMA CRIMSON SHONEN (COWO) ===================== -->
+    <template v-else-if="activeTheme === 'crimson_shonen'">
+      <div class="fixed inset-0 z-10 overflow-hidden">
+        <div class="absolute -left-24 top-16 h-72 w-72 rounded-full bg-red-400/20 blur-3xl"></div>
+        <div class="absolute -right-24 bottom-12 h-80 w-80 rounded-full bg-orange-400/20 blur-3xl"></div>
+      </div>
+      <div class="fixed inset-0 z-30 overflow-hidden">
+        <svg viewBox="0 0 220 220" class="absolute -left-2 top-14 h-44 w-44 opacity-65 sm:h-52 sm:w-52" fill="none">
+          <path d="M16 96 L88 24 M16 128 L120 24 M44 134 L134 44" stroke="#B91C1C" stroke-width="2.5" stroke-linecap="round" />
+          <polygon points="56,36 72,56 56,76 40,56" fill="#EF4444" fill-opacity="0.35" stroke="#B91C1C" stroke-width="2" />
+        </svg>
+        <svg viewBox="0 0 220 220" class="absolute bottom-2 right-2 h-44 w-44 opacity-65 sm:h-52 sm:w-52" fill="none">
+          <path d="M204 124 L132 196 M204 92 L100 196 M176 86 L86 176" stroke="#B91C1C" stroke-width="2.5" stroke-linecap="round" />
+          <polygon points="164,144 180,164 164,184 148,164" fill="#EF4444" fill-opacity="0.35" stroke="#B91C1C" stroke-width="2" />
+        </svg>
+      </div>
+    </template>
+
+    <!-- ===================== TEMA GALACTIC SPACE (COWO) ===================== -->
+    <template v-else-if="activeTheme === 'royal_galactic'">
+      <div class="fixed inset-0 z-10 overflow-hidden">
+        <div class="absolute -left-24 top-16 h-72 w-72 rounded-full bg-indigo-400/25 blur-3xl"></div>
+        <div class="absolute -right-24 bottom-12 h-80 w-80 rounded-full bg-blue-400/25 blur-3xl"></div>
+      </div>
+      <div class="fixed inset-0 z-30 overflow-hidden">
+        <svg viewBox="0 0 220 220" class="theme-sway-slow absolute -left-2 top-14 h-44 w-44 opacity-70 sm:h-52 sm:w-52" fill="none">
+          <circle cx="76" cy="78" r="24" fill="#6366F1" fill-opacity="0.25" stroke="#4338CA" stroke-width="2" />
+          <ellipse cx="76" cy="78" rx="44" ry="12" transform="rotate(-22 76 78)" stroke="#4338CA" stroke-width="2" />
+          <path d="M138 38 L141 46 L149 49 L141 52 L138 60 L135 52 L127 49 L135 46 Z" fill="#4338CA" />
+          <circle cx="32" cy="128" r="2.5" fill="#4338CA" />
+          <circle cx="122" cy="118" r="3" fill="#6366F1" />
+          <path d="M32 128 L76 78 L122 118" stroke="#4338CA" stroke-width="1" stroke-dasharray="4 4" />
+        </svg>
+        <svg viewBox="0 0 220 220" class="theme-sway-slow absolute bottom-2 right-2 h-44 w-44 opacity-70 sm:h-52 sm:w-52" fill="none">
+          <circle cx="144" cy="144" r="20" fill="#6366F1" fill-opacity="0.25" stroke="#4338CA" stroke-width="2" />
+          <ellipse cx="144" cy="144" rx="38" ry="10" transform="rotate(18 144 144)" stroke="#4338CA" stroke-width="2" />
+          <path d="M88 168 L90 174 L96 176 L90 178 L88 184 L86 178 L80 176 L86 174 Z" fill="#4338CA" />
+        </svg>
+      </div>
+    </template>
   </div>
 </template>

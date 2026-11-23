@@ -8,6 +8,7 @@ import {
   addXp,
   addTickets,
   addReward,
+  FIGURE_CATEGORIES,
   COLLECTIBLE_FIGURES,
   SPECIAL_THEMES,
   unlockFigureForUser,
@@ -19,25 +20,45 @@ import {
 import figureAppleImg from '../assets/images/figure_apple.jpg'
 import figureWarriorImg from '../assets/images/figure_warrior.jpg'
 import figureRoseImg from '../assets/images/figure_rose.jpg'
-import figureCapybaraImg from '../assets/images/capybara boba.jpg'
-import figureGarfieldImg from '../assets/images/garfield.jpg'
-import figureMinionDuoImg from '../assets/images/minions 1.jpg'
-import figureMinionOneImg from '../assets/images/minions 2.jpg'
+import figureBatmanImg from '../assets/images/Batman Baby - Png.jpg'
+import figureIronmanImg from '../assets/images/Homem de Ferro - png.jpg'
+import figureSpidermanImg from '../assets/images/Homem-aranha.jpg'
+import figurePikachuImg from '../assets/images/BANDAI 萬代 Pokémon PLAMO 收藏集 快組版 001 皮卡丘 模型 5060771.jpg'
+import figureBulbasaurStandImg from '../assets/images/bulbasaur.jpg'
+import figureBulbasaurWaveImg from '../assets/images/Pokemon Bulbasaur Cute 3D Printable STL & 3MF _ Chibi Print Ready Figure.jpg'
+import figureSquirtleImg from '../assets/images/download (33).jpg'
+import figureJigglypuffImg from '../assets/images/Jigglypuff.jpg'
+import figureGengarImg from '../assets/images/Pokémon PKW4432 - Vinyl Figure - Gengar, offizielle Sammelfigur, 10cm.jpg'
+import figureVulpixImg from '../assets/images/Vulpix.jpg'
 import figureStitchBoyImg from '../assets/images/stitch boy.jpg'
 import figureStitchGirlImg from '../assets/images/stitch girl.jpg'
 import figureToothlessImg from '../assets/images/toothless.jpg'
+import figureMinionDuoImg from '../assets/images/minions 1.jpg'
+import figureMinionOneImg from '../assets/images/minions 2.jpg'
+import figureCapybaraImg from '../assets/images/capybara boba.jpg'
+import figureGarfieldImg from '../assets/images/garfield.jpg'
 
 const figureImages = {
   apple: figureAppleImg,
   warrior: figureWarriorImg,
   rose: figureRoseImg,
-  capybara: figureCapybaraImg,
-  garfield: figureGarfieldImg,
-  minion_duo: figureMinionDuoImg,
-  minion_one: figureMinionOneImg,
+  batman: figureBatmanImg,
+  ironman: figureIronmanImg,
+  spiderman: figureSpidermanImg,
+  pikachu: figurePikachuImg,
+  bulbasaur_stand: figureBulbasaurStandImg,
+  bulbasaur_wave: figureBulbasaurWaveImg,
+  squirtle: figureSquirtleImg,
+  jigglypuff: figureJigglypuffImg,
+  gengar: figureGengarImg,
+  vulpix: figureVulpixImg,
   stitch_boy: figureStitchBoyImg,
   stitch_girl: figureStitchGirlImg,
   toothless: figureToothlessImg,
+  minion_duo: figureMinionDuoImg,
+  minion_one: figureMinionOneImg,
+  capybara: figureCapybaraImg,
+  garfield: figureGarfieldImg,
 }
 
 const currentUser = ref(null)
@@ -46,6 +67,9 @@ const isOpening = ref(false)
 const showRewardModal = ref(false)
 const lastReward = ref(null)
 const alertNotice = ref('')
+const showThemeDrawer = ref(false)
+const selectedThemeGroup = ref('Semua')
+const selectedFigureCategory = ref('Semua')
 
 // Lemari Koleksi & Modal Detail Figure 3D
 const isFigureModalOpen = ref(false)
@@ -77,6 +101,20 @@ const ticketCount = computed(() => userStats.value?.tickets ?? 0)
 const unlockedFigures = computed(() => userStats.value?.unlockedFigures || [])
 const unlockedThemes = computed(() => userStats.value?.unlockedThemes || ['blue'])
 const activeTheme = computed(() => userStats.value?.activeTheme || 'blue')
+
+const activeThemeObj = computed(() => {
+  return SPECIAL_THEMES.find((t) => t.id === activeTheme.value) || SPECIAL_THEMES[0]
+})
+
+const filteredThemes = computed(() => {
+  if (selectedThemeGroup.value === 'Semua') return SPECIAL_THEMES
+  return SPECIAL_THEMES.filter((t) => t.group === selectedThemeGroup.value || t.isDefault)
+})
+
+const filteredFigures = computed(() => {
+  if (selectedFigureCategory.value === 'Semua') return COLLECTIBLE_FIGURES
+  return COLLECTIBLE_FIGURES.filter((f) => f.category === selectedFigureCategory.value)
+})
 
 const activeFigureObj = computed(() => {
   return COLLECTIBLE_FIGURES.find((f) => f.id === activeFigureId.value) || COLLECTIBLE_FIGURES[0]
@@ -1608,6 +1646,452 @@ function buildFigureMesh(figureId) {
       addEllipsoid(parts, side * 32, -26, 2, 9.5, 4.8, 4.5, blackScale, 8, 12, { roll: side * 0.35 })
       addEllipsoid(parts, side * 30, -16, 4, 8.2, 4.5, 4.2, blackScale, 8, 12, { roll: side * 0.15 })
     })
+  } else if (figureId === 'batman') {
+    // 11. BATMAN CHIBI FIGURE
+    const cowlBlack = [38, 38, 44]
+    const suitGrey = [120, 126, 134]
+    const bootBlack = [30, 32, 36]
+    const skin = [245, 200, 178]
+    const beltGold = [238, 182, 54]
+    const white = [254, 254, 255]
+    const irisBrown = [138, 76, 32]
+    const black = [20, 20, 24]
+
+    // Jubah kelelawar melebar di belakang
+    addCurvedPetal(parts, 0, 48, -14, 96, 82, 12, 0.22, Math.PI, 0, cowlBlack, { rows: 6, cols: 6, spec: 0.22 })
+
+    // Sepatu bot & kaki abu-abu
+    ;[-9.5, 9.5].forEach((lx) => {
+      addCapsule(parts, [lx, 44, 0], [lx, 62, 0], 5.6, 5.2, suitGrey, 12)
+      addCapsule(parts, [lx, 60, 0], [lx, 75, 0], 5.8, 5.4, bootBlack, 12, { spec: 0.45 })
+      addEllipsoid(parts, lx, 77, 4.5, 6.2, 4.0, 9.2, bootBlack, 8, 12, { spec: 0.45 })
+    })
+
+    // Celana hitam & torso abu-abu + lambang kelelawar kuning-hitam + sabuk emas
+    addEllipsoid(parts, 0, 42, 0, 14.5, 8.5, 11.5, bootBlack, 10, 16)
+    addLathePart(parts, 0, 22, 0, [[-15, 14, 11], [0, 15.5, 12], [14, 15, 11.5]], suitGrey, 20, { spec: 0.2 })
+    addEllipsoid(parts, 0, 15, 11.8, 6.5, 3.8, 1.5, beltGold, 8, 12, { spec: 0.4 })
+    addEllipsoid(parts, 0, 15, 13.0, 4.5, 2.2, 1.2, black, 6, 10)
+    // Sabuk utilitas kuning & gesper lingkaran tengah
+    addLathePart(parts, 0, 34, 0, [[-3.5, 16.2, 12.6], [3.5, 16.2, 12.6]], beltGold, 20, { spec: 0.45 })
+    addEllipsoid(parts, 0, 34, 13.2, 4.2, 4.2, 2.2, beltGold, 8, 12, { spec: 0.55 })
+
+    // Tangan bertolak pinggang bersarung tangan hitam
+    ;[-1, 1].forEach((side) => {
+      addCapsule(parts, [side * 15, 11, 0], [side * 24, 21, 2], 4.8, 4.2, suitGrey, 10)
+      addCapsule(parts, [side * 24, 21, 2], [side * 17, 32, 6], 4.4, 4.0, bootBlack, 10, { spec: 0.4 })
+    })
+
+    // Kepala chibi Batman bertopeng hitam + telinga kelelawar tinggi lancip
+    addEllipsoid(parts, 0, -24, 2, 27, 25, 24, cowlBlack, 14, 24, { spec: 0.32 })
+    ;[-1, 1].forEach((side) => {
+      addCapsule(parts, [side * 19, -40, 2], [side * 20, -70, 0], 6.5, 1.4, cowlBlack, 10, { spec: 0.32 })
+    })
+    // Bagian dagu peach terbuka + mulut serius
+    addEllipsoid(parts, 0, -9.5, 13, 18.5, 10.5, 12.5, skin, 10, 16)
+    addCapsule(parts, [-4, -5.5, 24.5], [4, -5.5, 24.5], 0.8, 0.8, [168, 110, 94], 6)
+    // Mata bulat tajam + alis topeng menyudut ke dalam
+    ;[-1, 1].forEach((side) => {
+      addEllipsoid(parts, side * 9.5, -18, 22, 6.2, 5.2, 3.0, white, 8, 14, { spec: 0.6 })
+      addEllipsoid(parts, side * 9.0, -18, 24.4, 3.5, 3.5, 1.6, irisBrown, 8, 12, { spec: 0.7 })
+      addEllipsoid(parts, side * 9.0, -18, 25.5, 1.9, 1.9, 1.0, black, 6, 8, { spec: 0.85 })
+      addCapsule(parts, [side * 3, -22, 25.5], [side * 16, -26, 22.5], 2.2, 2.0, cowlBlack, 8)
+    })
+  } else if (figureId === 'ironman') {
+    // 12. IRON MAN CHIBI FIGURE
+    const armorRed = [188, 28, 36]
+    const armorGold = [226, 178, 66]
+    const armorSilver = [176, 184, 194]
+    const arcCyan = [172, 248, 255]
+
+    // Kaki berarmor merah & emas kokoh
+    ;[-10.5, 10.5].forEach((lx) => {
+      addCapsule(parts, [lx * 0.9, 36, 0], [lx, 54, 1], 6.4, 5.8, armorRed, 12, { spec: 0.55 })
+      addEllipsoid(parts, lx, 52, 4.5, 5.5, 8.5, 5.2, armorGold, 8, 12, { spec: 0.65 })
+      addCapsule(parts, [lx, 56, 1], [lx, 73, 1], 6.0, 5.5, armorRed, 12, { spec: 0.55 })
+      addEllipsoid(parts, lx, 76, 4.5, 6.8, 4.2, 10.5, armorRed, 8, 12, { spec: 0.6 })
+    })
+
+    // Torso armor Iron Man merah-emas + Arc Reactor cyan bercahaya di dada
+    addLathePart(
+      parts,
+      0,
+      20,
+      0,
+      [
+        [-14, 14.5, 11],
+        [-2, 17.5, 13.5],
+        [10, 14, 11],
+        [19, 15.5, 12],
+      ],
+      armorRed,
+      22,
+      { spec: 0.6 }
+    )
+    addEllipsoid(parts, 0, 14, 13.8, 4.8, 4.8, 2.2, armorSilver, 8, 12, { spec: 0.7 })
+    addEllipsoid(parts, 0, 14, 15.2, 3.4, 3.4, 1.5, arcCyan, 8, 12, { spec: 0.95 })
+    // Pelat emas perut & pinggang
+    ;[-1, 1].forEach((side) => {
+      addCapsule(parts, [side * 5, 22, 12.2], [side * 12, 27, 10.5], 2.5, 2.2, armorGold, 8, { spec: 0.65 })
+    })
+
+    // Pelindung bahu bulat merah + lengan emas & kepalan tangan merah
+    ;[-1, 1].forEach((side) => {
+      addEllipsoid(parts, side * 19, 11, 0, 7.2, 6.5, 6.5, armorRed, 10, 14, { spec: 0.6 })
+      addCapsule(parts, [side * 20, 15, 0], [side * 25, 27, 2], 4.8, 4.5, armorGold, 10, { spec: 0.65 })
+      addCapsule(parts, [side * 25, 27, 2], [side * 28, 39, 5], 5.2, 4.8, armorRed, 10, { spec: 0.6 })
+      addEllipsoid(parts, side * 29, 41, 6, 5.4, 5.4, 5.4, armorRed, 8, 12, { spec: 0.65 })
+    })
+
+    // Helm chibi Iron Man merah-emas + mata cyan menyala
+    addEllipsoid(parts, 0, -24, 0, 27, 25, 24, armorRed, 14, 24, { spec: 0.62 })
+    // Pelat wajah emas di bagian depan helm
+    addEllipsoid(parts, 0, -22, 7, 21.5, 20.5, 19, armorGold, 12, 20, { spec: 0.68 })
+    // Dahi merah atas faceplate
+    addEllipsoid(parts, 0, -40, 14, 11, 6.5, 12, armorRed, 8, 12, { spec: 0.6 })
+    // Dua mata LED cyan menyala
+    ;[-1, 1].forEach((side) => {
+      addCapsule(parts, [side * 4.5, -20.5, 25.5], [side * 13.5, -22.5, 22.8], 2.6, 2.2, arcCyan, 8, { spec: 0.95 })
+      addCapsule(parts, [side * 26.5, -24, 2], [side * 26.5, -24, 2], 4.2, 4.2, armorRed, 8)
+    })
+  } else if (figureId === 'spiderman') {
+    // 13. SPIDER-MAN CHIBI FIGURE
+    const red = [212, 34, 42]
+    const blue = [34, 82, 156]
+    const black = [24, 24, 28]
+    const white = [254, 254, 255]
+
+    // Kaki biru & sepatu bot merah
+    ;[-1, 1].forEach((side) => {
+      addCapsule(parts, [side * 8, 38, 0], [side * 13, 60, 0], 5.8, 5.2, blue, 12, { spec: 0.25 })
+      addCapsule(parts, [side * 13, 58, 0], [side * 15, 74, 0], 5.4, 5.0, red, 12, { spec: 0.25 })
+      addEllipsoid(parts, side * 16, 76, 4.5, 6.0, 3.8, 9.0, red, 8, 12)
+    })
+
+    // Torso Spider-Man merah-biru + logo laba-laba hitam di dada
+    addLathePart(parts, 0, 22, 0, [[-14, 14, 10.5], [0, 15.5, 12], [16, 13, 10.5]], blue, 20)
+    addEllipsoid(parts, 0, 17, 6.5, 11.5, 11.5, 7.5, red, 10, 16)
+    addEllipsoid(parts, 0, 17, 13.8, 3.0, 4.0, 1.4, black, 6, 8)
+
+    // Lengan kiri mengangkat kepalan tangan heroik, lengan kanan bertolak pinggang
+    addCapsule(parts, [-14, 11, 0], [-28, 14, 2], 4.8, 4.4, blue, 10)
+    addCapsule(parts, [-28, 14, 2], [-30, -4, 4], 4.6, 4.2, red, 10)
+    addEllipsoid(parts, -30, -7, 4.5, 5.0, 5.0, 5.0, red, 8, 10)
+
+    addCapsule(parts, [14, 11, 0], [26, 21, 2], 4.8, 4.2, blue, 10)
+    addCapsule(parts, [26, 21, 2], [16, 30, 6], 4.4, 4.0, red, 10)
+
+    // Kepala chibi bulat merah + mata Spider-Man putih besar berbingkai hitam
+    addEllipsoid(parts, 0, -24, 2, 26.5, 25.5, 24, red, 14, 24, { spec: 0.28 })
+    ;[-1, 1].forEach((side) => {
+      addEllipsoid(parts, side * 11, -22, 22.2, 8.2, 7.2, 3.2, black, 10, 14, { roll: -side * 0.42, yaw: side * 0.25 })
+      addEllipsoid(parts, side * 11, -22, 23.6, 6.4, 5.4, 2.2, white, 10, 14, { roll: -side * 0.42, yaw: side * 0.25, spec: 0.65 })
+    })
+    // Garis jaring halus di dahi & pipi
+    addCapsule(parts, [0, -49, 6], [0, -14, 26], 0.7, 0.7, black, 6)
+    addCapsule(parts, [-20, -28, 14], [20, -28, 14], 0.7, 0.7, black, 6)
+  } else if (figureId === 'pikachu') {
+    // 14. PIKACHU FIGURE
+    const yellow = [252, 216, 44]
+    const cheekRed = [234, 62, 42]
+    const mouthPink = [220, 120, 128]
+    const mouthDark = [164, 52, 46]
+    const black = [26, 26, 28]
+    const white = [254, 254, 255]
+
+    // Badan Pikachu kuning gembul + kaki kuning kecil
+    addLathePart(
+      parts,
+      0,
+      36,
+      0,
+      [
+        [-22, 21, 18],
+        [0, 26, 22],
+        [22, 28, 24],
+        [34, 23, 20],
+      ],
+      yellow,
+      24,
+      { spec: 0.3 }
+    )
+    ;[-15, 15].forEach((fx) => {
+      addEllipsoid(parts, fx, 70, 8, 8.5, 4.5, 11.5, yellow, 8, 12, { spec: 0.28 })
+    })
+
+    // Dua lengan kuning terbuka ramah
+    addCapsule(parts, [-22, 20, 4], [-38, 8, 8], 6.5, 4.5, yellow, 10)
+    addCapsule(parts, [22, 20, 4], [38, 18, 10], 6.5, 4.5, yellow, 10)
+
+    // Ekor petir kuning zig-zag di kanan belakang
+    addCapsule(parts, [14, 56, -16], [26, 42, -16], 3.8, 4.2, yellow, 8)
+    addCapsule(parts, [26, 42, -16], [42, 40, -14], 5.5, 6.2, yellow, 8)
+    addCapsule(parts, [42, 40, -14], [54, 18, -10], 7.5, 9.5, yellow, 8)
+
+    // Kepala Pikachu bulat + pipi bulat chubby
+    addEllipsoid(parts, 0, -18, 2, 29, 25, 25, yellow, 14, 24, { chubby: 0.16, spec: 0.3 })
+
+    // Dua telinga panjang dengan ujung hitam (telinga kiri ke atas, telinga kanan miring ke samping)
+    addCapsule(parts, [-14, -40, 0], [-10, -64, -2], 6.8, 4.8, yellow, 12)
+    addCapsule(parts, [-10, -64, -2], [-7, -76, -2], 4.8, 1.5, black, 10)
+
+    addCapsule(parts, [16, -37, 0], [34, -41, -2], 6.8, 4.8, yellow, 12)
+    addCapsule(parts, [34, -41, -2], [46, -42, -2], 4.8, 1.5, black, 10)
+
+    // Mata hitam besar berkilau, hidung kecil, pipi merah bulat, dan mulut tertawa lebar
+    ;[-1, 1].forEach((side) => {
+      addEllipsoid(parts, side * 13, -22, 23.2, 4.8, 5.2, 2.4, black, 8, 12, { spec: 0.85 })
+      addEllipsoid(parts, side * 12, -23.8, 25.2, 1.8, 1.8, 1.0, white, 5, 8, { spec: 0.9 })
+      addEllipsoid(parts, side * 20, -11, 20.5, 6.8, 6.4, 3.0, cheekRed, 8, 12, { yaw: side * 0.45, spec: 0.3 })
+    })
+    addEllipsoid(parts, 0, -16, 26.8, 2.2, 1.4, 1.6, black, 6, 8)
+    addEllipsoid(parts, 0, -7, 24.5, 6.8, 6.2, 3.5, mouthDark, 8, 12)
+    addEllipsoid(parts, 0, -4.5, 25.5, 5.2, 4.0, 2.6, mouthPink, 8, 10)
+  } else if (figureId === 'bulbasaur_stand') {
+    // 15. BULBASAUR CLASSIC STAND FIGURE
+    const teal = [98, 186, 182]
+    const spotDark = [48, 114, 120]
+    const bulbGreen = [138, 214, 168]
+    const eyeRed = [218, 86, 62]
+    const tonguePink = [228, 128, 134]
+    const white = [254, 254, 255]
+
+    // Badan Bulbasaur membungkuk di atas 4 kaki kokoh + 3 cakar putih tiap kaki
+    addEllipsoid(parts, 0, 22, -4, 28, 22, 32, teal, 14, 22, { spec: 0.25 })
+    ;[
+      [-18, 16],
+      [18, 16],
+      [-20, -22],
+      [20, -22],
+    ].forEach(([lx, lz]) => {
+      addCapsule(parts, [lx, 30, lz], [lx, 54, lz + 2], 9.2, 8.2, teal, 12)
+      addEllipsoid(parts, lx, 56, lz + 4, 9.5, 5.5, 10.2, teal, 8, 12)
+      ;[-4.5, 0, 4.5].forEach((tx) => {
+        addEllipsoid(parts, lx + tx, 57, lz + 13.5, 1.8, 1.8, 2.4, white, 5, 8)
+      })
+    })
+    // Bercak teal gelap di tubuh & paha
+    addEllipsoid(parts, -27, 26, -6, 3.5, 7.5, 9.5, spotDark, 8, 10)
+    addEllipsoid(parts, 27, 26, -6, 3.5, 7.5, 9.5, spotDark, 8, 10)
+
+    // Umbi hijau besar bersegmen di punggung
+    addEllipsoid(parts, 0, -10, -24, 28, 27, 28, bulbGreen, 14, 22, { spec: 0.24 })
+    addCapsule(parts, [-4, -34, -22], [-2, -44, -20], 4.5, 2.0, bulbGreen, 8)
+    addCapsule(parts, [4, -34, -22], [2, -44, -20], 4.5, 2.0, bulbGreen, 8)
+
+    // Kepala lebar Bulbasaur + telinga pendek + bercak dahi + mata merah-oranye + taring & lidah mungil
+    addEllipsoid(parts, 0, -4, 18, 28, 22, 23, teal, 14, 22, { chubby: 0.14, spec: 0.26 })
+    ;[-1, 1].forEach((side) => {
+      addCapsule(parts, [side * 16, -22, 14], [side * 22, -32, 12], 7.5, 3.2, teal, 10)
+      addEllipsoid(parts, side * 16, -6, 36.5, 6.2, 7.2, 3.5, white, 8, 12, { yaw: side * 0.35 })
+      addEllipsoid(parts, side * 15, -6, 38.8, 4.4, 5.4, 2.2, eyeRed, 8, 12, { yaw: side * 0.35, spec: 0.65 })
+      addEllipsoid(parts, side * 14, -8, 40.4, 1.6, 1.8, 1.0, white, 5, 8)
+      // Dua taring putih kecil
+      addEllipsoid(parts, side * 10, 8, 39.5, 2.0, 2.6, 1.8, white, 5, 8)
+    })
+    addEllipsoid(parts, 0, -22, 29, 7.5, 4.5, 3.2, spotDark, 8, 10)
+    addEllipsoid(parts, 0, 9.5, 40, 5.5, 3.2, 3.2, tonguePink, 6, 10)
+  } else if (figureId === 'bulbasaur_wave') {
+    // 16. BULBASAUR CHIBI WAVE FIGURE
+    const teal = [108, 198, 182]
+    const spotDark = [58, 128, 124]
+    const bulbLeaf = [118, 184, 98]
+    const blushPink = [238, 142, 148]
+    const mouthRed = [212, 92, 102]
+    const white = [254, 254, 255]
+
+    // Duduk gembul menghadap depan
+    addEllipsoid(parts, 0, 32, 0, 26, 24, 24, teal, 14, 20, { spec: 0.25 })
+    // Umbi daun hijau subur di belakang
+    addEllipsoid(parts, 0, 6, -24, 27, 28, 25, bulbLeaf, 14, 20, { spec: 0.24 })
+    addCapsule(parts, [0, -18, -22], [0, -34, -20], 7.5, 2.5, bulbLeaf, 10)
+
+    // Kaki duduk ke depan + tangan kanan menumpu + tangan kiri melambai tinggi
+    ;[-18, 18].forEach((hx) => {
+      addEllipsoid(parts, hx, 54, 10, 9.5, 8.5, 11.5, teal, 8, 12)
+      ;[-3.5, 0, 3.5].forEach((tx) => {
+        addEllipsoid(parts, hx + tx, 56, 20.5, 1.8, 1.8, 2.4, white, 5, 8)
+      })
+    })
+    addCapsule(parts, [-14, 26, 10], [-14, 54, 14], 7.8, 7.2, teal, 10)
+    // Tangan kiri melambai ceria
+    addCapsule(parts, [16, 24, 10], [28, 4, 18], 7.5, 6.8, teal, 10)
+    ;[-3.5, 0, 3.5].forEach((tx) => {
+      addEllipsoid(parts, 28 + tx, -2, 20, 1.7, 2.0, 1.8, white, 5, 8)
+    })
+
+    // Kepala bulat chibi + mata tersenyum (^ ^) + pipi merona + mulut terbuka + taring
+    addEllipsoid(parts, 0, -10, 12, 28, 22, 23, teal, 14, 22, { chubby: 0.16, spec: 0.28 })
+    ;[-1, 1].forEach((side) => {
+      addCapsule(parts, [side * 16, -28, 8], [side * 22, -38, 6], 7.2, 3.0, teal, 10)
+      addCapsule(parts, [side * 8.5, -10, 33], [side * 14, -14, 32], 1.8, 1.8, spotDark, 8)
+      addCapsule(parts, [side * 14, -14, 32], [side * 19.5, -10, 29], 1.8, 1.8, spotDark, 8)
+      addEllipsoid(parts, side * 19, -5, 29.5, 5.5, 3.8, 2.2, blushPink, 8, 10, { yaw: side * 0.45 })
+      addEllipsoid(parts, side * 10, 3, 33.8, 1.8, 2.4, 1.6, white, 5, 8)
+    })
+    addEllipsoid(parts, 0, -26, 23, 7.2, 4.5, 3.0, spotDark, 8, 10)
+    addEllipsoid(parts, 0, 5, 31.5, 11, 5.5, 3.8, mouthRed, 8, 12)
+  } else if (figureId === 'squirtle') {
+    // 17. SQUIRTLE JUMP FIGURE
+    const blue = [124, 204, 232]
+    const shellYellow = [252, 234, 126]
+    const shellBrown = [152, 82, 42]
+    const rimWhite = [246, 242, 234]
+    const eyeRed = [148, 42, 42]
+    const mouthPink = [226, 114, 118]
+    const white = [254, 254, 255]
+
+    // Badan + cangkang kuning depan, garis tepi putih, punggung coklat tua
+    addEllipsoid(parts, 0, 12, 4, 20, 24, 14, shellYellow, 12, 18, { spec: 0.35 })
+    addEllipsoid(parts, 0, 12, -2, 22, 26, 16, rimWhite, 12, 18, { spec: 0.3 })
+    addEllipsoid(parts, 0, 12, -9, 21, 25, 16, shellBrown, 12, 18, { spec: 0.35 })
+
+    // Ekor biru besar melengkung spiral khas Squirtle di bawah
+    addCapsule(parts, [0, 32, -8], [0, 54, -2], 6.5, 10.5, blue, 12)
+    addEllipsoid(parts, 0, 62, 6, 17, 17, 15, blue, 12, 18, { spec: 0.32 })
+
+    // Tangan & kaki biru merentang melompat ceria
+    addCapsule(parts, [-16, 4, 4], [-32, -6, 8], 6.8, 5.8, blue, 10)
+    addCapsule(parts, [16, 2, 4], [30, -14, 6], 6.8, 5.8, blue, 10)
+    addCapsule(parts, [-12, 28, 6], [-18, 42, 14], 7.8, 7.2, blue, 10)
+    addCapsule(parts, [14, 26, 4], [28, 36, 10], 7.8, 7.2, blue, 10)
+
+    // Kepala biru bulat ceria + mata merah-coklat + mulut senyum lebar
+    addEllipsoid(parts, 0, -24, 4, 23, 22, 22, blue, 14, 22, { spec: 0.32 })
+    ;[-1, 1].forEach((side) => {
+      addEllipsoid(parts, side * 10, -26, 22, 5.4, 6.8, 3.0, white, 8, 12, { yaw: side * 0.28 })
+      addEllipsoid(parts, side * 9.5, -26, 23.6, 3.8, 5.2, 2.0, eyeRed, 8, 12, { yaw: side * 0.28, spec: 0.65 })
+      addEllipsoid(parts, side * 8.5, -28.5, 25.0, 1.5, 1.8, 0.9, white, 5, 8)
+    })
+    addEllipsoid(parts, 0, -14, 21.5, 12.5, 6.2, 4.2, mouthPink, 8, 14)
+  } else if (figureId === 'jigglypuff') {
+    // 18. JIGGLYPUFF FIGURE
+    const pink = [250, 204, 216]
+    const earBlack = [36, 36, 42]
+    const eyeTeal = [28, 132, 152]
+    const white = [254, 254, 255]
+
+    // Tubuh bola pink Jigglypuff
+    addEllipsoid(parts, 0, 10, 0, 38, 37, 36, pink, 16, 26, { spec: 0.28 })
+
+    // Jambul ikal bundar di dahi tengah
+    addEllipsoid(parts, 0, -24, 18, 12, 11, 11, pink, 10, 16, { spec: 0.3 })
+    addCapsule(parts, [-4, -22, 27], [6, -24, 26], 4.2, 3.6, pink, 8)
+
+    // Dua telinga segitiga pink dengan bagian dalam hitam
+    ;[-1, 1].forEach((side) => {
+      addCapsule(parts, [side * 22, -16, 0], [side * 34, -38, 0], 11, 3.2, pink, 10)
+      addCapsule(parts, [side * 22, -16, 5.5], [side * 31, -33, 4], 6.5, 1.8, earBlack, 8)
+    })
+
+    // Mata biru-teal besar bulat + lingkar putih + senyum manis
+    ;[-1, 1].forEach((side) => {
+      addEllipsoid(parts, side * 16, 4, 30.5, 10.5, 10.8, 4.2, white, 10, 16, { yaw: side * 0.25, spec: 0.5 })
+      addEllipsoid(parts, side * 15, 4, 33.2, 7.6, 8.0, 3.2, eyeTeal, 10, 14, { yaw: side * 0.25, spec: 0.72 })
+      addEllipsoid(parts, side * 13, 1.5, 35.6, 2.6, 2.8, 1.4, white, 6, 8, { spec: 0.9 })
+    })
+    addCapsule(parts, [-6, 15, 35.5], [0, 17, 36.2], 0.9, 0.9, [96, 62, 72], 6)
+    addCapsule(parts, [0, 17, 36.2], [6, 15, 35.5], 0.9, 0.9, [96, 62, 72], 6)
+
+    // Lengan mungil & kaki oval menari ceria
+    addCapsule(parts, [-32, 6, 8], [-44, -4, 12], 5.5, 3.2, pink, 10)
+    addCapsule(parts, [32, 16, 10], [42, 22, 16], 5.5, 3.2, pink, 10)
+    addEllipsoid(parts, -18, 52, 6, 7.5, 11, 8.5, pink, 8, 12)
+    addEllipsoid(parts, 22, 46, -4, 8.5, 6.5, 11, pink, 8, 12)
+  } else if (figureId === 'gengar') {
+    // 19. GENGAR VINYL FIGURE
+    const purple = [102, 74, 148]
+    const eyeRed = [238, 72, 62]
+    const teethWhite = [234, 238, 244]
+    const black = [20, 20, 24]
+
+    // Badan bulat ungu Gengar
+    addEllipsoid(parts, 0, 8, 0, 38, 35, 35, purple, 16, 26, { spec: 0.34 })
+
+    // Telinga panjang lancip & deretan duri di puncak kepala
+    ;[-1, 1].forEach((side) => {
+      addCapsule(parts, [side * 24, -14, 0], [side * 44, -46, -2], 12, 2.4, purple, 12, { spec: 0.34 })
+    })
+    ;[-14, -7, 0, 7, 14].forEach((sx, idx) => {
+      const h = idx === 2 ? -48 : idx % 2 === 1 ? -41 : -36
+      addCapsule(parts, [sx, -24, 0], [sx * 1.15, h, -2], 4.8, 1.4, purple, 8)
+    })
+
+    // Mata merah miring tajam + pupil hitam & putih
+    ;[-1, 1].forEach((side) => {
+      addEllipsoid(parts, side * 14, -4, 30, 10.5, 7.2, 3.2, eyeRed, 10, 14, { roll: -side * 0.45, yaw: side * 0.25, spec: 0.55 })
+      addEllipsoid(parts, side * 12, -3, 32.8, 2.0, 3.2, 1.2, black, 6, 8)
+      addEllipsoid(parts, side * 12, -4, 33.4, 0.9, 1.2, 0.7, teethWhite, 5, 6)
+    })
+
+    // Senyum putih menyeringai lebar khas Gengar
+    for (let t = -3; t <= 3; t++) {
+      const tx = t * 6.5
+      const ty = 17 - Math.pow(t, 2) * 0.65
+      addEllipsoid(parts, tx, ty, 33.2 - Math.abs(t) * 1.6, 3.5, 5.2, 2.2, teethWhite, 6, 10, { yaw: t * 0.14, spec: 0.4 })
+    }
+
+    // Tangan pendek di samping & kaki duduk berjari
+    ;[-1, 1].forEach((side) => {
+      addCapsule(parts, [side * 34, 8, 4], [side * 46, 32, 6], 8.5, 3.8, purple, 10)
+      addEllipsoid(parts, side * 24, 42, 18, 11.5, 8.5, 13.5, purple, 8, 14)
+    })
+  } else if (figureId === 'vulpix') {
+    // 20. VULPIX SIX-TAILS FIGURE
+    const orange = [218, 128, 82]
+    const plume = [242, 146, 84]
+    const cream = [244, 232, 198]
+    const pawBrown = [152, 82, 52]
+    const eyeBrown = [96, 62, 48]
+    const white = [254, 254, 255]
+
+    // Badan rubah ramping + dada warna krem
+    addEllipsoid(parts, 0, 26, 2, 17, 18, 28, orange, 12, 20, { pitch: -0.25, spec: 0.28 })
+    addEllipsoid(parts, 0, 24, 20, 11.5, 13.5, 9.5, cream, 10, 14)
+    addCapsule(parts, [-4, 4, 12], [-2, 18, 16], 11, 13, orange, 12)
+
+    // Empat kaki tegak dengan kaus kaki coklat gelap
+    ;[
+      [-10, 16],
+      [10, 16],
+      [-12, -16],
+      [12, -16],
+    ].forEach(([lx, lz]) => {
+      addCapsule(parts, [lx, 32, lz], [lx, 56, lz], 4.8, 4.2, orange, 10)
+      addCapsule(parts, [lx, 56, lz], [lx, 69, lz], 4.2, 3.8, pawBrown, 10)
+      addEllipsoid(parts, lx, 71, lz + 3.5, 4.6, 3.0, 6.2, pawBrown, 8, 10)
+    })
+
+    // Kepala rubah imut menghadap agak kiri + mata coklat & jambul 3 ikal di kepala
+    addEllipsoid(parts, -6, -12, 18, 19, 17, 19, orange, 14, 22, { spec: 0.3 })
+    // Telinga lancip rubah dengan bagian dalam coklat gelap
+    ;[-1, 1].forEach((side) => {
+      addCapsule(parts, [-6 + side * 14, -22, 16], [-6 + side * 26, -42, 14], 7.5, 1.8, orange, 10)
+      addCapsule(parts, [-6 + side * 14, -22, 19], [-6 + side * 23, -38, 16.5], 4.8, 1.2, pawBrown, 8)
+    })
+    // Jambul ikal tiga gulung di puncak kepala
+    ;[-6, 1, 8].forEach((jx, idx) => {
+      addEllipsoid(parts, jx - 6, -34 - (idx === 1 ? 4 : 0), 20, 6.5, 6.5, 7.5, plume, 8, 12, { spec: 0.32 })
+    })
+    // Mata coklat besar berkilau & hidung kecil
+    addEllipsoid(parts, -17, -12, 30, 5.2, 5.6, 2.6, eyeBrown, 8, 12, { yaw: -0.45, spec: 0.65 })
+    addEllipsoid(parts, -18, -14, 31.8, 1.8, 1.8, 1.0, white, 5, 8)
+    addEllipsoid(parts, 4, -12, 33, 5.2, 5.6, 2.6, eyeBrown, 8, 12, { yaw: 0.25, spec: 0.65 })
+    addEllipsoid(parts, 3, -14, 34.8, 1.8, 1.8, 1.0, white, 5, 8)
+    addEllipsoid(parts, -9, -6, 36.5, 2.4, 1.8, 1.8, pawBrown, 6, 8)
+
+    // Enam ekor menggulung mekar di belakang
+    ;[
+      [-26, 26, -18],
+      [-22, 8, -24],
+      [-10, -2, -28],
+      [8, -4, -28],
+      [22, 6, -24],
+      [26, 24, -18],
+    ].forEach(([tx, ty, tz]) => {
+      addCapsule(parts, [0, 26, -14], [tx, ty, tz], 5.5, 9.2, plume, 10, { spec: 0.3 })
+      addEllipsoid(parts, tx * 1.12, ty - 2, tz, 9.8, 9.8, 9.2, plume, 8, 12, { spec: 0.32 })
+    })
   }
 
   meshCache[figureId] = parts
@@ -1832,18 +2316,18 @@ onUnmounted(() => {
         </button>
       </div>
 
-      <!-- Main Section: Gift Box & Info Hadiah + Tema Spesial -->
+      <!-- Main Section: Gift Box & Info Hadiah -->
       <div class="grid items-start gap-6 lg:grid-cols-[1fr_360px]">
-        <!-- Kiri: Kado 3D & Tombol Buka -->
-        <div class="flex flex-col items-center justify-center rounded-3xl border border-[#C5E4FA] bg-white p-8 shadow-2xs">
+        <!-- Kiri: Kado 3D Transparan & Tombol Buka -->
+        <div class="flex flex-col items-center justify-center rounded-3xl border border-[#C5E4FA] bg-white/95 p-8 shadow-2xs">
           <div
-            class="transition-transform duration-500"
+            class="relative flex items-center justify-center bg-transparent transition-transform duration-500"
             :class="isOpening ? 'scale-105 animate-bounce' : 'hover:scale-105'"
           >
             <img
               src="../assets/images/gift_box.png"
               alt="Mystery Blind Box"
-              class="h-[260px] w-auto drop-shadow-lg sm:h-[300px]"
+              class="h-[260px] w-auto bg-transparent drop-shadow-xl sm:h-[300px]"
             />
           </div>
 
@@ -1862,7 +2346,7 @@ onUnmounted(() => {
           </button>
         </div>
 
-        <!-- Kanan: Tiket, Daftar Hadiah, & Pilihan Tema Spesial -->
+        <!-- Kanan: Tiket & Daftar Kemungkinan Hadiah -->
         <div class="space-y-5">
           <!-- Tiket Kamu -->
           <div class="rounded-2xl border border-[#C5E4FA] bg-white p-6 shadow-2xs">
@@ -1890,83 +2374,136 @@ onUnmounted(() => {
               </li>
             </ul>
           </div>
-
-          <!-- Tema Spesial Latar Belakang -->
-          <div class="rounded-2xl border border-[#C5E4FA] bg-white p-6 shadow-2xs space-y-3">
-            <div>
-              <h2 class="text-sm font-semibold text-[#0A2540]">
-                Tema Spesial Latar
-              </h2>
-              <p class="mt-0.5 text-xs text-slate-500">
-                Ubah warna latar &amp; hiasan bunga/daun di seluruh website dengan hadiah Blind Box.
-              </p>
-            </div>
-
-            <div class="grid grid-cols-2 gap-2.5">
-              <button
-                v-for="theme in SPECIAL_THEMES"
-                :key="theme.id"
-                type="button"
-                @click="handleSelectTheme(theme)"
-                class="flex items-center gap-2 rounded-xl border p-2.5 text-left text-xs transition cursor-pointer"
-                :class="
-                  activeTheme === theme.id
-                    ? 'border-[#2D6BE4] bg-[#EAF5FD]/70 font-semibold text-[#0A2540]'
-                    : isThemeUnlocked(theme.id)
-                      ? 'border-slate-200 bg-white text-slate-700 hover:border-[#C5E4FA]'
-                      : 'border-slate-100 bg-slate-50 text-slate-400'
-                "
-              >
-                <span
-                  class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-200"
-                  :class="theme.previewClass"
-                >
-                  <!-- Mini Apple Icon (Merah Apel Lucu) -->
-                  <svg v-if="theme.id === 'apple'" class="h-4 w-4 text-rose-600" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 6c2-1.2 6-1 6 4 0 5-3 8.5-6 7.5C9 18.5 6 15 6 10c0-5 4-5.2 6-4z" />
-                    <path d="M12 6c.4-2 1.5-3 3-3" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" />
-                  </svg>
-                  <!-- Mini Lavender Icon -->
-                  <svg v-else-if="theme.id === 'purple'" class="h-4 w-4 text-purple-700" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 3c1.2 1.2 1.2 2.8 0 4-1.2-1.2-1.2-2.8 0-4zm-3 3.5c1.5.5 2.4 1.8 2 3.2-1.5-.5-2.4-1.8-2-3.2zm6 0c-1.5.5-2.4 1.8-2 3.2 1.5-.5 2.4-1.8 2-3.2zm-3 3c1.3 1.2 1.3 2.8 0 4-1.3-1.2-1.3-2.8 0-4z" />
-                    <path d="M12 13v8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-                  </svg>
-                  <!-- Mini Sakura Blossom Icon -->
-                  <svg v-else-if="theme.id === 'pink'" class="h-4 w-4 text-pink-500" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 2c1.6 0 2.8 2 1.8 4.2 2-1.5 4-.5 3.4 1.5-.5 1.5-2.6 1.8-3.8.5 1.5 2 .7 4.2-1.4 3.8-1.5-.4-1.6-2.4-.2-3.6-1.9 1.4-4 .7-4-1.2 0-1.8 2.2-2 3.8-.6-1.2-2.2-.8-4.6.4-4.6z" />
-                  </svg>
-                  <!-- Mini Mint Leaf Icon -->
-                  <svg v-else-if="theme.id === 'mint'" class="h-4 w-4 text-emerald-600" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M17 4C11 4 6 8.5 6 15c0 1.4.4 2.7 1 3.8L16 9.8l-7.2 9.8c1 .4 2.1.4 3.2.4 5 0 9-4 9-9V4h-4z" />
-                  </svg>
-                  <!-- Mini Daisy Icon -->
-                  <svg v-else-if="theme.id === 'daisy'" class="h-4 w-4 text-amber-500" viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="5.5" r="2.6" fill="#FFFFFF" stroke="#EAB308" stroke-width="1" />
-                    <circle cx="18.5" cy="12" r="2.6" fill="#FFFFFF" stroke="#EAB308" stroke-width="1" />
-                    <circle cx="12" cy="18.5" r="2.6" fill="#FFFFFF" stroke="#EAB308" stroke-width="1" />
-                    <circle cx="5.5" cy="12" r="2.6" fill="#FFFFFF" stroke="#EAB308" stroke-width="1" />
-                    <circle cx="12" cy="12" r="3.4" fill="#FACC15" />
-                  </svg>
-                  <!-- Classic Star Icon -->
-                  <svg v-else class="h-3.5 w-3.5 text-[#2D6BE4]" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 3l2.4 5.2 5.6.8-4 3.9.9 5.6L12 15.8 7.1 18.5l.9-5.6-4-3.9 5.6-.8L12 3z" />
-                  </svg>
-                </span>
-                <div class="min-w-0 flex-1">
-                  <p class="truncate text-[11px]">{{ theme.name }}</p>
-                  <p class="truncate text-[9px] font-normal text-slate-400">
-                    <template v-if="activeTheme === theme.id">Dipakai • {{ theme.ornamentLabel }}</template>
-                    <template v-else-if="isThemeUnlocked(theme.id)">Terbuka</template>
-                    <template v-else>Terkunci</template>
-                  </p>
-                </div>
-              </button>
-            </div>
-          </div>
         </div>
       </div>
 
-      <!-- LEMARI KOLEKSI FIGURE (ETALASE PAJANGAN) -->
+      <!-- TEMA SPESIAL LATAR (Drawer Lipat di Bawah Blind Box agar Rapi) -->
+      <section class="rounded-3xl border border-[#C5E4FA] bg-white p-6 shadow-2xs">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div class="flex items-center gap-3.5">
+            <span
+              class="h-10 w-10 shrink-0 rounded-2xl border border-slate-200 shadow-2xs"
+              :style="{ backgroundColor: activeThemeObj.bgHex }"
+            ></span>
+            <div>
+              <h2 class="text-base font-semibold text-[#0A2540]">
+                Tema Spesial Latar: {{ activeThemeObj.name }}
+              </h2>
+              <p class="text-xs text-slate-500">
+                {{ activeThemeObj.ornamentLabel }} • {{ unlockedThemes.length }} / {{ SPECIAL_THEMES.length }} tema terbuka
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            @click="showThemeDrawer = !showThemeDrawer"
+            class="rounded-xl bg-[#2D6BE4] px-4 py-2 text-xs font-medium text-white shadow-2xs transition hover:bg-blue-700 cursor-pointer"
+          >
+            {{ showThemeDrawer ? 'Tutup Pilihan Tema ▲' : 'Pilih Tema Latar ▼' }}
+          </button>
+        </div>
+
+        <div v-if="showThemeDrawer" class="mt-5 border-t border-slate-100 pt-5 space-y-4">
+          <!-- Filter Kategori Tema (Semua / Buah & Bunga / Cool & Cowo) -->
+          <div class="flex flex-wrap items-center gap-2">
+            <button
+              v-for="grp in ['Semua', 'Buah & Bunga', 'Cool & Cowo']"
+              :key="grp"
+              type="button"
+              @click="selectedThemeGroup = grp"
+              class="rounded-full px-3.5 py-1.5 text-xs font-medium transition cursor-pointer"
+              :class="
+                selectedThemeGroup === grp
+                  ? 'bg-[#2D6BE4] text-white shadow-2xs'
+                  : 'border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
+              "
+            >
+              {{ grp }}
+            </button>
+          </div>
+
+          <!-- Grid Pilihan Tema Spesial -->
+          <div class="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+            <button
+              v-for="theme in filteredThemes"
+              :key="theme.id"
+              type="button"
+              @click="handleSelectTheme(theme)"
+              class="flex items-center gap-2.5 rounded-2xl border p-3 text-left text-xs transition cursor-pointer"
+              :class="
+                activeTheme === theme.id
+                  ? 'border-[#2D6BE4] bg-[#EAF5FD]/70 font-semibold text-[#0A2540] shadow-2xs'
+                  : isThemeUnlocked(theme.id)
+                    ? 'border-slate-200 bg-white text-slate-700 hover:border-[#C5E4FA]'
+                    : 'border-slate-100 bg-slate-50 text-slate-400'
+              "
+            >
+              <span
+                class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200"
+                :class="theme.previewClass"
+              >
+                <svg v-if="theme.id === 'apple'" class="h-4 w-4 text-rose-600" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 6c2-1.2 6-1 6 4 0 5-3 8.5-6 7.5C9 18.5 6 15 6 10c0-5 4-5.2 6-4z" />
+                </svg>
+                <svg v-else-if="theme.id === 'strawberry'" class="h-4 w-4 text-pink-600" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 5c4 0 6 3 4 9-1.5 4.5-3 6-4 6s-2.5-1.5-4-6c-2-6 0-9 4-9z" />
+                </svg>
+                <svg v-else-if="theme.id === 'lemon'" class="h-4 w-4 text-amber-500" viewBox="0 0 24 24" fill="currentColor">
+                  <circle cx="12" cy="12" r="7" />
+                </svg>
+                <svg v-else-if="theme.id === 'cherry'" class="h-4 w-4 text-rose-700" viewBox="0 0 24 24" fill="currentColor">
+                  <circle cx="8" cy="15" r="3.5" />
+                  <circle cx="16" cy="15" r="3.5" />
+                  <path d="M8 12c1-4 4-6 6-7 0 3 1 5 2 7" stroke="#16A34A" stroke-width="1.8" fill="none" />
+                </svg>
+                <svg v-else-if="theme.id === 'watermelon'" class="h-4 w-4 text-emerald-600" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M4 10a8 8 0 0 0 16 0z" />
+                </svg>
+                <svg v-else-if="theme.id === 'purple'" class="h-4 w-4 text-purple-700" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 3c1.2 1.2 1.2 2.8 0 4-1.2-1.2-1.2-2.8 0-4zm-3 3.5c1.5.5 2.4 1.8 2 3.2-1.5-.5-2.4-1.8-2-3.2zm6 0c-1.5.5-2.4 1.8-2 3.2 1.5-.5 2.4-1.8 2-3.2z" />
+                </svg>
+                <svg v-else-if="theme.id === 'pink'" class="h-4 w-4 text-pink-500" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2c1.6 0 2.8 2 1.8 4.2 2-1.5 4-.5 3.4 1.5-.5 1.5-2.6 1.8-3.8.5 1.5 2 .7 4.2-1.4 3.8-1.5-.4-1.6-2.4-.2-3.6-1.9 1.4-4 .7-4-1.2 0-1.8 2.2-2 3.8-.6-1.2-2.2-.8-4.6.4-4.6z" />
+                </svg>
+                <svg v-else-if="theme.id === 'mint'" class="h-4 w-4 text-emerald-600" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17 4C11 4 6 8.5 6 15c0 1.4.4 2.7 1 3.8L16 9.8l-7.2 9.8c1 .4 2.1.4 3.2.4 5 0 9-4 9-9V4h-4z" />
+                </svg>
+                <svg v-else-if="theme.id === 'daisy'" class="h-4 w-4 text-amber-500" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="5.5" r="2.6" fill="#FFFFFF" stroke="#EAB308" stroke-width="1" />
+                  <circle cx="18.5" cy="12" r="2.6" fill="#FFFFFF" stroke="#EAB308" stroke-width="1" />
+                  <circle cx="12" cy="18.5" r="2.6" fill="#FFFFFF" stroke="#EAB308" stroke-width="1" />
+                  <circle cx="5.5" cy="12" r="2.6" fill="#FFFFFF" stroke="#EAB308" stroke-width="1" />
+                  <circle cx="12" cy="12" r="3.4" fill="#FACC15" />
+                </svg>
+                <svg v-else-if="theme.id === 'cyber_navy' || theme.id === 'emerald_matrix'" class="h-4 w-4 text-blue-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="12 3 20 8 20 16 12 21 4 16 4 8" />
+                </svg>
+                <svg v-else-if="theme.id === 'crimson_shonen'" class="h-4 w-4 text-red-700" viewBox="0 0 24 24" fill="currentColor">
+                  <polygon points="12 2 20 12 12 22 4 12" />
+                </svg>
+                <svg v-else-if="theme.id === 'royal_galactic'" class="h-4 w-4 text-indigo-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <circle cx="12" cy="12" r="5" />
+                  <ellipse cx="12" cy="12" rx="10" ry="3.5" transform="rotate(-20 12 12)" />
+                </svg>
+                <svg v-else class="h-3.5 w-3.5 text-[#2D6BE4]" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 3l2.4 5.2 5.6.8-4 3.9.9 5.6L12 15.8 7.1 18.5l.9-5.6-4-3.9 5.6-.8L12 3z" />
+                </svg>
+              </span>
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-[11px] font-medium">{{ theme.name }}</p>
+                <p class="truncate text-[9px] font-normal text-slate-400">
+                  <template v-if="activeTheme === theme.id">Dipakai</template>
+                  <template v-else-if="isThemeUnlocked(theme.id)">Terbuka</template>
+                  <template v-else>Terkunci</template>
+                </p>
+              </div>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- LEMARI KOLEKSI FIGURE (ETALASE PAJANGAN SESUAI KATEGORI) -->
       <section class="rounded-3xl border border-[#C5E4FA] bg-white p-6 shadow-2xs sm:p-8">
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
           <div>
@@ -1974,7 +2511,7 @@ onUnmounted(() => {
               Lemari Koleksi Figure
             </h2>
             <p class="mt-0.5 text-xs text-slate-500">
-              Etalase pajangan hadiah figure dari Mystery Blind Box. Klik figure yang sudah terbuka untuk melihat detail 3D-nya.
+              Etalase pajangan hadiah figure disusun berdasarkan kategori. Klik figure yang sudah terbuka untuk melihat detail 3D-nya.
             </p>
           </div>
           <span class="rounded-full bg-[#EAF5FD] px-3.5 py-1 text-xs font-medium text-[#2D6BE4]">
@@ -1982,19 +2519,37 @@ onUnmounted(() => {
           </span>
         </div>
 
-        <!-- Rak Etalase Pajangan (10 Figure Koleksi) -->
+        <!-- Tab Kategori Figure -->
+        <div class="mt-4 flex flex-wrap items-center gap-2">
+          <button
+            v-for="cat in ['Semua', ...FIGURE_CATEGORIES]"
+            :key="cat"
+            type="button"
+            @click="selectedFigureCategory = cat"
+            class="rounded-full px-3.5 py-1.5 text-xs font-medium transition cursor-pointer"
+            :class="
+              selectedFigureCategory === cat
+                ? 'bg-[#2D6BE4] text-white shadow-2xs'
+                : 'border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
+            "
+          >
+            {{ cat }}
+          </button>
+        </div>
+
+        <!-- Rak Etalase Pajangan (20 Figure Sesuai Kategori) -->
         <div class="mt-6 grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
           <button
-            v-for="fig in COLLECTIBLE_FIGURES"
+            v-for="fig in filteredFigures"
             :key="fig.id"
             type="button"
             @click="openFigureDetail(fig)"
-            class="group relative flex flex-col items-center justify-between overflow-hidden rounded-2xl border border-[#C5E4FA] border-b-8 border-b-[#DCEBFB] bg-gradient-to-b from-[#F8FBFF] to-[#EAF5FD]/60 p-6 text-center transition hover:border-[#2D6BE4] cursor-pointer"
+            class="group relative flex flex-col items-center justify-between overflow-hidden rounded-2xl border border-[#C5E4FA] border-b-8 border-b-[#DCEBFB] bg-gradient-to-b from-[#F8FBFF] to-[#EAF5FD]/60 p-5 text-center transition hover:border-[#2D6BE4] cursor-pointer"
           >
-            <!-- Top Badge Status -->
+            <!-- Top Badge Status & Kategori -->
             <div class="flex w-full items-center justify-between gap-2">
               <span
-                class="rounded-full px-2.5 py-0.5 text-[11px] font-medium"
+                class="rounded-full px-2.5 py-0.5 text-[10px] font-medium"
                 :class="
                   isFigureUnlocked(fig.id)
                     ? 'bg-emerald-100 text-emerald-700'
@@ -2003,8 +2558,8 @@ onUnmounted(() => {
               >
                 {{ isFigureUnlocked(fig.id) ? 'Terkumpul' : 'Terkunci' }}
               </span>
-              <span class="text-[11px] text-slate-400">
-                {{ fig.rarity }}
+              <span class="truncate text-[10px] text-slate-400">
+                {{ fig.category }}
               </span>
             </div>
 

@@ -393,10 +393,20 @@ export function initNewUserStats(email) {
   return freshStats
 }
 
+export const FIGURE_CATEGORIES = [
+  'Hirono Art Toy',
+  'Superhero',
+  'Pokémon',
+  'Disney & Animasi',
+  'Cute & Toon',
+]
+
 export const COLLECTIBLE_FIGURES = [
+  // Kategori: Hirono Art Toy
   {
     id: 'apple',
     name: 'Apple Boy Figure',
+    category: 'Hirono Art Toy',
     series: 'Hirono Collection #01',
     rarity: 'Rare',
     desc: 'Figur karakter bertudung apel merah dengan daun hijau, kacamata hitam di dahi, kaos merah, dan celana pendek denim.',
@@ -404,6 +414,7 @@ export const COLLECTIBLE_FIGURES = [
   {
     id: 'warrior',
     name: 'Star Fort Figure',
+    category: 'Hirono Art Toy',
     series: 'Hirono Shelter #02',
     rarity: 'Epic',
     desc: 'Figur karakter dengan tudung bintang kardus jahit dan kostum kotak benteng bertuliskan Keep Out.',
@@ -411,58 +422,154 @@ export const COLLECTIBLE_FIGURES = [
   {
     id: 'rose',
     name: 'Rose Prince Figure',
+    category: 'Hirono Art Toy',
     series: 'Hirono Le Petit Prince #03',
     rarity: 'Legendary',
     desc: 'Figur karakter bertudung kelopak mawar merah berlapis dengan jubah putih dan tangkai berduri di atas kawah bulan.',
   },
+
+  // Kategori: Superhero
   {
-    id: 'capybara',
-    name: 'Capybara Boba Figure',
-    series: 'Cute Companions #04',
+    id: 'batman',
+    name: 'Batman Chibi Figure',
+    category: 'Superhero',
+    series: 'Hero Series #04',
     rarity: 'Epic',
-    desc: 'Figur Capybara gembul berbulu coklat karamel yang sedang menyeruput cup Boba Milk Tea dengan sedotan putih.',
+    desc: 'Figur chibi Batman bertopeng hitam bertelinga lancip, lambang kelelawar kuning, sabuk utilitas emas, dan jubah sayap hitam.',
   },
   {
-    id: 'garfield',
-    name: 'Garfield Lazy Cat Figure',
-    series: 'Classic Toon #05',
-    rarity: 'Rare',
-    desc: 'Figur kucing oranye Garfield duduk santai dengan mata mengantuk khas, hidung pink, dan belang hitam.',
+    id: 'ironman',
+    name: 'Iron Man Chibi Figure',
+    category: 'Superhero',
+    series: 'Hero Series #05',
+    rarity: 'Legendary',
+    desc: 'Figur chibi Iron Man dengan armor merah-emas mengkilap serta mata dan reaktor dada cyan menyala.',
   },
   {
-    id: 'minion_duo',
-    name: 'Minion Goggles Figure',
-    series: 'Despicable Crew #06',
-    rarity: 'Rare',
-    desc: 'Figur Minion bermata dua dengan kacamata perak, senyum ramah, dan baju kodok denim biru.',
-  },
-  {
-    id: 'minion_one',
-    name: 'Minion Pointing Figure',
-    series: 'Despicable Crew #07',
+    id: 'spiderman',
+    name: 'Spider-Man Chibi Figure',
+    category: 'Superhero',
+    series: 'Hero Series #06',
     rarity: 'Epic',
-    desc: 'Figur Minion bermata satu yang tersenyum lebar sambil mengangkat satu jari dengan sarung tangan hitam.',
+    desc: 'Figur chibi Spider-Man berkostum jaring merah-biru dengan mata putih besar dan pose mengepalkan tangan.',
   },
+
+  // Kategori: Pokémon
+  {
+    id: 'pikachu',
+    name: 'Pikachu Figure',
+    category: 'Pokémon',
+    series: 'Poké Collection #07',
+    rarity: 'Rare',
+    desc: 'Figur Pikachu kuning ceria dengan pipi merah bulat, telinga berujung hitam, dan ekor petir khas.',
+  },
+  {
+    id: 'bulbasaur_stand',
+    name: 'Bulbasaur Classic Figure',
+    category: 'Pokémon',
+    series: 'Poké Collection #08',
+    rarity: 'Rare',
+    desc: 'Figur Bulbasaur hijau tosca bertotol gelap dengan taring mungil, lidah pink, dan umbi tanaman hijau di punggung.',
+  },
+  {
+    id: 'bulbasaur_wave',
+    name: 'Bulbasaur Chibi Wave Figure',
+    category: 'Pokémon',
+    series: 'Poké Collection #09',
+    rarity: 'Epic',
+    desc: 'Figur Bulbasaur duduk dengan mata tersenyum melengkung sambil melambaikan kaki depan dengan ceria.',
+  },
+  {
+    id: 'squirtle',
+    name: 'Squirtle Jump Figure',
+    category: 'Pokémon',
+    series: 'Poké Collection #10',
+    rarity: 'Rare',
+    desc: 'Figur Squirtle biru muda melompat ceria dengan cangkang kuning-coklat bertekstur dan ekor melingkar besar.',
+  },
+  {
+    id: 'jigglypuff',
+    name: 'Jigglypuff Figure',
+    category: 'Pokémon',
+    series: 'Poké Collection #11',
+    rarity: 'Rare',
+    desc: 'Figur Jigglypuff pink bulat menggemaskan dengan jambul keriting khas dan mata biru kehijauan lebar.',
+  },
+  {
+    id: 'gengar',
+    name: 'Gengar Figure',
+    category: 'Pokémon',
+    series: 'Poké Collection #12',
+    rarity: 'Epic',
+    desc: 'Figur vinyl Gengar ungu gelap dengan mata merah menyala, rambut berduri, dan senyum lebar khas.',
+  },
+  {
+    id: 'vulpix',
+    name: 'Vulpix Six-Tails Figure',
+    category: 'Pokémon',
+    series: 'Poké Collection #13',
+    rarity: 'Legendary',
+    desc: 'Figur Vulpix oranye lembut dengan jambul ikal, dada krem, dan enam ekor melingkar cantik.',
+  },
+
+  // Kategori: Disney & Animasi
   {
     id: 'stitch_boy',
     name: 'Stitch Blue Figure',
-    series: 'Ohana Galaxy #08',
+    category: 'Disney & Animasi',
+    series: 'Ohana Galaxy #14',
     rarity: 'Legendary',
     desc: 'Figur Stitch biru ceria yang merentangkan kedua tangan dengan telinga lebar bagian dalam pink.',
   },
   {
     id: 'stitch_girl',
     name: 'Angel Pink Figure',
-    series: 'Ohana Galaxy #09',
+    category: 'Disney & Animasi',
+    series: 'Ohana Galaxy #15',
     rarity: 'Legendary',
     desc: 'Figur Angel berwarna pink lembut dengan dua antena panjang dan hiasan bunga sepatu pink di kepala.',
   },
   {
     id: 'toothless',
     name: 'Toothless Night Fury Figure',
-    series: 'Dragon Riders #10',
+    category: 'Disney & Animasi',
+    series: 'Dragon Riders #16',
     rarity: 'Legendary',
     desc: 'Figur naga hitam Toothless duduk manis dengan mata hijau-kuning besar, sayap membentang, dan kuku krem.',
+  },
+  {
+    id: 'minion_duo',
+    name: 'Minion Goggles Figure',
+    category: 'Disney & Animasi',
+    series: 'Despicable Crew #17',
+    rarity: 'Rare',
+    desc: 'Figur Minion bermata dua dengan kacamata perak, senyum ramah, dan baju kodok denim biru.',
+  },
+  {
+    id: 'minion_one',
+    name: 'Minion Pointing Figure',
+    category: 'Disney & Animasi',
+    series: 'Despicable Crew #18',
+    rarity: 'Epic',
+    desc: 'Figur Minion bermata satu yang tersenyum lebar sambil mengangkat satu jari dengan sarung tangan hitam.',
+  },
+
+  // Kategori: Cute & Toon
+  {
+    id: 'capybara',
+    name: 'Capybara Boba Figure',
+    category: 'Cute & Toon',
+    series: 'Cute Companions #19',
+    rarity: 'Epic',
+    desc: 'Figur Capybara gembul berbulu coklat karamel yang sedang menyeruput cup Boba Milk Tea dengan sedotan putih.',
+  },
+  {
+    id: 'garfield',
+    name: 'Garfield Lazy Cat Figure',
+    category: 'Cute & Toon',
+    series: 'Classic Toon #20',
+    rarity: 'Rare',
+    desc: 'Figur kucing oranye Garfield duduk santai dengan mata mengantuk khas, hidung pink, dan belang hitam.',
   },
 ]
 
@@ -470,74 +577,148 @@ export const SPECIAL_THEMES = [
   {
     id: 'blue',
     name: 'Biru Klasik',
+    group: 'Klasik',
     ornamentLabel: 'Standar EQuest',
     bgHex: '#D8EDFB',
+    accentHex: '#2D6BE4',
     previewClass: 'bg-[#D8EDFB]',
     isDefault: true,
   },
   {
     id: 'apple',
     name: 'Merah Apel',
+    group: 'Buah & Bunga',
     ornamentLabel: 'Hiasan Apel Merah Lucu',
     bgHex: '#FFE4E6',
+    accentHex: '#E11D48',
     previewClass: 'bg-[#FFE4E6]',
+    isDefault: false,
+  },
+  {
+    id: 'strawberry',
+    name: 'Pink Strawberry',
+    group: 'Buah & Bunga',
+    ornamentLabel: 'Hiasan Buah Strawberry Manis',
+    bgHex: '#FCE7F3',
+    accentHex: '#EC4899',
+    previewClass: 'bg-[#FCE7F3]',
+    isDefault: false,
+  },
+  {
+    id: 'lemon',
+    name: 'Kuning Lemon',
+    group: 'Buah & Bunga',
+    ornamentLabel: 'Hiasan Irisan Lemon Segar',
+    bgHex: '#FEF9C3',
+    accentHex: '#D97706',
+    previewClass: 'bg-[#FEF9C3]',
+    isDefault: false,
+  },
+  {
+    id: 'cherry',
+    name: 'Merah Cherry',
+    group: 'Buah & Bunga',
+    ornamentLabel: 'Hiasan Buah Cherry Lucu',
+    bgHex: '#FFE4E6',
+    accentHex: '#BE123C',
+    previewClass: 'bg-[#FFE4E6]',
+    isDefault: false,
+  },
+  {
+    id: 'watermelon',
+    name: 'Segar Semangka',
+    group: 'Buah & Bunga',
+    ornamentLabel: 'Hiasan Irisan Semangka Lucu',
+    bgHex: '#DCFCE7',
+    accentHex: '#E11D48',
+    previewClass: 'bg-[#DCFCE7]',
     isDefault: false,
   },
   {
     id: 'purple',
     name: 'Ungu Lavender',
+    group: 'Buah & Bunga',
     ornamentLabel: 'Hiasan Bunga Lavender',
     bgHex: '#EDE9FE',
+    accentHex: '#7C3AED',
     previewClass: 'bg-[#EDE9FE]',
     isDefault: false,
   },
   {
     id: 'pink',
     name: 'Pink Sakura',
+    group: 'Buah & Bunga',
     ornamentLabel: 'Hiasan Bunga Sakura',
     bgHex: '#FCE7F3',
+    accentHex: '#DB2777',
     previewClass: 'bg-[#FCE7F3]',
     isDefault: false,
   },
   {
     id: 'mint',
     name: 'Hijau Mint',
+    group: 'Buah & Bunga',
     ornamentLabel: 'Hiasan Daun Mint',
     bgHex: '#D1FAE5',
+    accentHex: '#059669',
     previewClass: 'bg-[#D1FAE5]',
     isDefault: false,
   },
   {
     id: 'daisy',
     name: 'Kuning Daisy',
+    group: 'Buah & Bunga',
     ornamentLabel: 'Hiasan Bunga Daisy Lucu',
     bgHex: '#FEF9C3',
+    accentHex: '#CA8A04',
     previewClass: 'bg-[#FEF9C3]',
+    isDefault: false,
+  },
+  {
+    id: 'cyber_navy',
+    name: 'Cyber Mecha',
+    group: 'Cool & Cowo',
+    ornamentLabel: 'Hiasan Sirkuit Futuristik',
+    bgHex: '#DBEAFE',
+    accentHex: '#1D4ED8',
+    previewClass: 'bg-[#DBEAFE]',
+    isDefault: false,
+  },
+  {
+    id: 'emerald_matrix',
+    name: 'Emerald Gamer',
+    group: 'Cool & Cowo',
+    ornamentLabel: 'Hiasan Hexa Tech Teal',
+    bgHex: '#CCFBF1',
+    accentHex: '#0F766E',
+    previewClass: 'bg-[#CCFBF1]',
+    isDefault: false,
+  },
+  {
+    id: 'crimson_shonen',
+    name: 'Crimson Shonen',
+    group: 'Cool & Cowo',
+    ornamentLabel: 'Hiasan Energi Geometris Merah',
+    bgHex: '#FEE2E2',
+    accentHex: '#B91C1C',
+    previewClass: 'bg-[#FEE2E2]',
+    isDefault: false,
+  },
+  {
+    id: 'royal_galactic',
+    name: 'Galactic Space',
+    group: 'Cool & Cowo',
+    ornamentLabel: 'Hiasan Planet & Konstelasi',
+    bgHex: '#E0E7FF',
+    accentHex: '#4338CA',
+    previewClass: 'bg-[#E0E7FF]',
     isDefault: false,
   },
 ]
 
 export function isDivaOwnerAccount(email) {
-  if (!email || isDemoAccount(email)) return false
-  const normalized = email.trim().toLowerCase()
-  if (normalized === '11241026@student.itk.ac.id' || normalized === 'dvaalzaa@gmail.com') {
-    return true
-  }
-  const session = readStorage('equestUser', null)
-  if (
-    session?.email?.trim().toLowerCase() === normalized &&
-    String(session.name || '').toLowerCase().includes('diva novaliza')
-  ) {
-    return true
-  }
-  const users = readStorage('equestUsers', [])
-  if (Array.isArray(users)) {
-    const matched = users.find((u) => u.email?.trim().toLowerCase() === normalized)
-    if (matched && String(matched.name || '').toLowerCase().includes('diva novaliza')) {
-      return true
-    }
-  }
-  return false
+  if (!email) return false
+  return email.trim().toLowerCase() === '11241026@student.itk.ac.id'
 }
 
 function normalizeAccountCollections(stats, email = '') {
@@ -559,14 +740,30 @@ function normalizeAccountCollections(stats, email = '') {
       const n = String(r.name || '').toLowerCase()
       if (n.includes('ungu') || n.includes('lavender')) {
         if (!themes.includes('purple')) themes.push('purple')
-      } else if (n.includes('pink') || n.includes('sakura')) {
+      } else if (n.includes('sakura')) {
         if (!themes.includes('pink')) themes.push('pink')
-      } else if (n.includes('mint') || n.includes('hijau')) {
+      } else if (n.includes('strawberry')) {
+        if (!themes.includes('strawberry')) themes.push('strawberry')
+      } else if (n.includes('lemon')) {
+        if (!themes.includes('lemon')) themes.push('lemon')
+      } else if (n.includes('cherry')) {
+        if (!themes.includes('cherry')) themes.push('cherry')
+      } else if (n.includes('semangka') || n.includes('watermelon')) {
+        if (!themes.includes('watermelon')) themes.push('watermelon')
+      } else if (n.includes('mint')) {
         if (!themes.includes('mint')) themes.push('mint')
-      } else if (n.includes('apel') || n.includes('merah')) {
+      } else if (n.includes('apel')) {
         if (!themes.includes('apple')) themes.push('apple')
-      } else if (n.includes('daisy') || n.includes('kuning')) {
+      } else if (n.includes('daisy')) {
         if (!themes.includes('daisy')) themes.push('daisy')
+      } else if (n.includes('cyber') || n.includes('mecha')) {
+        if (!themes.includes('cyber_navy')) themes.push('cyber_navy')
+      } else if (n.includes('emerald') || n.includes('gamer')) {
+        if (!themes.includes('emerald_matrix')) themes.push('emerald_matrix')
+      } else if (n.includes('crimson') || n.includes('shonen')) {
+        if (!themes.includes('crimson_shonen')) themes.push('crimson_shonen')
+      } else if (n.includes('galactic') || n.includes('space')) {
+        if (!themes.includes('royal_galactic')) themes.push('royal_galactic')
       } else if (n.includes('tema spesial')) {
         if (!themes.includes('purple')) themes.push('purple')
       }
@@ -597,7 +794,26 @@ function normalizeAccountCollections(stats, email = '') {
     stats.isPremium = computedPremium
     changed = true
   }
-  // Khusus akun pemilik (Diva Novaliza Fitriyani): buka seluruh figure & pastikan stok tiket cukup
+
+  // Bersihkan akun non-pemilik apabila sebelumnya sempat terkena boost tiket/figure dari versi lama
+  if (
+    email &&
+    !isDivaOwnerAccount(email) &&
+    !isDemoAccount(email) &&
+    (stats.divaOwnerRewardsAppliedV2 || stats.tempGachaTicketBoostV1) &&
+    !stats.nonOwnerCleanedV3
+  ) {
+    stats.unlockedFigures = []
+    stats.unlockedThemes = ['blue']
+    stats.activeTheme = 'blue'
+    stats.tickets = Math.max(0, Number(stats.completedLatihan) || 0)
+    stats.divaOwnerRewardsAppliedV2 = false
+    stats.tempGachaTicketBoostV1 = false
+    stats.nonOwnerCleanedV3 = true
+    changed = true
+  }
+
+  // Khusus akun utama Diva Novaliza Fitriyani (11241026@student.itk.ac.id)
   if (isDivaOwnerAccount(email)) {
     COLLECTIBLE_FIGURES.forEach((fig) => {
       if (!stats.unlockedFigures.includes(fig.id)) {
@@ -605,9 +821,15 @@ function normalizeAccountCollections(stats, email = '') {
         changed = true
       }
     })
-    if (!stats.divaOwnerRewardsAppliedV2) {
+    SPECIAL_THEMES.forEach((t) => {
+      if (!stats.unlockedThemes.includes(t.id)) {
+        stats.unlockedThemes.push(t.id)
+        changed = true
+      }
+    })
+    if (!stats.divaOwnerRewardsAppliedV3) {
       stats.tickets = Math.max(Number(stats.tickets) || 0, 99)
-      stats.divaOwnerRewardsAppliedV2 = true
+      stats.divaOwnerRewardsAppliedV3 = true
       changed = true
     }
   }
@@ -1064,7 +1286,7 @@ export const PREMIUM_PLANS = {
 export function activatePremiumPlan(
   email,
   planId,
-  paymentMethod = 'QRIS Instan',
+  paymentMethod = 'GoPay',
   paymentDetails = {}
 ) {
   if (!email) {
@@ -1134,6 +1356,84 @@ export function cancelPremiumPlan(email) {
   return {
     success: true,
     tickets: stats.tickets,
+  }
+}
+
+export const TICKET_PACKS = [
+  {
+    id: 'pack_3',
+    name: 'Paket 3 Tiket Blind Box',
+    tickets: 3,
+    bonusXp: 15,
+    price: 'Rp 3.000',
+    priceAmount: 3000,
+    badge: 'Hemat',
+    desc: 'Tambahan 3 tiket instan untuk membuka Mystery Blind Box kapan saja.',
+  },
+  {
+    id: 'pack_8',
+    name: 'Paket 8 Tiket Blind Box',
+    tickets: 8,
+    bonusXp: 40,
+    price: 'Rp 6.000',
+    priceAmount: 6000,
+    badge: 'Populer',
+    desc: 'Peluang lebih besar mengumpulkan koleksi figure 3D dan tema spesial.',
+  },
+  {
+    id: 'pack_20',
+    name: 'Paket 20 Tiket Blind Box',
+    tickets: 20,
+    bonusXp: 100,
+    price: 'Rp 12.000',
+    priceAmount: 12000,
+    badge: 'Kolektor',
+    desc: 'Paket tiket maksimal untuk berburu seluruh koleksi Blind Box.',
+  },
+]
+
+export function purchaseTicketPack(
+  email,
+  packId,
+  paymentMethod = 'GoPay',
+  paymentDetails = {}
+) {
+  if (!email) {
+    return { success: false, message: 'Silakan masuk ke akun EQuest terlebih dahulu.' }
+  }
+  const packMeta = TICKET_PACKS.find((p) => p.id === packId)
+  if (!packMeta) {
+    return { success: false, message: 'Paket tiket tidak ditemukan.' }
+  }
+
+  const stats = getUserStats(email)
+  stats.tickets = (stats.tickets || 0) + packMeta.tickets
+  stats.xp = (stats.xp || 0) + packMeta.bonusXp
+  stats.xpMonth = (stats.xpMonth || 0) + packMeta.bonusXp
+  stats.activityMonth = (stats.activityMonth || 0) + 1
+  saveUserStats(email, stats)
+
+  const invoiceInfo = paymentDetails.invoiceId ? ` (${paymentDetails.invoiceId})` : ''
+  addHistoryItem(email, {
+    type: 'ticket',
+    title: `Pembelian ${packMeta.name}`,
+    subtitle: `Metode: ${paymentMethod}${invoiceInfo} | +${packMeta.tickets} Tiket Blind Box & +${packMeta.bonusXp} XP`,
+    badgeText: `+${packMeta.tickets} Tiket`,
+    badgeClass: 'bg-purple-100 text-purple-700',
+    hasAction: false,
+  })
+
+  return {
+    success: true,
+    packId: packMeta.id,
+    planName: packMeta.name,
+    bonusTickets: packMeta.tickets,
+    bonusXp: packMeta.bonusXp,
+    totalTickets: stats.tickets,
+    totalXp: stats.xp,
+    paymentMethod,
+    invoiceId: paymentDetails.invoiceId || null,
+    payerInfo: paymentDetails.payerInfo || email,
   }
 }
 
