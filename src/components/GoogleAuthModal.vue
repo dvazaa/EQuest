@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { loginWithGoogle, readStorage } from '../utils/equestState'
 
@@ -21,12 +21,133 @@ const googleEmail = ref('')
 const googleName = ref('')
 const errorMessage = ref('')
 const isLoading = ref(false)
+const isOAuthLoading = ref(false)
 const savedGoogleAccounts = ref([])
+
+const googleClientId = computed(() => {
+  const envId = typeof import.meta !== 'undefined' ? import.meta.env?.VITE_GOOGLE_CLIENT_ID : ''
+  const storedId = readStorage('equestGoogleClientId', '')
+  return String(envId || storedId || '').trim()
+})
 
 onMounted(() => {
   // Ambil akun google asli yang pernah login di perangkat ini
   savedGoogleAccounts.value = readStorage('equestGoogleAccounts', [])
 })
+
+function isValidGoogleOrStudentEmail(email) {
+  const parts = String(email || '').trim().toLowerCase().split('@')
+  if (parts.length !== 2 || !parts[0] || !parts[1]) return false
+  const domain = parts[1]
+  return (
+    domain === 'gmail.com' ||
+    domain === 'googlemail.com' ||
+    domain === 'student.itk.ac.id' ||
+    domain.endsWith('.ac.id') ||
+    domain.endsWith('.sch.id')
+  )
+}
+
+function persistAndSignInGoogleAccount(accountData) {
+  const email = accountData.email.trim().toLowerCase()
+  const existing = readStorage('equestGoogleAccounts', [])
+  const foundIdx = existing.findIndex((a) => a.email.toLowerCase() === email)
+  if (foundIdx === -1) {
+    existing.unshift(accountData)
+    localStorage.setItem('equestGoogleAccounts', JSON.stringify(existing.slice(0, 3)))
+  } else {
+    existing[foundIdx] = accountData
+    localStorage.setItem('equestGoogleAccounts', JSON.stringify(existing))
+  }
+
+  loginWithGoogle(accountData)
+  emit('success')
+  emit('close')
+  router.push('/')
+}
+
+function loadGoogleGsiScript() {
+  return new Promise((resolve, reject) => {
+    if (typeof window === 'undefined') return reject(new Error('Window unavailable'))
+    if (window.google?.accounts?.oauth2) return resolve(window.google)
+
+    const scriptUrl = 'https://accounts.google.com/gsi/client'
+    const existing = document.querySelector(`script[src="${scriptUrl}"]`)
+    if (existing) {
+      existing.addEventListener('load', () => resolve(window.google))
+      existing.addEventListener('error', () => reject(new Error('Gagal memuat Google Identity Services')))
+      return
+    }
+
+    const script = document.createElement('script')
+    script.src = scriptUrl
+    script.async = true
+    script.defer = true
+    script.onload = () => resolve(window.google)
+    script.onerror = () => reject(new Error('Gagal memuat Google Identity Services'))
+    document.head.appendChild(script)
+  })
+}
+
+async function triggerRealGooglePopup() {
+  errorMessage.value = ''
+  if (!googleClientId.value) {
+    errorMessage.value =
+      'VITE_GOOGLE_CLIENT_ID belum diatur di file .env sehingga pemilih akun Google perangkat belum aktif.'
+    return
+  }
+
+  isOAuthLoading.value = true
+  try {
+    const google = await loadGoogleGsiScript()
+    if (!google?.accounts?.oauth2) {
+      throw new Error('Google Identity Services belum siap.')
+    }
+
+    const tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: googleClientId.value,
+      scope: 'openid email profile',
+      callback: async (tokenResponse) => {
+        if (tokenResponse?.error || !tokenResponse?.access_token) {
+          isOAuthLoading.value = false
+          errorMessage.value = 'Login dengan akun Google dibatalkan atau gagal.'
+          return
+        }
+        try {
+          const userInfoResp = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: {
+              Authorization: `Bearer ${tokenResponse.access_token}`,
+            },
+          })
+          if (!userInfoResp.ok) {
+            throw new Error('Gagal mengambil profil akun Google.')
+          }
+          const profile = await userInfoResp.json()
+          const resolvedEmail = String(profile?.email || '').trim().toLowerCase()
+          if (!resolvedEmail) {
+            throw new Error('Email akun Google tidak ditemukan.')
+          }
+          const accountData = {
+            email: resolvedEmail,
+            name: String(profile?.name || resolvedEmail.split('@')[0]).trim(),
+            avatar: profile?.picture ? '🌐' : '🌐',
+            picture: profile?.picture || null,
+          }
+          isOAuthLoading.value = false
+          persistAndSignInGoogleAccount(accountData)
+        } catch (profileErr) {
+          isOAuthLoading.value = false
+          errorMessage.value = profileErr?.message || 'Gagal membaca data profil Google.'
+        }
+      },
+    })
+
+    tokenClient.requestAccessToken({ prompt: 'select_account' })
+  } catch (err) {
+    isOAuthLoading.value = false
+    errorMessage.value = err?.message || 'Tidak dapat membuka pemilih akun Google perangkat.'
+  }
+}
 
 function handleGoogleLogin(emailToUse, nameToUse) {
   errorMessage.value = ''
@@ -38,8 +159,9 @@ function handleGoogleLogin(emailToUse, nameToUse) {
     return
   }
 
-  if (!email.includes('@')) {
-    errorMessage.value = 'Format email Google tidak valid (contoh: nama@gmail.com).'
+  if (!isValidGoogleOrStudentEmail(email)) {
+    errorMessage.value =
+      'Gunakan alamat email Google asli (@gmail.com / @googlemail.com) atau email sekolah/kampus (.ac.id / .sch.id).'
     return
   }
 
@@ -52,19 +174,8 @@ function handleGoogleLogin(emailToUse, nameToUse) {
       avatar: '🌐',
     }
 
-    // Simpan ke riwayat akun Google di perangkat ini
-    const existing = readStorage('equestGoogleAccounts', [])
-    const foundIdx = existing.findIndex((a) => a.email.toLowerCase() === email)
-    if (foundIdx === -1) {
-      existing.unshift(accountData)
-      localStorage.setItem('equestGoogleAccounts', JSON.stringify(existing.slice(0, 3)))
-    }
-
-    loginWithGoogle(accountData)
     isLoading.value = false
-    emit('success')
-    emit('close')
-    router.push('/')
+    persistAndSignInGoogleAccount(accountData)
   }, 400)
 }
 </script>
@@ -119,6 +230,20 @@ function handleGoogleLogin(emailToUse, nameToUse) {
       <div class="mt-5 space-y-4">
         <p class="text-xs text-gray-500">
           Gunakan akun Google asli milikmu untuk masuk ke EQuest secara aman.
+        </p>
+
+        <!-- Tombol OAuth 2.0 Pilih Akun Google Perangkat (Aktif jika VITE_GOOGLE_CLIENT_ID diatur) -->
+        <button
+          v-if="googleClientId"
+          type="button"
+          :disabled="isOAuthLoading"
+          @click="triggerRealGooglePopup"
+          class="flex w-full items-center justify-center gap-2.5 rounded-2xl border border-blue-200 bg-blue-50/70 py-3 text-xs font-semibold text-blue-900 shadow-2xs transition hover:bg-blue-100/70 disabled:opacity-50 cursor-pointer"
+        >
+          <span>{{ isOAuthLoading ? 'Membuka jendela akun Google...' : 'Pilih Akun Google di Perangkat Ini →' }}</span>
+        </button>
+        <p v-else class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] leading-relaxed text-slate-600">
+          Untuk menampilkan popup pilih akun Google langsung dari perangkat, atur <code class="font-mono text-slate-800">VITE_GOOGLE_CLIENT_ID</code> pada file <code class="font-mono text-slate-800">.env</code>.
         </p>
 
         <!-- Akun yang pernah digunakan sebelumnya (jika ada) -->

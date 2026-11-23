@@ -665,7 +665,7 @@ const floatingPetals = [
       </div>
     </template>
 
-    <!-- ===================== TEMA CYBER MECHA (COWO) ===================== -->
+    <!-- ===================== TEMA CYBER MECHA ===================== -->
     <template v-else-if="activeTheme === 'cyber_navy'">
       <div class="fixed inset-0 z-10 overflow-hidden">
         <div class="absolute -left-24 top-16 h-72 w-72 rounded-full bg-blue-400/25 blur-3xl"></div>
@@ -690,7 +690,7 @@ const floatingPetals = [
       </div>
     </template>
 
-    <!-- ===================== TEMA EMERALD GAMER (COWO) ===================== -->
+    <!-- ===================== TEMA EMERALD GAMER ===================== -->
     <template v-else-if="activeTheme === 'emerald_matrix'">
       <div class="fixed inset-0 z-10 overflow-hidden">
         <div class="absolute -left-24 top-16 h-72 w-72 rounded-full bg-teal-400/25 blur-3xl"></div>
@@ -711,7 +711,7 @@ const floatingPetals = [
       </div>
     </template>
 
-    <!-- ===================== TEMA CRIMSON SHONEN (COWO) ===================== -->
+    <!-- ===================== TEMA CRIMSON SHONEN ===================== -->
     <template v-else-if="activeTheme === 'crimson_shonen'">
       <div class="fixed inset-0 z-10 overflow-hidden">
         <div class="absolute -left-24 top-16 h-72 w-72 rounded-full bg-red-400/20 blur-3xl"></div>
@@ -729,7 +729,7 @@ const floatingPetals = [
       </div>
     </template>
 
-    <!-- ===================== TEMA GALACTIC SPACE (COWO) ===================== -->
+    <!-- ===================== TEMA GALACTIC SPACE ===================== -->
     <template v-else-if="activeTheme === 'royal_galactic'">
       <div class="fixed inset-0 z-10 overflow-hidden">
         <div class="absolute -left-24 top-16 h-72 w-72 rounded-full bg-indigo-400/25 blur-3xl"></div>
@@ -749,6 +749,159 @@ const floatingPetals = [
           <ellipse cx="144" cy="144" rx="38" ry="10" transform="rotate(18 144 144)" stroke="#4338CA" stroke-width="2" />
           <path d="M88 168 L90 174 L96 176 L90 178 L88 184 L86 178 L80 176 L86 174 Z" fill="#4338CA" />
         </svg>
+      </div>
+    </template>
+
+    <!-- ===================== TEMA TURBO RACING MOBIL ===================== -->
+    <template v-else-if="activeTheme === 'racing_car'">
+      <div class="fixed inset-0 z-10 overflow-hidden">
+        <div class="absolute -left-24 top-16 h-72 w-72 rounded-full bg-orange-400/20 blur-3xl"></div>
+        <div class="absolute -right-24 bottom-12 h-80 w-80 rounded-full bg-slate-400/25 blur-3xl"></div>
+      </div>
+      <div class="fixed inset-0 z-30 overflow-hidden">
+        <!-- Mobil Sport & Bendera Balap Kiri Atas -->
+        <svg viewBox="0 0 240 220" class="theme-sway-slow absolute left-0 top-14 h-44 w-48 opacity-75 sm:h-52 sm:w-56" fill="none">
+          <!-- Garis Kecepatan -->
+          <path d="M10 92 H42 M4 104 H34" stroke="#EA580C" stroke-width="2.5" stroke-linecap="round" />
+          <!-- Siluet Mobil Sport + Spoiler -->
+          <g transform="translate(22, 62)">
+            <path d="M16 40 L34 18 H88 L114 34 L144 38 C150 40 152 46 150 54 H12 C10 46 12 42 16 40Z" fill="#EA580C" fill-opacity="0.88" stroke="#9A3412" stroke-width="2" />
+            <path d="M40 22 H84 L104 34 H32 Z" fill="#E0F2FE" stroke="#1E293B" stroke-width="1.5" />
+            <!-- Spoiler belakang -->
+            <path d="M12 24 L26 24 L22 36" stroke="#1E293B" stroke-width="3" stroke-linecap="round" />
+            <!-- Roda Depan & Belakang -->
+            <circle cx="40" cy="54" r="13" fill="#1E293B" stroke="#FFFFFF" stroke-width="2" />
+            <circle cx="40" cy="54" r="6" fill="#CBD5E1" />
+            <circle cx="118" cy="54" r="13" fill="#1E293B" stroke="#FFFFFF" stroke-width="2" />
+            <circle cx="118" cy="54" r="6" fill="#CBD5E1" />
+          </g>
+          <!-- Motif Bendera Balap Kotak -->
+          <g transform="translate(154, 24) rotate(12)">
+            <rect x="0" y="0" width="12" height="10" fill="#1E293B" />
+            <rect x="12" y="0" width="12" height="10" fill="#FFFFFF" />
+            <rect x="0" y="10" width="12" height="10" fill="#FFFFFF" />
+            <rect x="12" y="10" width="12" height="10" fill="#1E293B" />
+            <rect x="0" y="0" width="24" height="20" stroke="#475569" stroke-width="1.4" />
+            <path d="M0 0 V34" stroke="#475569" stroke-width="2" />
+          </g>
+        </svg>
+        <!-- Mobil Sport & Checkered Kanan Bawah -->
+        <svg viewBox="0 0 240 220" class="theme-sway-slow absolute bottom-2 right-2 h-44 w-48 opacity-75 sm:h-52 sm:w-56" fill="none">
+          <g transform="translate(56, 130)">
+            <path d="M16 40 L34 18 H88 L114 34 L144 38 C150 40 152 46 150 54 H12 C10 46 12 42 16 40Z" fill="#334155" fill-opacity="0.88" stroke="#0F172A" stroke-width="2" />
+            <path d="M40 22 H84 L104 34 H32 Z" fill="#FFEDD5" stroke="#0F172A" stroke-width="1.5" />
+            <path d="M12 24 L26 24 L22 36" stroke="#EA580C" stroke-width="3" stroke-linecap="round" />
+            <circle cx="40" cy="54" r="13" fill="#0F172A" stroke="#EA580C" stroke-width="2" />
+            <circle cx="40" cy="54" r="6" fill="#E2E8F0" />
+            <circle cx="118" cy="54" r="13" fill="#0F172A" stroke="#EA580C" stroke-width="2" />
+            <circle cx="118" cy="54" r="6" fill="#E2E8F0" />
+          </g>
+          <path d="M22 172 H46 M14 184 H42" stroke="#EA580C" stroke-width="2.5" stroke-linecap="round" />
+        </svg>
+        <!-- Ikon Roda & Bendera Melayang -->
+        <div v-for="(p, idx) in floatingPetals" :key="'rc-' + idx" class="theme-petal-drift absolute top-0 opacity-60" :style="{ left: p.left, animationDelay: p.delay, animationDuration: p.duration }">
+          <svg :width="p.size" :height="p.size" viewBox="0 0 24 24" fill="none" :style="{ transform: `rotate(${p.rotate})` }">
+            <circle cx="12" cy="12" r="8" stroke="#EA580C" stroke-width="2" />
+            <circle cx="12" cy="12" r="3" fill="#334155" />
+          </svg>
+        </div>
+      </div>
+    </template>
+
+    <!-- ===================== TEMA TITANIUM ROBOT ===================== -->
+    <template v-else-if="activeTheme === 'mecha_robot'">
+      <div class="fixed inset-0 z-10 overflow-hidden">
+        <div class="absolute -left-24 top-16 h-72 w-72 rounded-full bg-sky-400/25 blur-3xl"></div>
+        <div class="absolute -right-24 bottom-12 h-80 w-80 rounded-full bg-blue-400/20 blur-3xl"></div>
+      </div>
+      <div class="fixed inset-0 z-30 overflow-hidden">
+        <!-- Kepala Robot & Roda Gigi Kiri Atas -->
+        <svg viewBox="0 0 240 220" class="theme-sway-slow absolute left-0 top-14 h-44 w-48 opacity-75 sm:h-52 sm:w-56" fill="none">
+          <!-- Roda Gigi -->
+          <g transform="translate(154, 48)">
+            <circle cx="0" cy="0" r="16" stroke="#0284C7" stroke-width="4" stroke-dasharray="6 4" />
+            <circle cx="0" cy="0" r="7" fill="#BAE6FD" stroke="#0369A1" stroke-width="2" />
+          </g>
+          <!-- Kepala Mecha Robot -->
+          <g transform="translate(28, 38)">
+            <rect x="28" y="24" width="68" height="54" rx="14" fill="#38BDF8" fill-opacity="0.32" stroke="#0284C7" stroke-width="2.5" />
+            <!-- Antena samping & atas -->
+            <path d="M62 8 V24 M18 42 H28 M96 42 H106" stroke="#0369A1" stroke-width="3" stroke-linecap="round" />
+            <circle cx="62" cy="6" r="5" fill="#0EA5E9" stroke="#0369A1" stroke-width="1.5" />
+            <!-- Visor Mata Menyala -->
+            <rect x="40" y="38" width="44" height="16" rx="6" fill="#0F172A" />
+            <circle cx="52" cy="46" r="4" fill="#38BDF8" />
+            <circle cx="72" cy="46" r="4" fill="#38BDF8" />
+            <!-- Garis Mulut Speaker -->
+            <path d="M48 64 H76" stroke="#0369A1" stroke-width="2.5" stroke-linecap="round" />
+          </g>
+        </svg>
+        <!-- Kepala Robot & Roda Gigi Kanan Bawah -->
+        <svg viewBox="0 0 240 220" class="theme-sway-slow absolute bottom-2 right-2 h-44 w-48 opacity-75 sm:h-52 sm:w-56" fill="none">
+          <g transform="translate(56, 146)">
+            <circle cx="0" cy="0" r="18" stroke="#0284C7" stroke-width="4" stroke-dasharray="7 4" />
+            <circle cx="0" cy="0" r="8" fill="#E0F2FE" stroke="#0369A1" stroke-width="2" />
+          </g>
+          <g transform="translate(96, 108)">
+            <rect x="24" y="20" width="64" height="50" rx="12" fill="#0EA5E9" fill-opacity="0.28" stroke="#0369A1" stroke-width="2.5" />
+            <path d="M56 6 V20" stroke="#0369A1" stroke-width="2.8" stroke-linecap="round" />
+            <circle cx="56" cy="4" r="4.5" fill="#38BDF8" />
+            <rect x="35" y="34" width="42" height="14" rx="5" fill="#0F172A" />
+            <rect x="42" y="39" width="10" height="4" rx="2" fill="#38BDF8" />
+            <rect x="60" y="39" width="10" height="4" rx="2" fill="#38BDF8" />
+          </g>
+        </svg>
+        <!-- Ikon Roda Gigi Melayang -->
+        <div v-for="(p, idx) in floatingPetals" :key="'rb-' + idx" class="theme-petal-drift absolute top-0 opacity-60" :style="{ left: p.left, animationDelay: p.delay, animationDuration: p.duration }">
+          <svg :width="p.size" :height="p.size" viewBox="0 0 24 24" fill="none" :style="{ transform: `rotate(${p.rotate})` }">
+            <circle cx="12" cy="12" r="7" stroke="#0284C7" stroke-width="2.8" stroke-dasharray="4 3" />
+            <circle cx="12" cy="12" r="2.5" fill="#0369A1" />
+          </svg>
+        </div>
+      </div>
+    </template>
+
+    <!-- ===================== TEMA NITRO DRIFT MOBIL ===================== -->
+    <template v-else-if="activeTheme === 'stealth_drift'">
+      <div class="fixed inset-0 z-10 overflow-hidden">
+        <div class="absolute -left-24 top-16 h-72 w-72 rounded-full bg-amber-400/25 blur-3xl"></div>
+        <div class="absolute -right-24 bottom-12 h-80 w-80 rounded-full bg-slate-500/15 blur-3xl"></div>
+      </div>
+      <div class="fixed inset-0 z-30 overflow-hidden">
+        <!-- Speedometer & Mobil Drift Kiri Atas -->
+        <svg viewBox="0 0 240 220" class="theme-sway-slow absolute left-0 top-14 h-44 w-48 opacity-75 sm:h-52 sm:w-56" fill="none">
+          <!-- Speedometer Gauge -->
+          <g transform="translate(154, 48)">
+            <path d="M-22 10 A24 24 0 1 1 22 10" stroke="#D97706" stroke-width="3.2" stroke-linecap="round" />
+            <path d="M0 0 L12 -14" stroke="#B45309" stroke-width="2.8" stroke-linecap="round" />
+            <circle cx="0" cy="0" r="4" fill="#92400E" />
+          </g>
+          <!-- Mobil Drift Kuning-Amber -->
+          <g transform="translate(20, 66) rotate(-5)">
+            <path d="M12 38 L36 16 H90 L118 32 L148 36 L146 52 H12 Z" fill="#F59E0B" fill-opacity="0.88" stroke="#92400E" stroke-width="2" />
+            <path d="M40 20 H86 L106 32 H34 Z" fill="#1E293B" />
+            <circle cx="40" cy="52" r="12.5" fill="#1E293B" stroke="#FEF3C7" stroke-width="2" />
+            <circle cx="118" cy="52" r="12.5" fill="#1E293B" stroke="#FEF3C7" stroke-width="2" />
+            <!-- Efek Api Nitro Belakang -->
+            <path d="M8 42 L-8 38 L2 46 L-10 52 L8 49 Z" fill="#EA580C" />
+          </g>
+        </svg>
+        <!-- Mobil Drift Kanan Bawah -->
+        <svg viewBox="0 0 240 220" class="theme-sway-slow absolute bottom-2 right-2 h-44 w-48 opacity-75 sm:h-52 sm:w-56" fill="none">
+          <g transform="translate(56, 130) rotate(4)">
+            <path d="M12 38 L36 16 H90 L118 32 L148 36 L146 52 H12 Z" fill="#1E293B" fill-opacity="0.88" stroke="#D97706" stroke-width="2" />
+            <path d="M40 20 H86 L106 32 H34 Z" fill="#FDE68A" />
+            <circle cx="40" cy="52" r="12.5" fill="#0F172A" stroke="#F59E0B" stroke-width="2" />
+            <circle cx="118" cy="52" r="12.5" fill="#0F172A" stroke="#F59E0B" stroke-width="2" />
+          </g>
+          <path d="M196 122 L204 108 H198 L206 96" stroke="#D97706" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        <!-- Ikon Petir Nitro Melayang -->
+        <div v-for="(p, idx) in floatingPetals" :key="'sd-' + idx" class="theme-petal-drift absolute top-0 opacity-65" :style="{ left: p.left, animationDelay: p.delay, animationDuration: p.duration }">
+          <svg :width="p.size" :height="p.size" viewBox="0 0 24 24" fill="none" :style="{ transform: `rotate(${p.rotate})` }">
+            <polygon points="13 2 4 14 11 14 10 22 20 10 13 10" fill="#F59E0B" fill-opacity="0.8" />
+          </svg>
+        </div>
       </div>
     </template>
   </div>

@@ -31,11 +31,14 @@ const countdownSeconds = ref(900)
 let timerInterval = null
 
 const ewalletPhone = ref('')
+const ewalletRequestSent = ref(false)
+const ewalletPin = ref('')
+const vaSenderName = ref('')
 const hasConfirmedTransfer = ref(false)
 const copiedVa = ref(false)
 const isVerifying = ref(false)
 const isCreatingSnap = ref(false)
-const snapMode = ref('midtrans_sandbox_simulator')
+const snapMode = ref('local_checkout')
 const snapToken = ref('')
 
 const checkoutResult = ref(null)
@@ -192,6 +195,9 @@ function openCheckout(item, type = 'plan') {
   checkoutResult.value = null
   checkoutError.value = ''
   ewalletPhone.value = ''
+  ewalletRequestSent.value = false
+  ewalletPin.value = ''
+  vaSenderName.value = ''
   hasConfirmedTransfer.value = false
   copiedVa.value = false
   isVerifying.value = false
@@ -216,7 +222,7 @@ function loadMidtransSnapScript(clientKey, isProduction = false) {
     const existing = document.querySelector(`script[src="${scriptUrl}"]`)
     if (existing) {
       existing.addEventListener('load', () => resolve(window.snap))
-      existing.addEventListener('error', () => reject(new Error('Gagal memuat Midtrans Snap JS')))
+      existing.addEventListener('error', () => reject(new Error('Gagal memuat layanan popup pembayaran')))
       return
     }
 
@@ -224,7 +230,7 @@ function loadMidtransSnapScript(clientKey, isProduction = false) {
     script.src = scriptUrl
     script.setAttribute('data-client-key', clientKey)
     script.onload = () => resolve(window.snap)
-    script.onerror = () => reject(new Error('Gagal memuat Midtrans Snap JS'))
+    script.onerror = () => reject(new Error('Gagal memuat layanan popup pembayaran'))
     document.head.appendChild(script)
   })
 }
@@ -237,6 +243,9 @@ async function createInvoiceAndProceed() {
   if (!selectedPlan.value) return
 
   checkoutError.value = ''
+  ewalletRequestSent.value = false
+  ewalletPin.value = ''
+  vaSenderName.value = ''
   hasConfirmedTransfer.value = false
   copiedVa.value = false
   isCreatingSnap.value = true
@@ -259,14 +268,14 @@ async function createInvoiceAndProceed() {
       tokenResponse = await resp.json()
     }
   } catch (_) {
-    // Backend sedang offline -> lanjutkan menggunakan simulator Midtrans Snap lokal
+    // Backend sedang offline -> lanjutkan menggunakan mode checkout aplikasi lokal
   }
 
   isCreatingSnap.value = false
 
   if (tokenResponse?.mode === 'midtrans_live_snap' && tokenResponse?.snapToken && tokenResponse?.clientKey) {
     invoiceId.value = tokenResponse.orderId
-    snapMode.value = 'midtrans_live_snap'
+    snapMode.value = 'gateway_live'
     snapToken.value = tokenResponse.snapToken
     try {
       const snap = await loadMidtransSnapScript(tokenResponse.clientKey, tokenResponse.isProduction)
@@ -277,18 +286,19 @@ async function createInvoiceAndProceed() {
               invoiceId: result?.order_id || tokenResponse.orderId,
               payerInfo: currentUser.value.email,
             }
+            const methodLabel = `Pembayaran Online (${result?.payment_type || selectedPayment.value})`
             const res =
               checkoutType.value === 'ticket'
                 ? purchaseTicketPack(
                     currentUser.value.email,
                     selectedPlan.value.id,
-                    `Midtrans (${result?.payment_type || 'Snap'})`,
+                    methodLabel,
                     payload
                   )
                 : activatePremiumPlan(
                     currentUser.value.email,
                     selectedPlan.value.id,
-                    `Midtrans (${result?.payment_type || 'Snap'})`,
+                    methodLabel,
                     payload
                   )
             if (res.success) {
@@ -299,25 +309,25 @@ async function createInvoiceAndProceed() {
             }
           },
           onPending: () => {
-            checkoutError.value = 'Pembayaran berstatus pending di Midtrans. Selesaikan pembayaran terlebih dahulu.'
+            checkoutError.value = 'Pembayaran berstatus pending. Selesaikan pembayaran terlebih dahulu.'
           },
           onError: () => {
-            checkoutError.value = 'Terjadi kesalahan saat memproses pembayaran melalui Midtrans.'
+            checkoutError.value = 'Terjadi kesalahan saat memproses pembayaran.'
           },
           onClose: () => {
-            checkoutError.value = 'Popup pembayaran Midtrans ditutup sebelum transaksi selesai.'
+            checkoutError.value = 'Popup pembayaran ditutup sebelum transaksi selesai.'
           },
         })
         return
       }
     } catch (_) {
-      // Fallback ke popup Sandbox Snap internal jika snap.js gagal dimuat
+      // Fallback ke alur tagihan internal jika script popup gagal dimuat
     }
   }
 
-  snapMode.value = 'midtrans_sandbox_simulator'
-  invoiceId.value = tokenResponse?.orderId || `EQ-MID-${Math.floor(100000 + Math.random() * 900000)}`
-  snapToken.value = tokenResponse?.snapToken || `SNAP-SIM-${invoiceId.value}`
+  snapMode.value = 'local_checkout'
+  invoiceId.value = tokenResponse?.orderId || `INV-EQ-${Math.floor(100000 + Math.random() * 900000)}`
+  snapToken.value = tokenResponse?.snapToken || `INV-TOKEN-${invoiceId.value}`
   checkoutStep.value = 'payment'
   startCountdown()
 }
@@ -340,6 +350,18 @@ async function copyVaNumber() {
   }
 }
 
+function sendEwalletRequest() {
+  checkoutError.value = ''
+  const cleanPhone = ewalletPhone.value.replace(/\D/g, '')
+  if (cleanPhone.length < 10) {
+    checkoutError.value = `Masukkan nomor HP akun ${selectedEwallet.value} yang terdaftar (minimal 10 digit) terlebih dahulu.`
+    return
+  }
+  ewalletRequestSent.value = true
+  ewalletPin.value = ''
+  hasConfirmedTransfer.value = false
+}
+
 function handleVerifyPayment() {
   checkoutError.value = ''
 
@@ -350,15 +372,32 @@ function handleVerifyPayment() {
   if (!selectedPlan.value) return
 
   const cleanPhone = ewalletPhone.value.replace(/\D/g, '')
+  const cleanPin = ewalletPin.value.replace(/\D/g, '')
+  const cleanSender = vaSenderName.value.trim()
 
-  if (selectedPayment.value === 'GoPay / OVO / DANA / ShopeePay' && cleanPhone.length < 10) {
-    checkoutError.value = `Masukkan nomor HP akun ${selectedEwallet.value} yang terdaftar (minimal 10 digit) terlebih dahulu.`
-    return
+  if (selectedPayment.value === 'GoPay / OVO / DANA / ShopeePay') {
+    if (cleanPhone.length < 10) {
+      checkoutError.value = `Masukkan nomor HP akun ${selectedEwallet.value} yang terdaftar (minimal 10 digit) terlebih dahulu.`
+      return
+    }
+    if (!ewalletRequestSent.value) {
+      checkoutError.value = `Kirim permintaan bayar ke nomor ${selectedEwallet.value} terlebih dahulu sebelum melakukan verifikasi.`
+      return
+    }
+    if (cleanPin.length !== 6) {
+      checkoutError.value = `Masukkan 6 digit PIN otorisasi ${selectedEwallet.value} untuk menyelesaikan pembayaran.`
+      return
+    }
+  } else if (selectedPayment.value === 'Virtual Account Bank') {
+    if (cleanSender.length < 3) {
+      checkoutError.value = 'Masukkan nama pemilik rekening pengirim atau kode referensi transfer (minimal 3 karakter).'
+      return
+    }
   }
 
   if (!hasConfirmedTransfer.value) {
     checkoutError.value =
-      'Silakan selesaikan pembayaran dan centang konfirmasi status pembayaran sebelum melanjutkan.'
+      'Silakan centang konfirmasi penyelesaian pembayaran sebelum melanjutkan.'
     return
   }
 
@@ -370,6 +409,7 @@ function handleVerifyPayment() {
     payerSummary = `${payerSummary} • ${cleanPhone}`
   } else if (selectedPayment.value === 'Virtual Account Bank') {
     methodDetail = `Virtual Account ${selectedBank.value}`
+    payerSummary = `${payerSummary} • ${cleanSender}`
   }
 
   isVerifying.value = true
@@ -836,17 +876,6 @@ function goToBlindBox() {
             </div>
           </div>
 
-          <!-- Info Privasi & Keamanan Midtrans Snap -->
-          <div class="flex items-start gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50/70 px-3.5 py-2.5 text-[11px] text-emerald-900">
-            <svg class="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            </svg>
-            <p>
-              <strong>Terhubung ke Midtrans Payment Gateway:</strong> Kredensial rekening, PIN e-wallet, dan Server Key diisolasi aman di sisi server tanpa menyimpan data pembayaran sensitif di aplikasi EQuest.
-            </p>
-          </div>
-
           <div
             v-if="checkoutError"
             class="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs text-rose-700"
@@ -863,7 +892,7 @@ function goToBlindBox() {
               class="flex w-full items-center justify-center gap-2 rounded-xl bg-purple-600 py-2.5 text-xs font-medium text-white shadow-sm transition hover:bg-purple-700 disabled:opacity-60 cursor-pointer"
             >
               <span v-if="isCreatingSnap" class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
-              <span>{{ isCreatingSnap ? 'Menghubungkan ke Midtrans Snap...' : 'Buat Tagihan Midtrans Snap →' }}</span>
+              <span>{{ isCreatingSnap ? 'Membuat Tagihan Pembayaran...' : 'Lanjutkan ke Pembayaran →' }}</span>
             </button>
             <RouterLink
               v-else
@@ -884,12 +913,12 @@ function goToBlindBox() {
 
         <!-- STEP 2: INSTRUKSI TAGIHAN, BAYAR & VERIFIKASI -->
         <template v-else-if="checkoutStep === 'payment'">
-          <!-- Header Midtrans Snap Tagihan & Countdown -->
+          <!-- Header Tagihan Resmi & Countdown -->
           <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-purple-200 bg-purple-50/70 px-4 py-3">
             <div>
               <div class="flex flex-wrap items-center gap-1.5">
-                <span class="rounded bg-[#0A2540] px-1.5 py-0.5 text-[10px] font-medium text-white">Midtrans Snap</span>
-                <span class="rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-medium text-purple-800">Sandbox Mode</span>
+                <span class="rounded bg-[#0A2540] px-1.5 py-0.5 text-[10px] font-medium text-white">Tagihan Resmi EQuest</span>
+                <span class="rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-medium text-purple-800">Menunggu Pembayaran</span>
               </div>
               <p class="mt-1 text-[11px] text-slate-500">Order ID: <span class="font-semibold text-[#0A2540]">{{ invoiceId }}</span></p>
               <p class="text-sm font-semibold text-[#0A2540]">
@@ -915,17 +944,62 @@ function goToBlindBox() {
                 {{ selectedEwallet }}
               </span>
             </div>
-            <div>
-              <label class="block text-xs font-medium text-slate-600">
-                Nomor HP Terdaftar di {{ selectedEwallet }} <span class="text-rose-500">*</span>
-              </label>
-              <input
-                v-model="ewalletPhone"
-                type="tel"
-                placeholder="Contoh: 081234567890"
-                class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-[#0A2540] outline-none focus:border-purple-500"
-              />
-            </div>
+
+            <!-- Langkah 2A: Masukkan Nomor HP E-Wallet -->
+            <template v-if="!ewalletRequestSent">
+              <div>
+                <label class="block text-xs font-medium text-slate-600">
+                  Nomor HP Terdaftar di {{ selectedEwallet }} <span class="text-rose-500">*</span>
+                </label>
+                <input
+                  v-model="ewalletPhone"
+                  type="tel"
+                  placeholder="Contoh: 081234567890"
+                  class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-[#0A2540] outline-none focus:border-purple-500"
+                />
+              </div>
+              <button
+                type="button"
+                @click="sendEwalletRequest"
+                class="w-full rounded-xl bg-purple-600 py-2.5 text-xs font-medium text-white shadow-2xs transition hover:bg-purple-700 cursor-pointer"
+              >
+                Kirim Permintaan Bayar ke {{ selectedEwallet }}
+              </button>
+            </template>
+
+            <!-- Langkah 2B: Otorisasi PIN Setelah Permintaan Bayar Dikirim -->
+            <template v-else>
+              <div class="rounded-xl border border-purple-200 bg-white p-3.5 space-y-2.5">
+                <div class="flex items-center justify-between gap-2">
+                  <p class="text-[11px] font-semibold text-emerald-700">
+                    Permintaan Tagihan Terkirim
+                  </p>
+                  <button
+                    type="button"
+                    @click="ewalletRequestSent = false; ewalletPin = ''; hasConfirmedTransfer = false; checkoutError = ''"
+                    class="text-[11px] font-medium text-purple-700 hover:underline cursor-pointer"
+                  >
+                    Ubah Nomor HP
+                  </button>
+                </div>
+                <p class="text-xs leading-relaxed text-slate-600">
+                  Notifikasi tagihan <strong>{{ selectedPlan.price }}</strong> telah dikirim ke <strong>{{ selectedEwallet }} ({{ ewalletPhone }})</strong>. Masukkan 6 digit PIN {{ selectedEwallet }} untuk menyelesaikan pembayaran.
+                </p>
+                <div>
+                  <label class="block text-xs font-medium text-slate-600">
+                    PIN Otorisasi {{ selectedEwallet }} (6 Digit) <span class="text-rose-500">*</span>
+                  </label>
+                  <input
+                    v-model="ewalletPin"
+                    type="password"
+                    inputmode="numeric"
+                    maxlength="6"
+                    placeholder="••••••"
+                    class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-center font-mono text-sm tracking-widest text-[#0A2540] outline-none focus:border-purple-500 focus:bg-white"
+                  />
+                </div>
+              </div>
+            </template>
           </div>
 
           <!-- Instruksi Spesifik Virtual Account Bank -->
@@ -954,10 +1028,24 @@ function goToBlindBox() {
             <p class="text-[11px] text-slate-500">
               Transfer tepat sebesar <strong>{{ selectedPlan.price }}</strong> melalui ATM / Mobile Banking {{ selectedBank }} ke nomor VA di atas.
             </p>
+            <div>
+              <label class="block text-xs font-medium text-slate-600">
+                Nama Rekening Pengirim / Kode Referensi Transfer <span class="text-rose-500">*</span>
+              </label>
+              <input
+                v-model="vaSenderName"
+                type="text"
+                placeholder="Contoh: Diva Novaliza / REF-882910"
+                class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-[#0A2540] outline-none focus:border-purple-500"
+              />
+            </div>
           </div>
 
-          <!-- Konfirmasi Otomatis Status Pembayaran -->
-          <label class="flex items-start gap-2.5 rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-xs text-[#0A2540] cursor-pointer">
+          <!-- Konfirmasi Penyelesaian Pembayaran -->
+          <label
+            v-if="selectedPayment === 'Virtual Account Bank' || ewalletRequestSent"
+            class="flex items-start gap-2.5 rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-xs text-[#0A2540] cursor-pointer"
+          >
             <input
               v-model="hasConfirmedTransfer"
               type="checkbox"
@@ -966,7 +1054,7 @@ function goToBlindBox() {
             <span>
               {{
                 selectedPayment === 'GoPay / OVO / DANA / ShopeePay'
-                  ? 'Saya menyetujui permintaan pembayaran langsung ke nomor HP e-wallet di atas.'
+                  ? 'Saya sudah memasukkan PIN dan menyetujui pemotongan saldo sesuai nominal tagihan.'
                   : 'Saya sudah mentransfer sesuai nominal ke Nomor Virtual Account di atas.'
               }}
             </span>
@@ -981,6 +1069,7 @@ function goToBlindBox() {
 
           <div class="flex flex-col gap-2 pt-1">
             <button
+              v-if="selectedPayment === 'Virtual Account Bank' || ewalletRequestSent"
               type="button"
               :disabled="isVerifying"
               @click="handleVerifyPayment"
@@ -990,10 +1079,8 @@ function goToBlindBox() {
               <span>
                 {{
                   isVerifying
-                    ? 'Mengecek status transaksi otomatis...'
-                    : selectedPayment === 'GoPay / OVO / DANA / ShopeePay'
-                      ? 'Kirim Tagihan & Cek Status Otomatis'
-                      : 'Cek Status Pembayaran Otomatis'
+                    ? 'Memverifikasi pembayaran...'
+                    : 'Konfirmasi & Selesaikan Pembayaran'
                 }}
               </span>
             </button>

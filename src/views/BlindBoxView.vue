@@ -37,6 +37,9 @@ import figureMinionDuoImg from '../assets/images/minions 1.jpg'
 import figureMinionOneImg from '../assets/images/minions 2.jpg'
 import figureCapybaraImg from '../assets/images/capybara boba.jpg'
 import figureGarfieldImg from '../assets/images/garfield.jpg'
+import figureSpongebobImg from '../assets/images/SpongeBob Best Friends Series Figures｜POP MART US Official.jpg'
+import figureSandyImg from '../assets/images/SpongeBob Pajamas Party Blind Box Series by POP MART.jpg'
+import figurePatrickImg from '../assets/images/Youtooz Collectibles.jpg'
 
 const figureImages = {
   apple: figureAppleImg,
@@ -59,6 +62,9 @@ const figureImages = {
   minion_one: figureMinionOneImg,
   capybara: figureCapybaraImg,
   garfield: figureGarfieldImg,
+  spongebob_gardener: figureSpongebobImg,
+  sandy_ukulele: figureSandyImg,
+  patrick_hammer: figurePatrickImg,
 }
 
 const currentUser = ref(null)
@@ -2092,6 +2098,369 @@ function buildFigureMesh(figureId) {
       addCapsule(parts, [0, 26, -14], [tx, ty, tz], 5.5, 9.2, plume, 10, { spec: 0.3 })
       addEllipsoid(parts, tx * 1.12, ty - 2, tz, 9.8, 9.8, 9.2, plume, 8, 12, { spec: 0.32 })
     })
+  } else if (figureId === 'spongebob_gardener') {
+    // 21. SPONGEBOB GARDENER FIGURE
+    const spongeYellow = [248, 224, 92]
+    const spongePore = [212, 174, 62]
+    const strawOrange = [232, 152, 88]
+    const strawCrown = [224, 144, 80]
+    const denimBlue = [78, 128, 186]
+    const shoeBrown = [128, 92, 64]
+    const grassGreen = [148, 188, 96]
+    const dirtBrown = [184, 122, 86]
+    const shovelHandle = [144, 104, 72]
+    const shovelSilver = [188, 198, 212]
+    const irisBlue = [48, 134, 214]
+    const white = [254, 254, 255]
+    const black = [22, 22, 26]
+    const blushOrange = [238, 162, 102]
+
+    // Dasar rumput hijau bulat pipih + gundukan tanah & tunas daun
+    addLathePart(parts, 0, 74, 0, [[-4, 46, 36], [4, 46, 36]], grassGreen, 24, { spec: 0.2 })
+    addEllipsoid(parts, -12, 71, 20, 12, 3.5, 7, dirtBrown, 8, 12)
+    addCapsule(parts, [22, 70, 16], [28, 60, 18], 3.2, 1.4, [118, 168, 66], 8)
+    addCapsule(parts, [22, 70, 16], [16, 61, 18], 3.0, 1.2, [118, 168, 66], 8)
+
+    // Sepatu coklat bulat & kaki baju kodok biru pendek
+    ;[-15, 15].forEach((lx) => {
+      addCapsule(parts, [lx, 36, 0], [lx, 56, 0], 6.8, 6.2, denimBlue, 12)
+      addCapsule(parts, [lx, 56, 0], [lx, 62, 0], 5.6, 5.2, white, 10)
+      addEllipsoid(parts, lx, 68, 6, 8.8, 6.2, 11.5, shoeBrown, 10, 14, { spec: 0.25 })
+    })
+
+    // Celana & baju kodok biru denim bagian bawah spons
+    addLathePart(
+      parts,
+      0,
+      30,
+      0,
+      [
+        [-10, 29, 17],
+        [8, 30, 18],
+        [14, 28, 17],
+      ],
+      denimBlue,
+      20,
+      { squircle: 4.5, spec: 0.24 }
+    )
+    // Garis atasan kemeja putih & tali kodok
+    addLathePart(
+      parts,
+      0,
+      20,
+      0,
+      [
+        [-2, 29, 17.2],
+        [2, 29, 17.2],
+      ],
+      white,
+      20,
+      { squircle: 4.5 }
+    )
+
+    // Kepala & badan spons kuning persegi membulat (squircle) + pori spons
+    addLathePart(
+      parts,
+      0,
+      -4,
+      0,
+      [
+        [-24, 29, 17],
+        [0, 30, 17.5],
+        [22, 29, 17],
+      ],
+      spongeYellow,
+      24,
+      { squircle: 4.8, spec: 0.22 }
+    )
+    ;[
+      [-23, -18, 17.2, 3.2],
+      [22, -16, 17.2, 3.6],
+      [-22, 8, 17.2, 3.4],
+      [23, 6, 17.2, 2.8],
+    ].forEach(([px, py, pz, pr]) => {
+      addEllipsoid(parts, px, py, pz, pr, pr * 1.15, 1.4, spongePore, 6, 10)
+    })
+
+    // Topi jerami berkebun lebar warna oranye-coklat hangat
+    addLathePart(
+      parts,
+      0,
+      -34,
+      0,
+      [
+        [-16, 18, 16],
+        [-12, 26, 23],
+        [2, 31, 26],
+        [11, 52, 42],
+        [16, 50, 40],
+      ],
+      strawOrange,
+      28,
+      { spec: 0.22 }
+    )
+    addLathePart(
+      parts,
+      0,
+      -46,
+      0,
+      [
+        [-4, 20, 17],
+        [4, 28, 24],
+      ],
+      strawCrown,
+      24,
+      { spec: 0.2 }
+    )
+
+    // Dua mata bulat besar bertepi biru muda + pupil hitam + kilau + 3 bulu mata
+    ;[-1, 1].forEach((side) => {
+      addEllipsoid(parts, side * 12, -10, 17.2, 11.2, 11.6, 3.2, white, 10, 16, { spec: 0.5 })
+      addEllipsoid(parts, side * 11.5, -10, 18.8, 7.6, 8.2, 2.2, irisBlue, 10, 14, { spec: 0.65 })
+      addEllipsoid(parts, side * 11.2, -10, 19.6, 5.4, 5.8, 1.8, black, 10, 14, { spec: 0.88 })
+      addEllipsoid(parts, side * 9.2, -13, 21.0, 2.0, 2.2, 1.0, white, 5, 8, { spec: 0.9 })
+      // 3 bulu mata hitam
+      ;[-0.35, 0, 0.35].forEach((ang) => {
+        const bx = side * 12 + Math.sin(ang + side * 0.2) * 10
+        const by = -20 - Math.cos(ang) * 2
+        addCapsule(parts, [bx, by, 17.6], [bx + Math.sin(ang + side * 0.2) * 3.5, by - 4.2, 17.2], 1.1, 0.8, black, 6)
+      })
+      // Pipi bulat berbintik
+      addEllipsoid(parts, side * 19, 2, 17.2, 5.5, 4.4, 2.2, blushOrange, 8, 10)
+    })
+
+    // Hidung kuning menonjol & dua gigi kelinci putih
+    addCapsule(parts, [0, -5, 18], [0, -1, 25], 3.4, 3.8, spongeYellow, 10)
+    addEllipsoid(parts, -3.2, 10.5, 17.8, 2.4, 2.8, 1.2, white, 6, 8)
+    addEllipsoid(parts, 3.2, 10.5, 17.8, 2.4, 2.8, 1.2, white, 6, 8)
+
+    // Lengan putih + tangan kuning memegang gagang sekop diagonal ke kiri bawah
+    addEllipsoid(parts, -32, 14, 2, 5.8, 5.8, 6.2, white, 8, 10)
+    addEllipsoid(parts, 32, 14, 2, 5.8, 5.8, 6.2, white, 8, 10)
+    addCapsule(parts, [-32, 17, 4], [-10, 34, 21], 4.2, 3.8, spongeYellow, 10)
+    addCapsule(parts, [32, 17, 4], [10, 22, 23], 4.2, 3.8, spongeYellow, 10)
+    addEllipsoid(parts, -10, 34, 22, 5.2, 4.5, 4.5, spongeYellow, 8, 10)
+    addEllipsoid(parts, 10, 22, 24, 5.2, 4.5, 4.5, spongeYellow, 8, 10)
+
+    // Gagang sekop coklat + bilah sekop metalik perak di kiri bawah
+    addCapsule(parts, [14, 14, 25], [-23, 51, 22], 2.4, 2.4, shovelHandle, 10)
+    addCapsule(parts, [-21, 49, 22], [-29, 57, 22], 3.5, 3.2, shovelSilver, 10)
+    addCurvedPetal(parts, -32, 62, 21, 15, 17, 3.5, 0.45, -0.3, -2.35, shovelSilver, { rows: 4, cols: 4, spec: 0.72 })
+  } else if (figureId === 'sandy_ukulele') {
+    // 22. SANDY UKULELE FIGURE
+    const furBrown = [184, 134, 98]
+    const cheekCream = [252, 248, 234]
+    const armchairOrange = [242, 118, 84]
+    const lifebuoyWhite = [228, 240, 252]
+    const shirtLavender = [206, 158, 216]
+    const ukuleleGold = [244, 180, 96]
+    const ukuleleNeck = [232, 168, 86]
+    const flowerPink = [248, 138, 184]
+    const flowerYellow = [252, 214, 96]
+    const nosePink = [248, 158, 184]
+    const footTan = [194, 142, 104]
+    const white = [254, 254, 255]
+    const black = [22, 22, 26]
+
+    // Pelampung putih bergaris oranye sebagai alas bawah
+    addLathePart(
+      parts,
+      0,
+      68,
+      0,
+      [
+        [-9, 34, 24],
+        [0, 38, 26],
+        [9, 34, 24],
+      ],
+      lifebuoyWhite,
+      28,
+      { spec: 0.28 }
+    )
+    // Strip oranye pelampung kanan-kiri
+    ;[-1, 1].forEach((side) => {
+      addCapsule(parts, [side * 22, 59, 0], [side * 24, 77, 16], 4.2, 4.2, armchairOrange, 10)
+      addCapsule(parts, [side * 22, 59, -16], [side * 24, 77, -14], 4.2, 4.2, armchairOrange, 10)
+    })
+
+    // Kursi empuk oranye + dua sandaran tangan bulat
+    addEllipsoid(parts, 0, 34, -14, 34, 28, 16, armchairOrange, 14, 22, { spec: 0.25 })
+    ;[-1, 1].forEach((side) => {
+      addCapsule(parts, [side * 30, 26, -12], [side * 30, 52, 8], 10, 10.5, armchairOrange, 12)
+      addEllipsoid(parts, side * 30, 52, 14, 10, 10, 10, armchairOrange, 10, 14, { spec: 0.28 })
+    })
+
+    // Ekor tupai coklat besar melengkung di sisi kanan belakang
+    addCapsule(parts, [18, 44, -6], [42, 34, -2], 9.5, 13, furBrown, 12)
+    addCapsule(parts, [42, 34, -2], [46, 52, 4], 12.5, 9.5, furBrown, 12)
+
+    // Kaos ungu muda & badan Sandy duduk
+    addEllipsoid(parts, 0, 34, 4, 22, 22, 16, shirtLavender, 12, 18)
+
+    // Dua kaki tupai menghadap ke depan + 3 jari kaki kecil
+    ;[-1, 1].forEach((side) => {
+      addCapsule(parts, [side * 12, 46, 12], [side * 16, 50, 24], 8.2, 7.8, furBrown, 10)
+      addEllipsoid(parts, side * 18, 48, 28, 9.5, 13.5, 4.5, footTan, 10, 14, { pitch: -0.25 })
+      ;[-4, 0, 4].forEach((tx) => {
+        addEllipsoid(parts, side * 18 + tx, 36.5, 29, 2.2, 2.8, 2.2, footTan, 6, 8)
+      })
+    })
+
+    // Kepala Sandy bulat + pipi putih-krem gembul khas tupai + telinga bulat
+    addEllipsoid(parts, 0, -14, 6, 26, 25, 22, furBrown, 14, 22, { spec: 0.24 })
+    ;[-1, 1].forEach((side) => {
+      addEllipsoid(parts, side * 16, -2, 14, 19, 14, 14, cheekCream, 12, 18, { spec: 0.22 })
+      addEllipsoid(parts, side * 22, -32, 4, 8.2, 8.2, 4.8, furBrown, 10, 14)
+    })
+    addEllipsoid(parts, 0, 2, 17, 17, 12, 13, cheekCream, 10, 16)
+
+    // Bunga pink 5 kelopak + putik kuning di kepala sisi kiri (kanan viewer kiri: side -1)
+    for (let p = 0; p < 5; p++) {
+      const ang = (p / 5) * Math.PI * 2
+      addEllipsoid(
+        parts,
+        -22 + Math.cos(ang) * 7.2,
+        -35 + Math.sin(ang) * 7.2,
+        12,
+        5.2,
+        5.2,
+        2.8,
+        flowerPink,
+        8,
+        10
+      )
+    }
+    addEllipsoid(parts, -22, -35, 14.5, 4.5, 4.5, 2.6, flowerYellow, 8, 10)
+
+    // Dua mata putih oval besar + pupil hitam + bulu mata + hidung pink + gigi tupai putih
+    ;[-1, 1].forEach((side) => {
+      addEllipsoid(parts, side * 10, -14, 25.5, 9.2, 11.2, 3.6, white, 10, 16, { yaw: side * 0.14, spec: 0.5 })
+      addEllipsoid(parts, side * 9.5, -13, 27.8, 5.8, 7.4, 2.2, black, 10, 14, { yaw: side * 0.14, spec: 0.88 })
+      addEllipsoid(parts, side * 7.8, -16, 29.5, 2.0, 2.2, 1.0, white, 5, 8, { spec: 0.9 })
+      // 3 bulu mata
+      ;[-0.3, 0, 0.3].forEach((a) => {
+        const ex = side * 10 + a * 10
+        addCapsule(parts, [ex, -24.5, 25.5], [ex + a * 3, -29.5, 25], 1.1, 0.8, black, 6)
+      })
+    })
+    addEllipsoid(parts, 0, -4, 30.2, 4.6, 3.4, 3.0, nosePink, 8, 10, { spec: 0.45 })
+    addEllipsoid(parts, -2.5, 4.5, 29.2, 2.4, 2.6, 1.4, white, 6, 8)
+    addEllipsoid(parts, 2.5, 4.5, 29.2, 2.4, 2.6, 1.4, white, 6, 8)
+
+    // Ukulele emas diagonal & kedua tangan memetik senar
+    addEllipsoid(parts, -2, 35, 21, 15, 11.5, 4.5, ukuleleGold, 10, 16, { roll: -0.58, spec: 0.35 })
+    addEllipsoid(parts, 7, 29, 21, 11.5, 9.5, 4.5, ukuleleGold, 10, 14, { roll: -0.58, spec: 0.35 })
+    addEllipsoid(parts, 2, 32, 24.8, 4.4, 4.4, 1.5, [76, 46, 32], 8, 12)
+    addCapsule(parts, [14, 25, 21], [32, 12, 22], 2.8, 2.6, ukuleleNeck, 10)
+    addEllipsoid(parts, 33, 11, 22, 4.5, 3.8, 2.2, ukuleleGold, 8, 10, { roll: -0.58 })
+    // Tangan kanan & kiri memegang ukulele
+    addCapsule(parts, [-18, 20, 10], [-2, 26, 25], 4.5, 4.2, furBrown, 10)
+    addCapsule(parts, [18, 20, 10], [22, 21, 25], 4.5, 4.2, furBrown, 10)
+  } else if (figureId === 'patrick_hammer') {
+    // 23. PATRICK HAMMER PLANK FIGURE
+    const pink = [234, 146, 152]
+    const pinkSpot = [194, 92, 102]
+    const shortsLime = [180, 216, 88]
+    const flowerPurple = [132, 92, 174]
+    const woodBrown = [148, 92, 52]
+    const nailGrey = [142, 154, 164]
+    const hammerHandle = [204, 148, 72]
+    const hammerHead = [152, 164, 174]
+    const white = [254, 254, 255]
+    const black = [20, 20, 24]
+
+    // Badan bintang laut kerucut bulat gembul duduk
+    addLathePart(
+      parts,
+      0,
+      20,
+      0,
+      [
+        [-84, 5.5, 5.5],
+        [-64, 14, 12],
+        [-36, 21, 18],
+        [-8, 30, 24],
+        [20, 38, 29],
+        [44, 34, 26],
+      ],
+      pink,
+      26,
+      { spec: 0.22 }
+    )
+
+    // Celana pendek hijau limau dengan motif bunga ungu
+    addLathePart(
+      parts,
+      0,
+      48,
+      0,
+      [
+        [-8, 36, 27],
+        [6, 37, 28],
+        [16, 31, 24],
+      ],
+      shortsLime,
+      24,
+      { spec: 0.24 }
+    )
+    addEllipsoid(parts, 0, 50, 26.5, 11, 7.5, 3.8, flowerPurple, 8, 12)
+    addEllipsoid(parts, -6, 56, 25.5, 4.8, 5.2, 3.2, flowerPurple, 6, 8)
+    addEllipsoid(parts, 6, 56, 25.5, 4.8, 5.2, 3.2, flowerPurple, 6, 8)
+
+    // Dua kaki pink pendek duduk ke samping depan
+    ;[-1, 1].forEach((side) => {
+      addCapsule(parts, [side * 18, 44, 10], [side * 28, 60, 20], 11.5, 10.5, pink, 12)
+      addEllipsoid(parts, side * 30, 62, 23, 10.5, 9.5, 10.5, pink, 10, 14)
+    })
+
+    // Bintik & pusar Patrick di perut
+    addEllipsoid(parts, 0, 36, 27.5, 3.8, 2.8, 1.5, pinkSpot, 6, 10)
+    ;[
+      [0, -4, 24.5],
+      [-12, 16, 26.5],
+      [14, 14, 26.5],
+    ].forEach(([sx, sy, sz]) => {
+      addEllipsoid(parts, sx, sy, sz, 1.5, 1.5, 1.0, pinkSpot, 5, 8)
+    })
+
+    // Mulut cemberut melengkung & mata oval besar berdempetan + alis miring
+    addCapsule(parts, [-14, -4, 21.5], [0, -8, 24.8], 1.2, 1.2, pinkSpot, 6)
+    addCapsule(parts, [0, -8, 24.8], [14, -4, 21.5], 1.2, 1.2, pinkSpot, 6)
+    ;[-1, 1].forEach((side) => {
+      addEllipsoid(parts, side * 6.2, -24, 18.8, 6.2, 8.8, 3.5, white, 10, 14, { spec: 0.55 })
+      addEllipsoid(parts, side * 4.5, -24, 21.5, 2.4, 3.2, 1.4, black, 8, 10, { spec: 0.88 })
+      addEllipsoid(parts, side * 3.8, -25.2, 22.6, 0.9, 1.0, 0.6, white, 5, 6, { spec: 0.9 })
+      // Alis hitam tebal
+      addCapsule(parts, [side * 3.5, -36, 18], [side * 10, -39, 16.5], 1.8, 1.6, black, 8)
+    })
+
+    // Papan kayu horizontal terpaku miring di dahi + paku abu-abu menancap
+    addLathePart(
+      parts,
+      0,
+      -52,
+      14,
+      [
+        [-8, 34, 4.5],
+        [8, 34, 4.5],
+      ],
+      woodBrown,
+      16,
+      { squircle: 6.5, roll: 0.06, spec: 0.18 }
+    )
+    addCapsule(parts, [-2, -68, 15], [0, -56, 18], 2.4, 2.2, nailGrey, 10)
+    addEllipsoid(parts, -2.5, -69, 15, 4.6, 2.2, 4.6, nailGrey, 8, 12, { roll: -0.2, spec: 0.5 })
+
+    // Lengan kanan turun di samping & lengan kiri terangkat memegang palu (di kiri viewer)
+    addCapsule(parts, [24, 8, 4], [38, 46, 8], 10.5, 8.2, pink, 12)
+    addCapsule(parts, [-22, 6, 4], [-34, 20, 16], 10.2, 9.2, pink, 12)
+    addCapsule(parts, [-34, 20, 16], [-34, 6, 22], 9.2, 8.5, pink, 10)
+    addEllipsoid(parts, -34, 4, 24, 9.5, 7.5, 8.5, pink, 10, 14)
+
+    // Palu kayu + kepala palu besi abu-abu digenggam di tangan kiri
+    addCapsule(parts, [-34, 18, 25], [-34, -14, 25], 2.8, 2.8, hammerHandle, 10)
+    addCapsule(parts, [-39, -18, 25], [-28, -18, 25], 6.5, 6.2, hammerHead, 12, { spec: 0.48 })
+    addCapsule(parts, [-35, -18, 22], [-35, -18, 31], 5.4, 5.2, hammerHead, 10, { spec: 0.48 })
   }
 
   meshCache[figureId] = parts
@@ -2405,10 +2774,10 @@ onUnmounted(() => {
         </div>
 
         <div v-if="showThemeDrawer" class="mt-5 border-t border-slate-100 pt-5 space-y-4">
-          <!-- Filter Kategori Tema (Semua / Buah & Bunga / Cool & Cowo) -->
+          <!-- Filter Kategori Tema (Semua / Buah & Bunga / Aksi & Otomotif) -->
           <div class="flex flex-wrap items-center gap-2">
             <button
-              v-for="grp in ['Semua', 'Buah & Bunga', 'Cool & Cowo']"
+              v-for="grp in ['Semua', 'Buah & Bunga', 'Aksi & Otomotif']"
               :key="grp"
               type="button"
               @click="selectedThemeGroup = grp"
@@ -2485,6 +2854,15 @@ onUnmounted(() => {
                 <svg v-else-if="theme.id === 'royal_galactic'" class="h-4 w-4 text-indigo-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                   <circle cx="12" cy="12" r="5" />
                   <ellipse cx="12" cy="12" rx="10" ry="3.5" transform="rotate(-20 12 12)" />
+                </svg>
+                <svg v-else-if="theme.id === 'racing_car' || theme.id === 'stealth_drift'" class="h-4 w-4 text-orange-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M3 13l2-5h10l3 4 3 1v3H3z" />
+                  <circle cx="7" cy="17" r="2" />
+                  <circle cx="17" cy="17" r="2" />
+                </svg>
+                <svg v-else-if="theme.id === 'mecha_robot'" class="h-4 w-4 text-sky-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <rect x="5" y="7" width="14" height="12" rx="3" />
+                  <path d="M12 3v4M9 12h2M13 12h2" />
                 </svg>
                 <svg v-else class="h-3.5 w-3.5 text-[#2D6BE4]" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 3l2.4 5.2 5.6.8-4 3.9.9 5.6L12 15.8 7.1 18.5l.9-5.6-4-3.9 5.6-.8L12 3z" />

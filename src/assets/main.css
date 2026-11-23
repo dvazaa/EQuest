@@ -197,6 +197,42 @@ html[data-equest-theme="royal_galactic"] {
   --eq-soft-text: #312E81;
 }
 
+html[data-equest-theme="racing_car"] {
+  --eq-bg: #E2E8F0;
+  --eq-grad-1: rgba(234, 88, 12, 0.22);
+  --eq-grad-2: rgba(51, 65, 85, 0.18);
+  --eq-header: rgba(226, 232, 240, 0.92);
+  --eq-border: #CBD5E1;
+  --eq-primary: #EA580C;
+  --eq-primary-hover: #C2410C;
+  --eq-soft: #FFEDD5;
+  --eq-soft-text: #9A3412;
+}
+
+html[data-equest-theme="mecha_robot"] {
+  --eq-bg: #E0F2FE;
+  --eq-grad-1: rgba(2, 132, 199, 0.22);
+  --eq-grad-2: rgba(56, 189, 248, 0.24);
+  --eq-header: rgba(224, 242, 254, 0.92);
+  --eq-border: #BAE6FD;
+  --eq-primary: #0284C7;
+  --eq-primary-hover: #0369A1;
+  --eq-soft: #E0F2FE;
+  --eq-soft-text: #075985;
+}
+
+html[data-equest-theme="stealth_drift"] {
+  --eq-bg: #FEF3C7;
+  --eq-grad-1: rgba(217, 119, 6, 0.22);
+  --eq-grad-2: rgba(15, 23, 42, 0.14);
+  --eq-header: rgba(254, 243, 199, 0.92);
+  --eq-border: #FDE68A;
+  --eq-primary: #D97706;
+  --eq-primary-hover: #B45309;
+  --eq-soft: #FEF3C7;
+  --eq-soft-text: #92400E;
+}
+
 /* Sinkronisasi Latar, Header, Tombol, Badge, dan Border Saat Tema Non-Default Aktif */
 html[data-equest-theme]:not([data-equest-theme="blue"]) .min-h-screen {
   background-color: var(--eq-bg) !important;

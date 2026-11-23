@@ -398,7 +398,7 @@ export const FIGURE_CATEGORIES = [
   'Superhero',
   'Pokémon',
   'Disney & Animasi',
-  'Cute & Toon',
+  'Cute & Cartoon',
 ]
 
 export const COLLECTIBLE_FIGURES = [
@@ -554,11 +554,11 @@ export const COLLECTIBLE_FIGURES = [
     desc: 'Figur Minion bermata satu yang tersenyum lebar sambil mengangkat satu jari dengan sarung tangan hitam.',
   },
 
-  // Kategori: Cute & Toon
+  // Kategori: Cute & Cartoon
   {
     id: 'capybara',
     name: 'Capybara Boba Figure',
-    category: 'Cute & Toon',
+    category: 'Cute & Cartoon',
     series: 'Cute Companions #19',
     rarity: 'Epic',
     desc: 'Figur Capybara gembul berbulu coklat karamel yang sedang menyeruput cup Boba Milk Tea dengan sedotan putih.',
@@ -566,10 +566,34 @@ export const COLLECTIBLE_FIGURES = [
   {
     id: 'garfield',
     name: 'Garfield Lazy Cat Figure',
-    category: 'Cute & Toon',
-    series: 'Classic Toon #20',
+    category: 'Cute & Cartoon',
+    series: 'Classic Cartoon #20',
     rarity: 'Rare',
     desc: 'Figur kucing oranye Garfield duduk santai dengan mata mengantuk khas, hidung pink, dan belang hitam.',
+  },
+  {
+    id: 'spongebob_gardener',
+    name: 'SpongeBob Gardener Figure',
+    category: 'Cute & Cartoon',
+    series: 'Bikini Bottom #21',
+    rarity: 'Legendary',
+    desc: 'Figur SpongeBob bertopi jerami berkebun dengan baju kodok biru yang memegang sekop di atas rumput hijau.',
+  },
+  {
+    id: 'sandy_ukulele',
+    name: 'Sandy Ukulele Figure',
+    category: 'Cute & Cartoon',
+    series: 'Bikini Bottom #22',
+    rarity: 'Legendary',
+    desc: 'Figur Sandy Cheeks dengan hiasan bunga pink di kepala yang duduk santai di sofa oranye sambil bermain ukulele.',
+  },
+  {
+    id: 'patrick_hammer',
+    name: 'Patrick Hammer Plank Figure',
+    category: 'Cute & Cartoon',
+    series: 'Bikini Bottom #23',
+    rarity: 'Epic',
+    desc: 'Figur Patrick Star duduk dengan papan kayu terpaku di dahi sambil memegang palu pertukangan.',
   },
 ]
 
@@ -677,7 +701,7 @@ export const SPECIAL_THEMES = [
   {
     id: 'cyber_navy',
     name: 'Cyber Mecha',
-    group: 'Cool & Cowo',
+    group: 'Aksi & Otomotif',
     ornamentLabel: 'Hiasan Sirkuit Futuristik',
     bgHex: '#DBEAFE',
     accentHex: '#1D4ED8',
@@ -687,7 +711,7 @@ export const SPECIAL_THEMES = [
   {
     id: 'emerald_matrix',
     name: 'Emerald Gamer',
-    group: 'Cool & Cowo',
+    group: 'Aksi & Otomotif',
     ornamentLabel: 'Hiasan Hexa Tech Teal',
     bgHex: '#CCFBF1',
     accentHex: '#0F766E',
@@ -697,7 +721,7 @@ export const SPECIAL_THEMES = [
   {
     id: 'crimson_shonen',
     name: 'Crimson Shonen',
-    group: 'Cool & Cowo',
+    group: 'Aksi & Otomotif',
     ornamentLabel: 'Hiasan Energi Geometris Merah',
     bgHex: '#FEE2E2',
     accentHex: '#B91C1C',
@@ -707,11 +731,41 @@ export const SPECIAL_THEMES = [
   {
     id: 'royal_galactic',
     name: 'Galactic Space',
-    group: 'Cool & Cowo',
+    group: 'Aksi & Otomotif',
     ornamentLabel: 'Hiasan Planet & Konstelasi',
     bgHex: '#E0E7FF',
     accentHex: '#4338CA',
     previewClass: 'bg-[#E0E7FF]',
+    isDefault: false,
+  },
+  {
+    id: 'racing_car',
+    name: 'Turbo Racing Mobil',
+    group: 'Aksi & Otomotif',
+    ornamentLabel: 'Hiasan Mobil Sport & Bendera Balap',
+    bgHex: '#E2E8F0',
+    accentHex: '#EA580C',
+    previewClass: 'bg-[#E2E8F0]',
+    isDefault: false,
+  },
+  {
+    id: 'mecha_robot',
+    name: 'Titanium Robot',
+    group: 'Aksi & Otomotif',
+    ornamentLabel: 'Hiasan Kepala Robot & Roda Gigi',
+    bgHex: '#E0F2FE',
+    accentHex: '#0284C7',
+    previewClass: 'bg-[#E0F2FE]',
+    isDefault: false,
+  },
+  {
+    id: 'stealth_drift',
+    name: 'Nitro Drift Mobil',
+    group: 'Aksi & Otomotif',
+    ornamentLabel: 'Hiasan Mobil Drift & Speedometer',
+    bgHex: '#FEF3C7',
+    accentHex: '#D97706',
+    previewClass: 'bg-[#FEF3C7]',
     isDefault: false,
   },
 ]
@@ -764,6 +818,12 @@ function normalizeAccountCollections(stats, email = '') {
         if (!themes.includes('crimson_shonen')) themes.push('crimson_shonen')
       } else if (n.includes('galactic') || n.includes('space')) {
         if (!themes.includes('royal_galactic')) themes.push('royal_galactic')
+      } else if (n.includes('turbo') || n.includes('racing')) {
+        if (!themes.includes('racing_car')) themes.push('racing_car')
+      } else if (n.includes('titanium') || n.includes('robot')) {
+        if (!themes.includes('mecha_robot')) themes.push('mecha_robot')
+      } else if (n.includes('nitro') || n.includes('drift')) {
+        if (!themes.includes('stealth_drift')) themes.push('stealth_drift')
       } else if (n.includes('tema spesial')) {
         if (!themes.includes('purple')) themes.push('purple')
       }
