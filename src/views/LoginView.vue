@@ -3,7 +3,13 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import GoogleAuthModal from '../components/GoogleAuthModal.vue'
 import ForgotPasswordModal from '../components/ForgotPasswordModal.vue'
-import { getAllUsers, setCurrentUser, initUserStats } from '../utils/equestState'
+import {
+  getAllUsers,
+  setCurrentUser,
+  initUserStats,
+  getCleanGoogleClientId,
+  startGoogleOAuthSelectAccount,
+} from '../utils/equestState'
 
 const router = useRouter()
 const email = ref('')
@@ -12,7 +18,31 @@ const errorMessage = ref('')
 const successNotice = ref('')
 
 const isGoogleModalOpen = ref(false)
+const isGoogleLoading = ref(false)
 const isForgotModalOpen = ref(false)
+
+function handleDirectGoogleLogin() {
+  errorMessage.value = ''
+  if (!getCleanGoogleClientId()) {
+    isGoogleModalOpen.value = true
+    return
+  }
+
+  isGoogleLoading.value = true
+  startGoogleOAuthSelectAccount({
+    onSuccess: () => {
+      isGoogleLoading.value = false
+      router.push('/')
+    },
+    onCancel: () => {
+      isGoogleLoading.value = false
+    },
+    onError: (err) => {
+      isGoogleLoading.value = false
+      errorMessage.value = err?.message || 'Gagal login dengan akun Google.'
+    },
+  })
+}
 
 function handleLogin() {
   errorMessage.value = ''
@@ -215,11 +245,12 @@ function handlePasswordResetSuccess(data) {
               atau lanjutkan dengan
             </span>
 
-            <!-- Tombol Masuk dengan Google Aktif! -->
+            <!-- Tombol Masuk dengan Google Langsung Pilih Akun -->
             <button
               type="button"
-              @click="isGoogleModalOpen = true"
-              class="flex w-full items-center justify-center gap-3 rounded-xl border border-blue-200 bg-white py-3.5 text-sm font-bold text-blue-950 shadow-xs transition hover:bg-sky-50/60 cursor-pointer"
+              :disabled="isGoogleLoading"
+              @click="handleDirectGoogleLogin"
+              class="flex w-full items-center justify-center gap-3 rounded-xl border border-blue-200 bg-white py-3.5 text-sm font-bold text-blue-950 shadow-xs transition hover:bg-sky-50/60 disabled:opacity-60 cursor-pointer"
             >
               <svg class="h-5 w-5" viewBox="0 0 24 24">
                 <path
@@ -239,7 +270,7 @@ function handlePasswordResetSuccess(data) {
                   d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.37 0 3.32 2.59 1.27 6.58l4.01 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
                 />
               </svg>
-              <span>Masuk dengan Google</span>
+              <span>{{ isGoogleLoading ? 'Membuka Akun Google...' : 'Masuk dengan Google' }}</span>
             </button>
           </div>
         </div>

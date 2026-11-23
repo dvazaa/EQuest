@@ -1,7 +1,12 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { loginWithGoogle, readStorage } from '../utils/equestState'
+import {
+  loginWithGoogle,
+  readStorage,
+  getCleanGoogleClientId,
+  startGoogleOAuthSelectAccount,
+} from '../utils/equestState'
 
 const props = defineProps({
   isOpen: {
@@ -24,11 +29,7 @@ const isLoading = ref(false)
 const isOAuthLoading = ref(false)
 const savedGoogleAccounts = ref([])
 
-const googleClientId = computed(() => {
-  const envId = typeof import.meta !== 'undefined' ? import.meta.env?.VITE_GOOGLE_CLIENT_ID : ''
-  const storedId = readStorage('equestGoogleClientId', '')
-  return String(envId || storedId || '').trim()
-})
+const googleClientId = computed(() => getCleanGoogleClientId())
 
 onMounted(() => {
   // Ambil akun google asli yang pernah login di perangkat ini
@@ -66,30 +67,7 @@ function persistAndSignInGoogleAccount(accountData) {
   router.push('/')
 }
 
-function loadGoogleGsiScript() {
-  return new Promise((resolve, reject) => {
-    if (typeof window === 'undefined') return reject(new Error('Window unavailable'))
-    if (window.google?.accounts?.oauth2) return resolve(window.google)
-
-    const scriptUrl = 'https://accounts.google.com/gsi/client'
-    const existing = document.querySelector(`script[src="${scriptUrl}"]`)
-    if (existing) {
-      existing.addEventListener('load', () => resolve(window.google))
-      existing.addEventListener('error', () => reject(new Error('Gagal memuat Google Identity Services')))
-      return
-    }
-
-    const script = document.createElement('script')
-    script.src = scriptUrl
-    script.async = true
-    script.defer = true
-    script.onload = () => resolve(window.google)
-    script.onerror = () => reject(new Error('Gagal memuat Google Identity Services'))
-    document.head.appendChild(script)
-  })
-}
-
-async function triggerRealGooglePopup() {
+function triggerRealGooglePopup() {
   errorMessage.value = ''
   if (!googleClientId.value) {
     errorMessage.value =
@@ -98,55 +76,21 @@ async function triggerRealGooglePopup() {
   }
 
   isOAuthLoading.value = true
-  try {
-    const google = await loadGoogleGsiScript()
-    if (!google?.accounts?.oauth2) {
-      throw new Error('Google Identity Services belum siap.')
-    }
-
-    const tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: googleClientId.value,
-      scope: 'openid email profile',
-      callback: async (tokenResponse) => {
-        if (tokenResponse?.error || !tokenResponse?.access_token) {
-          isOAuthLoading.value = false
-          errorMessage.value = 'Login dengan akun Google dibatalkan atau gagal.'
-          return
-        }
-        try {
-          const userInfoResp = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-            headers: {
-              Authorization: `Bearer ${tokenResponse.access_token}`,
-            },
-          })
-          if (!userInfoResp.ok) {
-            throw new Error('Gagal mengambil profil akun Google.')
-          }
-          const profile = await userInfoResp.json()
-          const resolvedEmail = String(profile?.email || '').trim().toLowerCase()
-          if (!resolvedEmail) {
-            throw new Error('Email akun Google tidak ditemukan.')
-          }
-          const accountData = {
-            email: resolvedEmail,
-            name: String(profile?.name || resolvedEmail.split('@')[0]).trim(),
-            avatar: profile?.picture ? '🌐' : '🌐',
-            picture: profile?.picture || null,
-          }
-          isOAuthLoading.value = false
-          persistAndSignInGoogleAccount(accountData)
-        } catch (profileErr) {
-          isOAuthLoading.value = false
-          errorMessage.value = profileErr?.message || 'Gagal membaca data profil Google.'
-        }
-      },
-    })
-
-    tokenClient.requestAccessToken({ prompt: 'select_account' })
-  } catch (err) {
-    isOAuthLoading.value = false
-    errorMessage.value = err?.message || 'Tidak dapat membuka pemilih akun Google perangkat.'
-  }
+  startGoogleOAuthSelectAccount({
+    onSuccess: () => {
+      isOAuthLoading.value = false
+      emit('success')
+      emit('close')
+      router.push('/')
+    },
+    onCancel: () => {
+      isOAuthLoading.value = false
+    },
+    onError: (err) => {
+      isOAuthLoading.value = false
+      errorMessage.value = err?.message || 'Tidak dapat membuka pemilih akun Google perangkat.'
+    },
+  })
 }
 
 function handleGoogleLogin(emailToUse, nameToUse) {

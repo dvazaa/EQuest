@@ -45,3 +45,8 @@ server/data/
 .env
 .env.*
 !.env.example
+
+# Server environment variables
+server/.env
+server/.env.*
+!server/.env.example

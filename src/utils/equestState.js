@@ -172,6 +172,122 @@ export function loginWithGoogle(account) {
   return sessionUser
 }
 
+export function getCleanGoogleClientId(overrideRaw = null) {
+  const envId =
+    overrideRaw !== null
+      ? overrideRaw
+      : (typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_GOOGLE_CLIENT_ID : '') ||
+        readStorage('equestGoogleClientId', '')
+  return String(envId || '')
+    .trim()
+    .replace(/^(?:VITE_GOOGLE_CLIENT_ID=)+/i, '')
+    .replace(/^["']|["']$/g, '')
+    .trim()
+}
+
+export function loadGoogleGsiScript() {
+  return new Promise((resolve, reject) => {
+    if (typeof window === 'undefined') return reject(new Error('Window unavailable'))
+    if (window.google?.accounts?.oauth2) return resolve(window.google)
+
+    const scriptUrl = 'https://accounts.google.com/gsi/client'
+    const existing = document.querySelector(`script[src="${scriptUrl}"]`)
+    if (existing) {
+      existing.addEventListener('load', () => resolve(window.google))
+      existing.addEventListener('error', () => reject(new Error('Gagal memuat Google Identity Services')))
+      return
+    }
+
+    const script = document.createElement('script')
+    script.src = scriptUrl
+    script.async = true
+    script.defer = true
+    script.onload = () => resolve(window.google)
+    script.onerror = () => reject(new Error('Gagal memuat Google Identity Services'))
+    document.head.appendChild(script)
+  })
+}
+
+export function startGoogleOAuthSelectAccount({ onSuccess, onError, onCancel } = {}) {
+  const clientId = getCleanGoogleClientId()
+  if (!clientId) {
+    onError?.(new Error('VITE_GOOGLE_CLIENT_ID belum dikonfigurasi.'))
+    return false
+  }
+
+  const runWithGoogle = (google) => {
+    if (!google?.accounts?.oauth2) {
+      onError?.(new Error('Google Identity Services belum siap.'))
+      return
+    }
+    const tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: clientId,
+      scope: 'openid email profile',
+      callback: async (tokenResponse) => {
+        if (tokenResponse?.error || !tokenResponse?.access_token) {
+          onError?.(new Error('Login dengan akun Google dibatalkan atau gagal.'))
+          return
+        }
+        try {
+          const userInfoResp = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: {
+              Authorization: `Bearer ${tokenResponse.access_token}`,
+            },
+          })
+          if (!userInfoResp.ok) {
+            throw new Error('Gagal mengambil profil akun Google.')
+          }
+          const profile = await userInfoResp.json()
+          const resolvedEmail = String(profile?.email || '').trim().toLowerCase()
+          if (!resolvedEmail) {
+            throw new Error('Email akun Google tidak ditemukan.')
+          }
+          const accountData = {
+            email: resolvedEmail,
+            name: String(profile?.name || resolvedEmail.split('@')[0]).trim(),
+            avatar: '🌐',
+            picture: profile?.picture || null,
+          }
+
+          const existing = readStorage('equestGoogleAccounts', [])
+          const foundIdx = existing.findIndex((a) => a.email?.toLowerCase() === resolvedEmail)
+          if (foundIdx === -1) {
+            existing.unshift(accountData)
+            writeStorage('equestGoogleAccounts', existing.slice(0, 3))
+          } else {
+            existing[foundIdx] = accountData
+            writeStorage('equestGoogleAccounts', existing)
+          }
+
+          const sessionUser = loginWithGoogle(accountData)
+          onSuccess?.(sessionUser)
+        } catch (profileErr) {
+          onError?.(profileErr instanceof Error ? profileErr : new Error('Gagal membaca data profil Google.'))
+        }
+      },
+      error_callback: (err) => {
+        if (err?.type === 'popup_closed') {
+          onCancel?.()
+        } else {
+          onError?.(new Error('Popup pilih akun Google gagal dibuka atau dibatalkan.'))
+        }
+      },
+    })
+
+    tokenClient.requestAccessToken({ prompt: 'select_account' })
+  }
+
+  if (typeof window !== 'undefined' && window.google?.accounts?.oauth2) {
+    // Panggil sinkron agar tidak diblokir popup blocker browser
+    runWithGoogle(window.google)
+  } else {
+    loadGoogleGsiScript()
+      .then((google) => runWithGoogle(google))
+      .catch((err) => onError?.(err))
+  }
+  return true
+}
+
 export function getStatsKey(email) {
   const normalized = email ? email.trim().toLowerCase() : 'guest'
   return `equestStats_${encodeURIComponent(normalized)}`

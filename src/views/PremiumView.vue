@@ -38,6 +38,8 @@ const hasConfirmedTransfer = ref(false)
 const copiedVa = ref(false)
 const isVerifying = ref(false)
 const isCreatingSnap = ref(false)
+const loadingItemId = ref('')
+const pageNotice = ref('')
 const snapMode = ref('local_checkout')
 const snapToken = ref('')
 
@@ -175,10 +177,18 @@ function stopCountdown() {
   }
 }
 
-function openCheckout(item, type = 'plan') {
+async function openCheckout(item, type = 'plan') {
   if (type === 'plan' && item.id === 'free') return
+  pageNotice.value = ''
+
+  if (!currentUser.value?.email) {
+    router.push('/login')
+    return
+  }
+
   stopCountdown()
   checkoutType.value = type
+  loadingItemId.value = item.id
   selectedPlan.value =
     type === 'ticket'
       ? {
@@ -191,7 +201,6 @@ function openCheckout(item, type = 'plan') {
           bonusXp: item.bonusXp,
         }
       : item
-  checkoutStep.value = 'select_method'
   checkoutResult.value = null
   checkoutError.value = ''
   ewalletPhone.value = ''
@@ -201,7 +210,8 @@ function openCheckout(item, type = 'plan') {
   hasConfirmedTransfer.value = false
   copiedVa.value = false
   isVerifying.value = false
-  showCheckoutModal.value = true
+
+  await createInvoiceAndProceed()
 }
 
 function closeCheckoutModal() {
@@ -272,6 +282,7 @@ async function createInvoiceAndProceed() {
   }
 
   isCreatingSnap.value = false
+  loadingItemId.value = ''
 
   if (tokenResponse?.mode === 'midtrans_live_snap' && tokenResponse?.snapToken && tokenResponse?.clientKey) {
     invoiceId.value = tokenResponse.orderId
@@ -286,7 +297,7 @@ async function createInvoiceAndProceed() {
               invoiceId: result?.order_id || tokenResponse.orderId,
               payerInfo: currentUser.value.email,
             }
-            const methodLabel = `Pembayaran Online (${result?.payment_type || selectedPayment.value})`
+            const methodLabel = `Pembayaran Online (${result?.payment_type || 'QRIS / E-Wallet / VA'})`
             const res =
               checkoutType.value === 'ticket'
                 ? purchaseTicketPack(
@@ -306,16 +317,17 @@ async function createInvoiceAndProceed() {
               userStats.value = getUserStats(currentUser.value.email)
               window.dispatchEvent(new Event('equest-stats-updated'))
               checkoutStep.value = 'success'
+              showCheckoutModal.value = true
             }
           },
           onPending: () => {
-            checkoutError.value = 'Pembayaran berstatus pending. Selesaikan pembayaran terlebih dahulu.'
+            pageNotice.value = 'Pembayaran masih berstatus pending. Selesaikan transaksi sesuai instruksi yang tampil.'
           },
           onError: () => {
-            checkoutError.value = 'Terjadi kesalahan saat memproses pembayaran.'
+            pageNotice.value = 'Terjadi kesalahan saat memproses pembayaran. Silakan coba kembali.'
           },
           onClose: () => {
-            checkoutError.value = 'Popup pembayaran ditutup sebelum transaksi selesai.'
+            pageNotice.value = 'Jendela pembayaran ditutup sebelum transaksi selesai.'
           },
         })
         return
@@ -329,6 +341,7 @@ async function createInvoiceAndProceed() {
   invoiceId.value = tokenResponse?.orderId || `INV-EQ-${Math.floor(100000 + Math.random() * 900000)}`
   snapToken.value = tokenResponse?.snapToken || `INV-TOKEN-${invoiceId.value}`
   checkoutStep.value = 'payment'
+  showCheckoutModal.value = true
   startCountdown()
 }
 
@@ -542,10 +555,25 @@ function goToBlindBox() {
             Belajar Tanpa Batas Kuota &amp; Raih Tiket Blind Box Instan
           </h1>
           <p class="text-xs leading-relaxed text-slate-600 sm:text-sm">
-            Pilih paket EQuest Premium atau beli tiket Blind Box tambahan melalui GoPay, OVO, DANA, ShopeePay, atau Virtual Account Bank.
+            Pilih paket EQuest Premium atau beli tiket Blind Box tambahan melalui QRIS, GoPay, OVO, DANA, ShopeePay, atau Virtual Account Bank.
           </p>
         </div>
       </section>
+
+      <!-- Notifikasi Status Pembayaran -->
+      <div
+        v-if="pageNotice"
+        class="flex items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-3 text-xs font-medium text-amber-900 shadow-2xs"
+      >
+        <span>{{ pageNotice }}</span>
+        <button
+          type="button"
+          @click="pageNotice = ''"
+          class="text-xs text-amber-700 hover:text-amber-950 cursor-pointer"
+        >
+          ✕
+        </button>
+      </div>
 
       <!-- 3 Kartu Pilihan Paket Langganan -->
       <section class="grid gap-5 lg:grid-cols-3">
@@ -641,15 +669,20 @@ function goToBlindBox() {
               </div>
               <button
                 type="button"
+                :disabled="isCreatingSnap"
                 @click="openCheckout(plan)"
-                class="flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-medium transition cursor-pointer"
+                class="flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-medium transition disabled:opacity-60 cursor-pointer"
                 :class="
                   plan.isPopular || currentPlanId === plan.id
                     ? 'bg-purple-600 text-white shadow-sm hover:bg-purple-700'
                     : 'border border-purple-300 bg-purple-50 text-purple-800 hover:bg-purple-100'
                 "
               >
-                <span v-if="currentPlanId === plan.id">
+                <span v-if="isCreatingSnap && loadingItemId === plan.id" class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
+                <span v-if="isCreatingSnap && loadingItemId === plan.id">
+                  Membuka Pembayaran...
+                </span>
+                <span v-else-if="currentPlanId === plan.id">
                   Perpanjang / Beli Lagi (+{{ plan.bonusTickets }} Tiket)
                 </span>
                 <span v-else>
@@ -711,10 +744,12 @@ function goToBlindBox() {
 
             <button
               type="button"
+              :disabled="isCreatingSnap"
               @click="openCheckout(pack, 'ticket')"
-              class="mt-4 w-full rounded-xl bg-purple-600 py-2.5 text-xs font-medium text-white shadow-2xs transition hover:bg-purple-700 cursor-pointer"
+              class="mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl bg-purple-600 py-2.5 text-xs font-medium text-white shadow-2xs transition hover:bg-purple-700 disabled:opacity-60 cursor-pointer"
             >
-              Beli Paket Tiket
+              <span v-if="isCreatingSnap && loadingItemId === pack.id" class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+              <span>{{ isCreatingSnap && loadingItemId === pack.id ? 'Membuka Pembayaran...' : 'Beli Paket Tiket' }}</span>
             </button>
           </div>
         </div>
@@ -726,6 +761,7 @@ function goToBlindBox() {
           Metode Pembayaran yang Didukung
         </p>
         <div class="mt-3 flex flex-wrap items-center justify-center gap-2.5 text-xs font-medium text-slate-700">
+          <span class="rounded-xl bg-purple-50/70 px-4 py-2 border border-purple-100">QRIS</span>
           <span class="rounded-xl bg-purple-50/70 px-4 py-2 border border-purple-100">GoPay / OVO / DANA / ShopeePay</span>
           <span class="rounded-xl bg-purple-50/70 px-4 py-2 border border-purple-100">Transfer Virtual Account Bank</span>
         </div>
