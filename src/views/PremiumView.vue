@@ -27,15 +27,15 @@ const invoiceId = ref('')
 const countdownSeconds = ref(900)
 let timerInterval = null
 
-const payerName = ref('')
 const ewalletPhone = ref('')
-const proofFileName = ref('')
 const hasConfirmedTransfer = ref(false)
 const copiedVa = ref(false)
 const isVerifying = ref(false)
 const isCreatingSnap = ref(false)
 const snapMode = ref('midtrans_sandbox_simulator')
 const snapToken = ref('')
+const qrisImageUrl = '/qris.png'
+const qrisImgError = ref(false)
 
 const checkoutResult = ref(null)
 const checkoutError = ref('')
@@ -179,12 +179,11 @@ function openCheckout(plan) {
   checkoutStep.value = 'select_method'
   checkoutResult.value = null
   checkoutError.value = ''
-  payerName.value = ''
   ewalletPhone.value = ''
-  proofFileName.value = ''
   hasConfirmedTransfer.value = false
   copiedVa.value = false
   isVerifying.value = false
+  qrisImgError.value = false
   showCheckoutModal.value = true
 }
 
@@ -303,14 +302,6 @@ async function createInvoiceAndProceed() {
   startCountdown()
 }
 
-function handleProofFileChange(event) {
-  const file = event.target.files?.[0]
-  if (file) {
-    proofFileName.value = file.name
-    checkoutError.value = ''
-  }
-}
-
 async function copyVaNumber() {
   const cleanVa = activeVaNumber.value.replace(/\s+/g, '')
   try {
@@ -339,28 +330,24 @@ function handleVerifyPayment() {
   if (!selectedPlan.value) return
 
   const cleanPhone = ewalletPhone.value.replace(/\D/g, '')
-  const hasNameOrProof = payerName.value.trim().length >= 2 || Boolean(proofFileName.value)
 
   if (selectedPayment.value === 'GoPay / OVO / DANA' && cleanPhone.length < 10) {
-    checkoutError.value =
-      'Kamu harus menyelesaikan pembayaran dan mengisi nomor HP akun e-wallet minimal 10 digit terlebih dahulu!'
+    checkoutError.value = `Masukkan nomor HP akun ${selectedEwallet.value} yang terdaftar (minimal 10 digit) terlebih dahulu.`
     return
   }
 
-  if (!hasNameOrProof || !hasConfirmedTransfer.value) {
+  if (!hasConfirmedTransfer.value) {
     checkoutError.value =
-      'Kamu harus menyelesaikan pembayaran dan mengisi data bukti bayar serta mencentang konfirmasi terlebih dahulu!'
+      'Silakan selesaikan pembayaran dan centang konfirmasi status pembayaran sebelum melanjutkan.'
     return
   }
 
   let methodDetail = selectedPayment.value
-  let payerSummary = payerName.value.trim() || proofFileName.value
+  let payerSummary = currentUser.value.name || currentUser.value.email
 
   if (selectedPayment.value === 'GoPay / OVO / DANA') {
     methodDetail = `${selectedEwallet.value} (${cleanPhone})`
-    payerSummary = payerName.value.trim()
-      ? `${payerName.value.trim()} • ${cleanPhone}`
-      : cleanPhone
+    payerSummary = `${payerSummary} • ${cleanPhone}`
   } else if (selectedPayment.value === 'Virtual Account Bank') {
     methodDetail = `Virtual Account ${selectedBank.value}`
   }
@@ -841,9 +828,16 @@ function goToBlindBox() {
             </div>
             <p class="text-[11px] text-slate-500">NMID: ID102600091827</p>
 
-            <!-- Kode QR SVG -->
-            <div class="mx-auto flex h-40 w-40 items-center justify-center rounded-xl border border-slate-200 bg-white p-2.5 shadow-2xs">
-              <svg viewBox="0 0 100 100" class="h-full w-full text-[#0A2540]" fill="currentColor">
+            <!-- Kode QRIS Asli (/qris.png) atau Fallback SVG -->
+            <div class="mx-auto flex h-44 w-44 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white p-2 shadow-2xs">
+              <img
+                v-if="!qrisImgError"
+                :src="qrisImageUrl"
+                alt="QRIS EQuest"
+                class="h-full w-full object-contain"
+                @error="qrisImgError = true"
+              />
+              <svg v-else viewBox="0 0 100 100" class="h-full w-full text-[#0A2540]" fill="currentColor">
                 <rect x="6" y="6" width="26" height="26" rx="3" fill="none" stroke="currentColor" stroke-width="5" />
                 <rect x="13" y="13" width="12" height="12" rx="1" />
                 <rect x="68" y="6" width="26" height="26" rx="3" fill="none" stroke="currentColor" stroke-width="5" />
@@ -878,6 +872,9 @@ function goToBlindBox() {
             </div>
             <p class="text-[11px] text-slate-600">
               Scan QRIS di atas dengan aplikasi GoPay, OVO, DANA, ShopeePay, atau Mobile Banking sesuai nominal <strong>{{ selectedPlan.price }}</strong>.
+            </p>
+            <p v-if="qrisImgError" class="text-[10px] text-slate-400">
+              Menampilkan QRIS bawaan. Untuk memakai gambar QRIS merchant aslimu, simpan file sebagai <code class="rounded bg-slate-100 px-1 py-0.5 text-slate-600">public/qris.png</code>.
             </p>
           </div>
 
@@ -933,64 +930,23 @@ function goToBlindBox() {
             </p>
           </div>
 
-          <!-- Bukti / Referensi Pembayaran -->
-          <div class="space-y-3">
-            <div>
-              <label class="block text-xs font-medium text-slate-600">
-                {{
-                  selectedPayment === 'QRIS Instan'
-                    ? 'Nama Pengirim / Nomor Referensi QRIS'
-                    : selectedPayment === 'GoPay / OVO / DANA'
-                      ? 'Nama Pemilik Akun / Catatan Transaksi'
-                      : 'Nama Pemilik Rekening Pengirim'
-                }}
-                <span class="text-rose-500">*</span>
-              </label>
-              <input
-                v-model="payerName"
-                type="text"
-                placeholder="Contoh: Diva Novaliza / Ref #8821"
-                class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-[#0A2540] outline-none focus:border-purple-500"
-              />
-            </div>
-
-            <div>
-              <label class="block text-xs font-medium text-slate-600">
-                Unggah Bukti Pembayaran (Opsional / Screenshot)
-              </label>
-              <label class="mt-1.5 flex cursor-pointer items-center justify-between rounded-xl border border-dashed border-purple-300 bg-purple-50/40 px-3.5 py-2 text-xs text-slate-600 hover:bg-purple-50">
-                <span class="truncate">
-                  {{ proofFileName || 'Pilih file gambar / screenshot bukti transfer...' }}
-                </span>
-                <span class="ml-2 shrink-0 rounded-lg bg-white px-2.5 py-1 text-[11px] font-medium text-purple-700 border border-purple-200">
-                  Pilih File
-                </span>
-                <input
-                  type="file"
-                  accept="image/*,.pdf"
-                  class="hidden"
-                  @change="handleProofFileChange"
-                />
-              </label>
-            </div>
-
-            <label class="flex items-start gap-2.5 rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-xs text-[#0A2540] cursor-pointer">
-              <input
-                v-model="hasConfirmedTransfer"
-                type="checkbox"
-                class="mt-0.5 h-4 w-4 rounded border-slate-300 accent-purple-600"
-              />
-              <span>
-                {{
-                  selectedPayment === 'QRIS Instan'
-                    ? 'Saya sudah scan QRIS dan menyelesaikan pembayaran sesuai nominal tagihan.'
-                    : selectedPayment === 'GoPay / OVO / DANA'
-                      ? 'Saya menyetujui pendebitan saldo e-wallet sesuai nominal tagihan di atas.'
-                      : 'Saya sudah mentransfer sesuai nominal ke Nomor Virtual Account di atas.'
-                }}
-              </span>
-            </label>
-          </div>
+          <!-- Konfirmasi Otomatis Status Pembayaran -->
+          <label class="flex items-start gap-2.5 rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-xs text-[#0A2540] cursor-pointer">
+            <input
+              v-model="hasConfirmedTransfer"
+              type="checkbox"
+              class="mt-0.5 h-4 w-4 rounded border-slate-300 accent-purple-600"
+            />
+            <span>
+              {{
+                selectedPayment === 'QRIS Instan'
+                  ? 'Saya sudah scan QRIS di atas dan menyelesaikan pembayaran di aplikasi e-wallet/m-banking.'
+                  : selectedPayment === 'GoPay / OVO / DANA'
+                    ? 'Saya menyetujui permintaan pembayaran langsung ke nomor HP e-wallet di atas.'
+                    : 'Saya sudah mentransfer sesuai nominal ke Nomor Virtual Account di atas.'
+              }}
+            </span>
+          </label>
 
           <div
             v-if="checkoutError"
@@ -1008,7 +964,13 @@ function goToBlindBox() {
             >
               <span v-if="isVerifying" class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
               <span>
-                {{ isVerifying ? 'Memverifikasi pembayaran dengan sistem...' : 'Konfirmasi & Verifikasi Pembayaran' }}
+                {{
+                  isVerifying
+                    ? 'Mengecek status transaksi otomatis...'
+                    : selectedPayment === 'GoPay / OVO / DANA'
+                      ? 'Kirim Tagihan & Cek Status Otomatis'
+                      : 'Cek Status Pembayaran Otomatis'
+                }}
               </span>
             </button>
             <button

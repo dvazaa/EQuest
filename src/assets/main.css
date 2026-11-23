@@ -84,3 +84,33 @@ html[data-equest-theme="mint"] .min-h-screen > main {
   position: relative;
   z-index: 20;
 }
+
+html[data-equest-theme="apple"] .min-h-screen {
+  background-color: #FFE4E6 !important;
+  background-image:
+    radial-gradient(circle at 14% 16%, rgba(244, 63, 94, 0.22), transparent 40%),
+    radial-gradient(circle at 86% 84%, rgba(251, 113, 133, 0.24), transparent 44%) !important;
+}
+html[data-equest-theme="apple"] header {
+  background-color: rgba(255, 228, 230, 0.92) !important;
+  border-color: #FECDD3 !important;
+}
+html[data-equest-theme="apple"] .min-h-screen > main {
+  position: relative;
+  z-index: 20;
+}
+
+html[data-equest-theme="daisy"] .min-h-screen {
+  background-color: #FEF9C3 !important;
+  background-image:
+    radial-gradient(circle at 14% 16%, rgba(250, 204, 21, 0.26), transparent 40%),
+    radial-gradient(circle at 86% 84%, rgba(253, 224, 71, 0.28), transparent 44%) !important;
+}
+html[data-equest-theme="daisy"] header {
+  background-color: rgba(254, 249, 195, 0.92) !important;
+  border-color: #FEF08A !important;
+}
+html[data-equest-theme="daisy"] .min-h-screen > main {
+  position: relative;
+  z-index: 20;
+}

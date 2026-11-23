@@ -310,5 +310,174 @@ const floatingPetals = [
         </div>
       </div>
     </template>
+
+    <!-- ===================== TEMA MERAH APEL LUCU ===================== -->
+    <template v-else-if="activeTheme === 'apple'">
+      <div class="fixed inset-0 z-10 overflow-hidden">
+        <div class="absolute -left-24 top-14 h-72 w-72 rounded-full bg-rose-300/25 blur-3xl"></div>
+        <div class="absolute -right-24 bottom-12 h-80 w-80 rounded-full bg-red-200/30 blur-3xl"></div>
+      </div>
+
+      <div class="fixed inset-0 z-30 overflow-hidden">
+        <!-- Sudut Kiri Atas: Apel Merah Lucu + Bunga Apel -->
+        <svg
+          viewBox="0 0 240 240"
+          class="theme-sway-slow absolute -left-2 top-12 h-44 w-44 opacity-85 sm:h-52 sm:w-52"
+          fill="none"
+        >
+          <path d="M-8 38 C52 44, 108 64, 168 92" stroke="#78350F" stroke-width="4" stroke-linecap="round" />
+          <path d="M90 60 C118 82, 138 112, 152 146" stroke="#78350F" stroke-width="2.6" stroke-linecap="round" />
+          <!-- Daun Apel -->
+          <path d="M62 46 C44 18, 64 2, 86 16 C88 36, 74 44, 62 46Z" fill="#4ADE80" stroke="#16A34A" stroke-width="1.2" />
+          <path d="M148 80 C172 64, 194 74, 188 94 C170 100, 154 90, 148 80Z" fill="#22C55E" stroke="#15803D" stroke-width="1.2" />
+          <!-- Apel Merah Utama Lucu -->
+          <g transform="translate(88, 106) rotate(-10)">
+            <path d="M0,-24 C10,-30 30,-28 32,-4 C34,20 18,34 6,31 C2,30 -2,30 -6,31 C-18,34 -34,20 -32,-4 C-30,-28 -10,-30 0,-24Z" fill="#F43F5E" stroke="#E11D48" stroke-width="1.6" />
+            <ellipse cx="-12" cy="-8" rx="6" ry="11" transform="rotate(-18 -12 -8)" fill="#FDA4AF" opacity="0.65" />
+            <path d="M0,-24 C2,-35 6,-40 12,-42" stroke="#78350F" stroke-width="3.2" stroke-linecap="round" />
+            <path d="M2,-32 C16,-44 30,-38 24,-24 C14,-20 4,-24 2,-32Z" fill="#4ADE80" stroke="#16A34A" stroke-width="1.2" />
+            <!-- Wajah Lucu Mini pada Apel -->
+            <circle cx="-10" cy="2" r="2.2" fill="#4C0519" />
+            <circle cx="10" cy="2" r="2.2" fill="#4C0519" />
+            <ellipse cx="-14" cy="7" rx="3.2" ry="1.8" fill="#FECDD3" opacity="0.8" />
+            <ellipse cx="14" cy="7" rx="3.2" ry="1.8" fill="#FECDD3" opacity="0.8" />
+            <path d="M-4 6 Q0 11 4 6" stroke="#4C0519" stroke-width="1.8" stroke-linecap="round" fill="none" />
+          </g>
+          <!-- Bunga Apel Putih Lucu -->
+          <g transform="translate(154, 48) scale(0.95)">
+            <circle cx="0" cy="-10" r="7" fill="#FFF1F2" stroke="#FDA4AF" stroke-width="1" />
+            <circle cx="9.5" cy="-3" r="7" fill="#FFF1F2" stroke="#FDA4AF" stroke-width="1" />
+            <circle cx="6" cy="8.5" r="7" fill="#FFF1F2" stroke="#FDA4AF" stroke-width="1" />
+            <circle cx="-6" cy="8.5" r="7" fill="#FFF1F2" stroke="#FDA4AF" stroke-width="1" />
+            <circle cx="-9.5" cy="-3" r="7" fill="#FFF1F2" stroke="#FDA4AF" stroke-width="1" />
+            <circle cx="0" cy="0" r="4.5" fill="#FACC15" />
+          </g>
+        </svg>
+
+        <!-- Sudut Kanan Bawah: Apel Merah & Potongan Apel -->
+        <svg
+          viewBox="0 0 240 240"
+          class="theme-sway-slow absolute -bottom-2 -right-2 h-48 w-48 opacity-85 sm:h-56 sm:w-56"
+          fill="none"
+        >
+          <!-- Apel Utuh -->
+          <g transform="translate(166, 156) rotate(8)">
+            <path d="M0,-24 C10,-30 30,-28 32,-4 C34,20 18,34 6,31 C2,30 -2,30 -6,31 C-18,34 -34,20 -32,-4 C-30,-28 -10,-30 0,-24Z" fill="#E11D48" stroke="#BE123C" stroke-width="1.6" />
+            <ellipse cx="-11" cy="-8" rx="5.5" ry="10" transform="rotate(-16 -11 -8)" fill="#FDA4AF" opacity="0.6" />
+            <path d="M0,-24 C-2,-34 -6,-39 -11,-41" stroke="#78350F" stroke-width="3.2" stroke-linecap="round" />
+            <path d="M0,-31 C14,-44 28,-38 22,-24 C12,-20 3,-24 0,-31Z" fill="#4ADE80" stroke="#16A34A" stroke-width="1.2" />
+            <circle cx="-9" cy="2" r="2.1" fill="#4C0519" />
+            <circle cx="9" cy="2" r="2.1" fill="#4C0519" />
+            <path d="M-4 6 Q0 10 4 6" stroke="#4C0519" stroke-width="1.7" stroke-linecap="round" fill="none" />
+          </g>
+          <!-- Potongan Setengah Apel -->
+          <g transform="translate(106, 184) rotate(-14)">
+            <path d="M0,-20 C8,-25 24,-23 26,-3 C28,16 15,28 5,25 C1,24 -1,24 -5,25 C-15,28 -28,16 -26,-3 C-24,-23 -8,-25 0,-20Z" fill="#FFE4E6" stroke="#E11D48" stroke-width="3" />
+            <ellipse cx="-5" cy="1" rx="2" ry="3.2" transform="rotate(-12 -5 1)" fill="#78350F" />
+            <ellipse cx="5" cy="1" rx="2" ry="3.2" transform="rotate(12 5 1)" fill="#78350F" />
+          </g>
+          <!-- Bunga Apel Kecil -->
+          <g transform="translate(120, 120) scale(0.85)">
+            <circle cx="0" cy="-10" r="6.5" fill="#FFF1F2" stroke="#FDA4AF" stroke-width="1" />
+            <circle cx="9" cy="-3" r="6.5" fill="#FFF1F2" stroke="#FDA4AF" stroke-width="1" />
+            <circle cx="6" cy="8" r="6.5" fill="#FFF1F2" stroke="#FDA4AF" stroke-width="1" />
+            <circle cx="-6" cy="8" r="6.5" fill="#FFF1F2" stroke="#FDA4AF" stroke-width="1" />
+            <circle cx="-9" cy="-3" r="6.5" fill="#FFF1F2" stroke="#FDA4AF" stroke-width="1" />
+            <circle cx="0" cy="0" r="4" fill="#FACC15" />
+          </g>
+        </svg>
+
+        <!-- Apel Mini & Kelopak Bunga Apel Melayang -->
+        <div
+          v-for="(p, idx) in floatingPetals"
+          :key="'apl-' + idx"
+          class="theme-petal-drift absolute top-0 opacity-75"
+          :style="{
+            left: p.left,
+            animationDelay: p.delay,
+            animationDuration: p.duration,
+          }"
+        >
+          <svg :width="p.size" :height="p.size" viewBox="0 0 24 24" fill="none" :style="{ transform: `rotate(${p.rotate})` }">
+            <path d="M12 6 C15 4, 20 5, 20 12 C20 18, 15 21, 12 20 C9 21, 4 18, 4 12 C4 5, 9 4, 12 6Z" fill="#F43F5E" fill-opacity="0.75" />
+            <path d="M12 6 C12 3, 14 2, 15 2" stroke="#78350F" stroke-width="1.5" stroke-linecap="round" />
+            <ellipse cx="15" cy="4.5" rx="3" ry="1.6" fill="#4ADE80" />
+          </svg>
+        </div>
+      </div>
+    </template>
+
+    <!-- ===================== TEMA KUNING DAISY LUCU ===================== -->
+    <template v-else-if="activeTheme === 'daisy'">
+      <div class="fixed inset-0 z-10 overflow-hidden">
+        <div class="absolute -left-24 top-16 h-72 w-72 rounded-full bg-amber-200/35 blur-3xl"></div>
+        <div class="absolute -right-24 bottom-12 h-80 w-80 rounded-full bg-yellow-300/30 blur-3xl"></div>
+      </div>
+
+      <div class="fixed inset-0 z-30 overflow-hidden">
+        <!-- Daisy Kiri Atas -->
+        <svg
+          viewBox="0 0 220 220"
+          class="theme-sway-slow absolute -left-3 top-12 h-44 w-44 opacity-85 sm:h-52 sm:w-52"
+          fill="none"
+        >
+          <path d="M24 210 C42 162, 62 126, 86 84" stroke="#65A30D" stroke-width="3" stroke-linecap="round" />
+          <path d="M18 212 C56 176, 98 148, 146 124" stroke="#65A30D" stroke-width="2.6" stroke-linecap="round" />
+          <path d="M44 176 C18 164, 14 142, 34 134 C46 148, 48 164, 44 176Z" fill="#84CC16" opacity="0.85" />
+          <g transform="translate(88, 82)">
+            <ellipse v-for="n in 8" :key="n" cx="0" cy="-18" rx="6.5" ry="13" :transform="`rotate(${n * 45})`" fill="#FFFFFF" stroke="#FDE047" stroke-width="1.2" />
+            <circle cx="0" cy="0" r="10" fill="#FACC15" stroke="#EAB308" stroke-width="1.2" />
+            <circle cx="-3" cy="-2" r="1.4" fill="#713F12" />
+            <circle cx="3" cy="-2" r="1.4" fill="#713F12" />
+            <path d="M-3 2 Q0 5 3 2" stroke="#713F12" stroke-width="1.4" stroke-linecap="round" />
+          </g>
+          <g transform="translate(148, 122) scale(0.75)">
+            <ellipse v-for="n in 8" :key="n" cx="0" cy="-18" rx="6.5" ry="13" :transform="`rotate(${n * 45})`" fill="#FFFFFF" stroke="#FDE047" stroke-width="1.2" />
+            <circle cx="0" cy="0" r="10" fill="#FACC15" stroke="#EAB308" stroke-width="1.2" />
+          </g>
+        </svg>
+
+        <!-- Daisy Kanan Bawah -->
+        <svg
+          viewBox="0 0 220 220"
+          class="theme-sway-slow absolute -bottom-3 -right-3 h-48 w-48 opacity-85 sm:h-56 sm:w-56"
+          fill="none"
+        >
+          <path d="M196 212 C164 166, 136 130, 118 82" stroke="#65A30D" stroke-width="3" stroke-linecap="round" />
+          <path d="M206 212 C166 184, 124 164, 74 148" stroke="#65A30D" stroke-width="2.6" stroke-linecap="round" />
+          <g transform="translate(120, 86)">
+            <ellipse v-for="n in 8" :key="n" cx="0" cy="-18" rx="6.5" ry="13" :transform="`rotate(${n * 45})`" fill="#FFFFFF" stroke="#FDE047" stroke-width="1.2" />
+            <circle cx="0" cy="0" r="10" fill="#FACC15" stroke="#EAB308" stroke-width="1.2" />
+            <circle cx="-3" cy="-2" r="1.4" fill="#713F12" />
+            <circle cx="3" cy="-2" r="1.4" fill="#713F12" />
+            <path d="M-3 2 Q0 5 3 2" stroke="#713F12" stroke-width="1.4" stroke-linecap="round" />
+          </g>
+          <g transform="translate(76, 146) scale(0.78)">
+            <ellipse v-for="n in 8" :key="n" cx="0" cy="-18" rx="6.5" ry="13" :transform="`rotate(${n * 45})`" fill="#FFFFFF" stroke="#FDE047" stroke-width="1.2" />
+            <circle cx="0" cy="0" r="10" fill="#FACC15" stroke="#EAB308" stroke-width="1.2" />
+          </g>
+        </svg>
+
+        <!-- Bunga Daisy Melayang -->
+        <div
+          v-for="(p, idx) in floatingPetals"
+          :key="'dsy-' + idx"
+          class="theme-petal-drift absolute top-0 opacity-75"
+          :style="{
+            left: p.left,
+            animationDelay: p.delay,
+            animationDuration: p.duration,
+          }"
+        >
+          <svg :width="p.size" :height="p.size" viewBox="0 0 24 24" fill="none" :style="{ transform: `rotate(${p.rotate})` }">
+            <ellipse cx="12" cy="5" rx="2.8" ry="4.5" fill="#FFFFFF" stroke="#FACC15" stroke-width="0.6" />
+            <ellipse cx="19" cy="12" rx="4.5" ry="2.8" fill="#FFFFFF" stroke="#FACC15" stroke-width="0.6" />
+            <ellipse cx="12" cy="19" rx="2.8" ry="4.5" fill="#FFFFFF" stroke="#FACC15" stroke-width="0.6" />
+            <ellipse cx="5" cy="12" rx="4.5" ry="2.8" fill="#FFFFFF" stroke="#FACC15" stroke-width="0.6" />
+            <circle cx="12" cy="12" r="3.5" fill="#FACC15" />
+          </svg>
+        </div>
+      </div>
+    </template>
   </div>
 </template>

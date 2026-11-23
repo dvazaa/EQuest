@@ -377,6 +377,7 @@ export function initNewUserStats(email) {
     activityMonth: 0,
     xpMonth: 0,
     openedBoxes: 0,
+    blindBoxBadgeUnlocked: false,
     premiumPlan: 'free',
     isPremium: false,
     premiumActivatedAt: null,
@@ -386,6 +387,7 @@ export function initNewUserStats(email) {
     badges: [],
     rewards: [],
   }
+  normalizeAccountCollections(freshStats, email)
   freshStats.badges = evaluateBadges(freshStats)
   writeStorage(key, freshStats)
   return freshStats
@@ -413,6 +415,55 @@ export const COLLECTIBLE_FIGURES = [
     rarity: 'Legendary',
     desc: 'Figur karakter bertudung kelopak mawar merah berlapis dengan jubah putih dan tangkai berduri di atas kawah bulan.',
   },
+  {
+    id: 'capybara',
+    name: 'Capybara Boba Figure',
+    series: 'Cute Companions #04',
+    rarity: 'Epic',
+    desc: 'Figur Capybara gembul berbulu coklat karamel yang sedang menyeruput cup Boba Milk Tea dengan sedotan putih.',
+  },
+  {
+    id: 'garfield',
+    name: 'Garfield Lazy Cat Figure',
+    series: 'Classic Toon #05',
+    rarity: 'Rare',
+    desc: 'Figur kucing oranye Garfield duduk santai dengan mata mengantuk khas, hidung pink, dan belang hitam.',
+  },
+  {
+    id: 'minion_duo',
+    name: 'Minion Goggles Figure',
+    series: 'Despicable Crew #06',
+    rarity: 'Rare',
+    desc: 'Figur Minion bermata dua dengan kacamata perak, senyum ramah, dan baju kodok denim biru.',
+  },
+  {
+    id: 'minion_one',
+    name: 'Minion Pointing Figure',
+    series: 'Despicable Crew #07',
+    rarity: 'Epic',
+    desc: 'Figur Minion bermata satu yang tersenyum lebar sambil mengangkat satu jari dengan sarung tangan hitam.',
+  },
+  {
+    id: 'stitch_boy',
+    name: 'Stitch Blue Figure',
+    series: 'Ohana Galaxy #08',
+    rarity: 'Legendary',
+    desc: 'Figur Stitch biru ceria yang merentangkan kedua tangan dengan telinga lebar bagian dalam pink.',
+  },
+  {
+    id: 'stitch_girl',
+    name: 'Angel Pink Figure',
+    series: 'Ohana Galaxy #09',
+    rarity: 'Legendary',
+    desc: 'Figur Angel berwarna pink lembut dengan dua antena panjang dan hiasan bunga sepatu pink di kepala.',
+  },
+  {
+    id: 'toothless',
+    name: 'Toothless Night Fury Figure',
+    series: 'Dragon Riders #10',
+    rarity: 'Legendary',
+    desc: 'Figur naga hitam Toothless duduk manis dengan mata hijau-kuning besar, sayap membentang, dan kuku krem.',
+  },
 ]
 
 export const SPECIAL_THEMES = [
@@ -423,6 +474,14 @@ export const SPECIAL_THEMES = [
     bgHex: '#D8EDFB',
     previewClass: 'bg-[#D8EDFB]',
     isDefault: true,
+  },
+  {
+    id: 'apple',
+    name: 'Merah Apel',
+    ornamentLabel: 'Hiasan Apel Merah Lucu',
+    bgHex: '#FFE4E6',
+    previewClass: 'bg-[#FFE4E6]',
+    isDefault: false,
   },
   {
     id: 'purple',
@@ -448,9 +507,40 @@ export const SPECIAL_THEMES = [
     previewClass: 'bg-[#D1FAE5]',
     isDefault: false,
   },
+  {
+    id: 'daisy',
+    name: 'Kuning Daisy',
+    ornamentLabel: 'Hiasan Bunga Daisy Lucu',
+    bgHex: '#FEF9C3',
+    previewClass: 'bg-[#FEF9C3]',
+    isDefault: false,
+  },
 ]
 
-function normalizeAccountCollections(stats) {
+export function isDivaOwnerAccount(email) {
+  if (!email || isDemoAccount(email)) return false
+  const normalized = email.trim().toLowerCase()
+  if (normalized === '11241026@student.itk.ac.id' || normalized === 'dvaalzaa@gmail.com') {
+    return true
+  }
+  const session = readStorage('equestUser', null)
+  if (
+    session?.email?.trim().toLowerCase() === normalized &&
+    String(session.name || '').toLowerCase().includes('diva novaliza')
+  ) {
+    return true
+  }
+  const users = readStorage('equestUsers', [])
+  if (Array.isArray(users)) {
+    const matched = users.find((u) => u.email?.trim().toLowerCase() === normalized)
+    if (matched && String(matched.name || '').toLowerCase().includes('diva novaliza')) {
+      return true
+    }
+  }
+  return false
+}
+
+function normalizeAccountCollections(stats, email = '') {
   let changed = false
   if (!Array.isArray(stats.unlockedFigures)) {
     const derived = []
@@ -473,6 +563,10 @@ function normalizeAccountCollections(stats) {
         if (!themes.includes('pink')) themes.push('pink')
       } else if (n.includes('mint') || n.includes('hijau')) {
         if (!themes.includes('mint')) themes.push('mint')
+      } else if (n.includes('apel') || n.includes('merah')) {
+        if (!themes.includes('apple')) themes.push('apple')
+      } else if (n.includes('daisy') || n.includes('kuning')) {
+        if (!themes.includes('daisy')) themes.push('daisy')
       } else if (n.includes('tema spesial')) {
         if (!themes.includes('purple')) themes.push('purple')
       }
@@ -481,6 +575,13 @@ function normalizeAccountCollections(stats) {
     changed = true
   } else if (!stats.unlockedThemes.includes('blue')) {
     stats.unlockedThemes.unshift('blue')
+    changed = true
+  }
+  if (stats.blindBoxBadgeUnlocked === undefined) {
+    const hasBadgeReward = (stats.rewards || []).some(
+      (r) => String(r.name || '').trim().toLowerCase() === 'badge'
+    )
+    stats.blindBoxBadgeUnlocked = hasBadgeReward
     changed = true
   }
   if (!stats.activeTheme) {
@@ -496,12 +597,31 @@ function normalizeAccountCollections(stats) {
     stats.isPremium = computedPremium
     changed = true
   }
-  if (!stats.tempGachaTicketBoostV1) {
-    stats.tickets = (Number(stats.tickets) || 0) + 50
-    stats.tempGachaTicketBoostV1 = true
-    changed = true
+  // Khusus akun pemilik (Diva Novaliza Fitriyani): buka seluruh figure & pastikan stok tiket cukup
+  if (isDivaOwnerAccount(email)) {
+    COLLECTIBLE_FIGURES.forEach((fig) => {
+      if (!stats.unlockedFigures.includes(fig.id)) {
+        stats.unlockedFigures.push(fig.id)
+        changed = true
+      }
+    })
+    if (!stats.divaOwnerRewardsAppliedV2) {
+      stats.tickets = Math.max(Number(stats.tickets) || 0, 99)
+      stats.divaOwnerRewardsAppliedV2 = true
+      changed = true
+    }
   }
   return changed
+}
+
+export function unlockBlindBoxBadgeForUser(email) {
+  if (!email) return false
+  const stats = getUserStats(email)
+  if (!stats.blindBoxBadgeUnlocked) {
+    stats.blindBoxBadgeUnlocked = true
+    saveUserStats(email, stats)
+  }
+  return true
 }
 
 export function applySavedTheme(email) {
@@ -598,7 +718,7 @@ export function getUserStats(email) {
     return initNewUserStats(email)
   }
 
-  let dirty = normalizeAccountCollections(saved)
+  let dirty = normalizeAccountCollections(saved, email)
 
   // Untuk akun reguler, sinkronkan jumlah soal selesai & latihan selesai dari data tugas nyata
   if (!isDemoAccount(email)) {

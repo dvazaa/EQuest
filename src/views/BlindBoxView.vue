@@ -12,17 +12,32 @@ import {
   SPECIAL_THEMES,
   unlockFigureForUser,
   unlockThemeForUser,
+  unlockBlindBoxBadgeForUser,
   setActiveThemeForUser,
 } from '../utils/equestState'
 
 import figureAppleImg from '../assets/images/figure_apple.jpg'
 import figureWarriorImg from '../assets/images/figure_warrior.jpg'
 import figureRoseImg from '../assets/images/figure_rose.jpg'
+import figureCapybaraImg from '../assets/images/capybara boba.jpg'
+import figureGarfieldImg from '../assets/images/garfield.jpg'
+import figureMinionDuoImg from '../assets/images/minions 1.jpg'
+import figureMinionOneImg from '../assets/images/minions 2.jpg'
+import figureStitchBoyImg from '../assets/images/stitch boy.jpg'
+import figureStitchGirlImg from '../assets/images/stitch girl.jpg'
+import figureToothlessImg from '../assets/images/toothless.jpg'
 
 const figureImages = {
   apple: figureAppleImg,
   warrior: figureWarriorImg,
   rose: figureRoseImg,
+  capybara: figureCapybaraImg,
+  garfield: figureGarfieldImg,
+  minion_duo: figureMinionDuoImg,
+  minion_one: figureMinionOneImg,
+  stitch_boy: figureStitchBoyImg,
+  stitch_girl: figureStitchGirlImg,
+  toothless: figureToothlessImg,
 }
 
 const currentUser = ref(null)
@@ -75,17 +90,6 @@ function isThemeUnlocked(themeId) {
   return themeId === 'blue' || unlockedThemes.value.includes(themeId)
 }
 
-function handleAddTesterTickets() {
-  const email = currentUser.value?.email
-  if (!email) {
-    alertNotice.value = 'Silakan masuk ke akun EQuest terlebih dahulu untuk mengklaim tiket gacha.'
-    return
-  }
-  addTickets(email, 20)
-  loadData()
-  alertNotice.value = '+20 Tiket Gacha sementara berhasil ditambahkan tanpa mengubah progres XP/soal akunmu!'
-}
-
 function handleSelectTheme(theme) {
   const email = currentUser.value?.email
   if (!email) return
@@ -102,8 +106,8 @@ const possibleRewards = [
   { type: 'xp', name: '+ 100 XP', xp: 100, icon: '🌟', desc: 'Hadiah XP besar untuk akselerasi peringkat' },
   { type: 'ticket', name: '+ 1 Tiket', tickets: 1, icon: '🎟️', desc: 'Tiket gratis untuk membuka Blind Box lagi' },
   { type: 'badge', name: 'Badge', icon: '🎖️', desc: 'Pencapaian pemburu misteri' },
-  { type: 'theme', name: 'Tema Spesial', icon: '🎨', desc: 'Membuka tema latar berhias bunga/daun untuk website EQuest' },
-  { type: 'figure', name: 'Figure Collection', icon: '🧸', desc: 'Miniatur koleksi figure 3D Hirono yang tersimpan di Lemari Koleksi' },
+  { type: 'theme', name: 'Tema Spesial', icon: '🎨', desc: 'Membuka tema latar berhias bunga/apel untuk website EQuest' },
+  { type: 'figure', name: 'Figure Collection', icon: '🧸', desc: 'Miniatur koleksi figure 3D eksklusif yang tersimpan di Lemari Koleksi' },
 ]
 
 function handleOpenBox() {
@@ -112,7 +116,7 @@ function handleOpenBox() {
   if (!email) return
 
   if (ticketCount.value <= 0) {
-    alertNotice.value = 'Tiket kamu belum mencukupi. Klik tombol + Tambah 20 Tiket Gacha atau selesaikan latihan soal!'
+    alertNotice.value = 'Tiket kamu belum mencukupi. Selesaikan latihan soal untuk mendapatkan tiket!'
     return
   }
 
@@ -122,26 +126,36 @@ function handleOpenBox() {
   isOpening.value = true
 
   setTimeout(() => {
-    const randomIndex = Math.floor(Math.random() * possibleRewards.length)
-    const wonReward = { ...possibleRewards[randomIndex] }
+    const lockedFigures = COLLECTIBLE_FIGURES.filter((f) => !unlockedFigures.value.includes(f.id))
+    const lockedThemes = SPECIAL_THEMES.filter(
+      (t) => !t.isDefault && !unlockedThemes.value.includes(t.id)
+    )
+    const hasMysteryBadge = Boolean(userStats.value?.blindBoxBadgeUnlocked)
+
+    const eligibleRewards = possibleRewards.filter((r) => {
+      if (r.type === 'figure') return lockedFigures.length > 0
+      if (r.type === 'theme') return lockedThemes.length > 0
+      if (r.type === 'badge') return !hasMysteryBadge
+      return true
+    })
+
+    const randomIndex = Math.floor(Math.random() * eligibleRewards.length)
+    const wonReward = { ...eligibleRewards[randomIndex] }
 
     if (wonReward.type === 'figure') {
-      const lockedPool = COLLECTIBLE_FIGURES.filter((f) => !unlockedFigures.value.includes(f.id))
-      const pool = lockedPool.length > 0 ? lockedPool : COLLECTIBLE_FIGURES
-      const chosen = pool[Math.floor(Math.random() * pool.length)]
+      const chosen = lockedFigures[Math.floor(Math.random() * lockedFigures.length)]
       unlockFigureForUser(email, chosen.id)
       wonReward.figureId = chosen.id
       wonReward.name = `Figure: ${chosen.name}`
       wonReward.desc = chosen.desc
     } else if (wonReward.type === 'theme') {
-      const extraThemes = SPECIAL_THEMES.filter((t) => !t.isDefault)
-      const lockedThemes = extraThemes.filter((t) => !unlockedThemes.value.includes(t.id))
-      const pool = lockedThemes.length > 0 ? lockedThemes : extraThemes
-      const chosenTheme = pool[Math.floor(Math.random() * pool.length)]
+      const chosenTheme = lockedThemes[Math.floor(Math.random() * lockedThemes.length)]
       unlockThemeForUser(email, chosenTheme.id)
       wonReward.themeId = chosenTheme.id
       wonReward.name = `Tema Spesial: ${chosenTheme.name}`
       wonReward.desc = `Tema "${chosenTheme.name}" dengan ${chosenTheme.ornamentLabel} kini terbuka dan bisa kamu aktifkan.`
+    } else if (wonReward.type === 'badge') {
+      unlockBlindBoxBadgeForUser(email)
     }
 
     if (wonReward.xp) {
@@ -748,7 +762,7 @@ function buildFigureMesh(figureId) {
     // Back depth cushion & kraft patch
     addEllipsoid(parts, 0, -21, -14, 24, 24, 14, kraftDark, 10, 16)
     addCapsule(parts, [-22, -16, 10], [-14, -12, 11.5], 3.2, 3.2, brownPatch, 8)
-  } else {
+  } else if (figureId === 'rose') {
     // 3. ROSE PRINCE FIGURE (Smooth Sculpted Le Petit Prince)
     const skin = [246, 209, 189]
     const robe = [242, 240, 232]
@@ -892,6 +906,708 @@ function buildFigureMesh(figureId) {
     }
     // Top rose bud swirl
     addEllipsoid(parts, 0, -49, -2, 14, 11, 13, petalDeep, 10, 14, { spec: 0.3 })
+  } else if (figureId === 'capybara') {
+    // 4. CAPYBARA BOBA FIGURE
+    const fur = [208, 146, 94]
+    const furDark = [174, 116, 70]
+    const earDark = [96, 64, 50]
+    const snout = [172, 118, 92]
+    const blush = [228, 148, 132]
+    const darkBrown = [54, 34, 26]
+    const cupMilk = [234, 178, 124]
+    const cupCream = [246, 232, 214]
+    const lidWhite = [248, 246, 244]
+    const strawWhite = [252, 252, 254]
+    const bobaPearl = [68, 40, 28]
+
+    // Collector base
+    addLathePart(parts, 0, 84, 0, [[-4, 36, 36], [4, 36, 36]], [238, 244, 250], 24, { spec: 0.35 })
+
+    // Tubuh Capybara membulat gembul (bentuk pear halus dari kepala hingga badan)
+    addLathePart(
+      parts,
+      0,
+      14,
+      -2,
+      [
+        [-64, 10, 9],
+        [-58, 20, 18],
+        [-45, 29, 27],
+        [-28, 34, 32],
+        [-10, 38, 35],
+        [14, 43, 39],
+        [40, 44, 39],
+        [56, 39, 34],
+        [63, 28, 25],
+      ],
+      fur,
+      26,
+      { spec: 0.16 }
+    )
+
+    // Dua telinga coklat gelap di sudut atas kepala + cekungan telinga
+    ;[-1, 1].forEach((side) => {
+      addEllipsoid(parts, side * 22, -46, 0, 7.5, 8.2, 6.2, earDark, 10, 14, { roll: side * 0.45, spec: 0.2 })
+      addEllipsoid(parts, side * 21, -45, 4.2, 4.5, 5.2, 2.2, darkBrown, 8, 10, { roll: side * 0.45 })
+    })
+
+    // Pipi merona hangat
+    addEllipsoid(parts, -19, -22, 24, 7.5, 5.5, 3.0, blush, 8, 12, { yaw: -0.45, spec: 0.12 })
+    addEllipsoid(parts, 19, -22, 24, 7.5, 5.5, 3.0, blush, 8, 12, { yaw: 0.45, spec: 0.12 })
+
+    // Mata tersenyum melengkung (^)
+    ;[-1, 1].forEach((side) => {
+      const ex = side * 14.5
+      const ey = -32
+      addCapsule(parts, [ex - 3.6, ey + 1.5, 25], [ex, ey - 1.5, 26], 1.4, 1.4, darkBrown, 8)
+      addCapsule(parts, [ex, ey - 1.5, 26], [ex + 3.6, ey + 1.5, 25], 1.4, 1.4, darkBrown, 8)
+    })
+
+    // Moncong oval taupe + lubang hidung & mulut terbuka kecil
+    addEllipsoid(parts, 0, -19, 29.5, 11.5, 11.2, 8.8, snout, 12, 16, { spec: 0.2 })
+    addEllipsoid(parts, -3.8, -24.5, 37.2, 1.8, 1.6, 1.4, darkBrown, 6, 8)
+    addEllipsoid(parts, 3.8, -24.5, 37.2, 1.8, 1.6, 1.4, darkBrown, 6, 8)
+    addCapsule(parts, [0, -23, 37.8], [0, -10, 37.5], 0.9, 0.9, [132, 84, 64], 8)
+    addEllipsoid(parts, 0, -6.5, 30, 5.8, 4.0, 4.2, darkBrown, 8, 12)
+
+    // Kaki depan-bawah coklat gelap berjari 3
+    ;[-18, 18].forEach((fx) => {
+      addEllipsoid(parts, fx, 75, 11, 9.5, 5.2, 12, earDark, 8, 14, { spec: 0.18 })
+      ;[-4.5, 0, 4.5].forEach((tx) => {
+        addEllipsoid(parts, fx + tx, 76, 21.5, 2.2, 2.5, 3.2, earDark, 6, 8)
+      })
+    })
+
+    // Cup Boba Milk Tea + Sedotan Putih + Mutiara Tapioka
+    addLathePart(
+      parts,
+      0,
+      36,
+      36,
+      [
+        [-20, 14.5, 14.5],
+        [-8, 13.8, 13.8],
+        [18, 10.6, 10.6],
+      ],
+      cupMilk,
+      22,
+      { spec: 0.35 }
+    )
+    addLathePart(
+      parts,
+      0,
+      14,
+      36,
+      [
+        [-5, 14.8, 14.8],
+        [4, 14.3, 14.3],
+      ],
+      cupCream,
+      22,
+      { spec: 0.3 }
+    )
+    addLathePart(
+      parts,
+      0,
+      9,
+      36,
+      [
+        [-2.8, 13.6, 13.6],
+        [0, 16.5, 16.5],
+        [2.8, 16.5, 16.5],
+      ],
+      lidWhite,
+      24,
+      { spec: 0.45 }
+    )
+    // Sedotan putih langsung masuk ke mulut capybara
+    addCapsule(parts, [0, -5, 31], [0, 9, 36], 2.2, 2.2, strawWhite, 12, { spec: 0.5 })
+    // Mutiara boba di bagian bawah gelas
+    ;[
+      [-5, 42, 47],
+      [0, 46, 47],
+      [5, 41, 47],
+      [-7, 36, 46.5],
+      [2, 37, 48],
+      [7, 47, 45],
+      [-2, 50, 46],
+    ].forEach(([bx, by, bz]) => {
+      addEllipsoid(parts, bx, by, bz, 2.4, 2.4, 2.0, bobaPearl, 6, 8, { spec: 0.4 })
+    })
+
+    // Lengan gemuk + Telapak tangan memeluk gelas boba
+    ;[-1, 1].forEach((side) => {
+      addCapsule(parts, [side * 29, 12, 12], [side * 19, 28, 30], 11.5, 8.5, furDark, 14)
+      addEllipsoid(parts, side * 15, 29, 37, 6.2, 5.5, 5.2, earDark, 8, 12)
+      ;[-2.2, 0, 2.2].forEach((dy) => {
+        addCapsule(parts, [side * 14, 29 + dy, 39], [side * 10.5, 29 + dy, 41.5], 1.3, 1.1, earDark, 6)
+      })
+    })
+  } else if (figureId === 'garfield') {
+    // 5. GARFIELD LAZY CAT FIGURE
+    const orange = [252, 162, 34]
+    const orangeDeep = [234, 144, 24]
+    const muzzleYellow = [255, 224, 72]
+    const pinkNose = [244, 152, 178]
+    const black = [28, 26, 28]
+    const white = [252, 252, 254]
+
+    addLathePart(parts, 0, 82, 0, [[-4, 42, 34], [4, 42, 34]], [238, 244, 250], 24, { spec: 0.35 })
+
+    // Badan oranye Garfield duduk santai
+    addLathePart(
+      parts,
+      0,
+      36,
+      -4,
+      [
+        [-28, 18, 15],
+        [-12, 23, 20],
+        [14, 27, 23],
+        [34, 28, 24],
+        [42, 24, 21],
+      ],
+      orange,
+      24,
+      { spec: 0.25 }
+    )
+
+    // Dua kaki depan & telapak besar berjari 3
+    ;[-16.5, 16.5].forEach((lx) => {
+      addCapsule(parts, [lx * 0.85, 22, 6], [lx, 62, 14], 9.5, 10.5, orange, 14)
+      addEllipsoid(parts, lx, 70, 21, 13.5, 8.8, 14, orange, 10, 16, { spec: 0.25 })
+      ;[-5.5, 0, 5.5].forEach((tx) => {
+        addCapsule(parts, [lx + tx, 69, 31], [lx + tx, 73, 33], 0.9, 0.9, orangeDeep, 6)
+      })
+    })
+
+    // Dua paha & telapak belakang menyamping + belang hitam
+    ;[-1, 1].forEach((side) => {
+      addEllipsoid(parts, side * 26, 48, -6, 11.5, 18, 14, orange, 10, 16, { roll: side * 0.25, spec: 0.25 })
+      addEllipsoid(parts, side * 38, 69, 2, 14, 8.5, 11, orange, 10, 14, { yaw: side * 0.3, spec: 0.25 })
+      for (let s = 0; s < 3; s++) {
+        addCapsule(parts, [side * 22, 38 + s * 6, -12], [side * 34, 40 + s * 6, -4], 1.5, 1.5, black, 8)
+      }
+    })
+
+    // Ekor belang melingkar ke belakang kanan
+    addCapsule(parts, [14, 58, -18], [28, 36, -24], 5.5, 6.2, orange, 12)
+    addCapsule(parts, [28, 36, -24], [24, 18, -18], 6.2, 6.8, black, 12)
+
+    // Kepala Garfield bulat lebar + pipi kuning besar
+    addEllipsoid(parts, 0, -24, 0, 31, 27, 25, orange, 14, 24, { spec: 0.26 })
+    // Telinga tegak berujung belang hitam
+    ;[-1, 1].forEach((side) => {
+      addEllipsoid(parts, side * 13, -53, -2, 11, 14, 7.5, orange, 10, 14, { roll: side * 0.22, spec: 0.25 })
+      addEllipsoid(parts, side * 13, -58, -1.5, 7.2, 6.5, 4.5, black, 8, 10, { roll: side * 0.22 })
+      // 3 Jambul rambut samping khas Garfield
+      ;[-0.35, -0.05, 0.25].forEach((ang, idx) => {
+        addCapsule(
+          parts,
+          [side * 25, -42 + idx * 3, 2],
+          [side * (36 - idx * 2), -49 + idx * 4.5, 2],
+          2.0,
+          1.2,
+          black,
+          8
+        )
+      })
+    })
+
+    // Dua mata putih menempel + kelopak mengantuk oranye + pupil hitam
+    ;[-1, 1].forEach((side) => {
+      const ex = side * 9.5
+      addEllipsoid(parts, ex, -21, 20.5, 9.8, 9.2, 5.2, white, 10, 16, { spec: 0.65 })
+      // Kelopak mengantuk menutupi separuh atas mata
+      addEllipsoid(parts, ex, -27, 21.8, 10.2, 6.6, 5.8, orange, 10, 16, { pitch: 0.22, spec: 0.28 })
+      // Pupil hitam mengintip dari balik kelopak
+      addEllipsoid(parts, ex - side * 2.5, -21.5, 25.0, 2.8, 2.5, 1.5, black, 8, 10, { spec: 0.8 })
+    })
+
+    // Pipi kuning W-muzzle lebar melengkung ke samping
+    ;[-1, 1].forEach((side) => {
+      addEllipsoid(parts, side * 13, -11, 20.5, 15.5, 9.5, 8.5, muzzleYellow, 10, 16, { roll: side * 0.22, spec: 0.26 })
+      addEllipsoid(parts, side * 25, -18, 16, 7.5, 8.5, 6.5, muzzleYellow, 8, 12, { roll: -side * 0.2, spec: 0.26 })
+    })
+    // Hidung pink oval
+    addEllipsoid(parts, 0, -15, 27.5, 4.8, 3.8, 3.6, pinkNose, 8, 12, { spec: 0.45 })
+  } else if (figureId === 'minion_duo') {
+    // 6. MINION GOGGLES FIGURE (Mata Dua & Overalls Denim)
+    const yellow = [252, 216, 38]
+    const denim = [54, 122, 176]
+    const denimDark = [38, 92, 142]
+    const silver = [198, 204, 212]
+    const strapDark = [44, 38, 36]
+    const irisBrown = [158, 78, 24]
+    const shoeDark = [46, 36, 32]
+    const white = [254, 254, 255]
+    const black = [22, 22, 24]
+
+    addLathePart(parts, 0, 82, 0, [[-4, 36, 34], [4, 36, 34]], [238, 244, 250], 24, { spec: 0.35 })
+
+    // Tubuh kapsul Minion kuning bulat halus
+    addLathePart(
+      parts,
+      0,
+      0,
+      0,
+      [
+        [-58, 9, 8],
+        [-50, 24, 22],
+        [-34, 31, 28],
+        [-12, 32, 29],
+        [14, 32, 29],
+        [34, 31, 28],
+        [48, 24, 22],
+        [55, 11, 10],
+      ],
+      yellow,
+      28,
+      { spec: 0.32 }
+    )
+
+    // Baju kodok denim biru + saku dada & tali selempang
+    addLathePart(
+      parts,
+      0,
+      0,
+      0,
+      [
+        [14, 32.8, 29.8],
+        [34, 32, 29],
+        [48, 25, 23],
+        [56, 13, 12],
+      ],
+      denim,
+      28,
+      { spec: 0.18 }
+    )
+    addLathePart(
+      parts,
+      0,
+      10,
+      3.5,
+      [
+        [-6, 18, 27],
+        [6, 19, 27.5],
+      ],
+      denim,
+      20,
+      { spec: 0.18 }
+    )
+    // Saku depan & logo Gru
+    addEllipsoid(parts, 0, 24, 29.8, 9.5, 8.5, 2.4, denimDark, 8, 14)
+    addEllipsoid(parts, 0, 23, 31.8, 4.4, 4.4, 1.2, black, 8, 10)
+    // Tali denim & kancing hitam
+    ;[-1, 1].forEach((side) => {
+      addCapsule(parts, [side * 16, 8, 27], [side * 30, -2, 14], 2.8, 2.8, denimDark, 10)
+      addEllipsoid(parts, side * 16, 8.5, 29.2, 2.2, 2.2, 1.4, black, 6, 8)
+    })
+
+    // Celana pendek & sepatu coklat gelap
+    ;[-9.5, 9.5].forEach((lx) => {
+      addCapsule(parts, [lx, 52, 0], [lx, 67, 0], 6.8, 6.2, denimDark, 12)
+      addEllipsoid(parts, lx, 73, 4.5, 7.8, 5.2, 11.2, shoeDark, 10, 14, { spec: 0.45 })
+    })
+
+    // Lengan kuning masuk ke saku samping
+    ;[-1, 1].forEach((side) => {
+      addCapsule(parts, [side * 31, 12, 2], [side * 35, 34, 6], 5.2, 5.5, yellow, 12)
+      addCapsule(parts, [side * 35, 34, 6], [side * 28, 42, 14], 5.5, 4.8, yellow, 12)
+    })
+
+    // Tali kacamata hitam melingkari kepala
+    addLathePart(
+      parts,
+      0,
+      -26,
+      0,
+      [
+        [-4.5, 32.5, 29.5],
+        [4.5, 32.5, 29.5],
+      ],
+      strapDark,
+      28,
+      { spec: 0.25 }
+    )
+
+    // Dua kacamata perak besar + mata coklat ekspresif
+    ;[-1, 1].forEach((side) => {
+      const gx = side * 12.2
+      addLathePart(
+        parts,
+        gx,
+        -26,
+        24,
+        [
+          [-4, 13.5, 13.5],
+          [4, 13.5, 13.5],
+        ],
+        silver,
+        22,
+        { pitch: Math.PI / 2, spec: 0.72 }
+      )
+      addEllipsoid(parts, gx, -26, 26.5, 10.5, 10.5, 5.2, white, 10, 16, { spec: 0.6 })
+      addEllipsoid(parts, gx, -26, 30.8, 5.4, 5.4, 2.2, irisBrown, 8, 14, { spec: 0.65 })
+      addEllipsoid(parts, gx, -26, 32.5, 2.7, 2.7, 1.3, black, 6, 10, { spec: 0.85 })
+      addEllipsoid(parts, gx - 1.8, -28, 33.4, 1.3, 1.3, 0.8, white, 5, 8, { spec: 0.9 })
+    })
+
+    // Senyum manis + helai rambut belah tengah di atas kepala
+    addCapsule(parts, [-9, -3, 27.5], [0, 0, 29], 1.1, 1.1, [146, 98, 22], 8)
+    addCapsule(parts, [0, 0, 29], [9, -3, 27.5], 1.1, 1.1, [146, 98, 22], 8)
+    ;[-1, 1].forEach((side) => {
+      for (let h = 0; h < 3; h++) {
+        addCapsule(parts, [side * (2 + h * 3), -57, 2], [side * (12 + h * 5), -65 + h * 2, 0], 1.0, 0.5, black, 6)
+      }
+    })
+  } else if (figureId === 'minion_one') {
+    // 7. MINION POINTING FIGURE (Mata Satu, Tunjuk Jari ke Atas)
+    const yellow = [252, 206, 34]
+    const denim = [54, 126, 182]
+    const denimDark = [38, 94, 144]
+    const silver = [202, 208, 216]
+    const strapDark = [42, 38, 36]
+    const gloveBlack = [36, 40, 46]
+    const irisBrown = [158, 78, 24]
+    const white = [254, 254, 255]
+    const black = [22, 22, 24]
+
+    addLathePart(parts, 0, 82, 0, [[-4, 38, 34], [4, 38, 34]], [238, 244, 250], 24, { spec: 0.35 })
+
+    // Tubuh Minion gembul pendek
+    addLathePart(
+      parts,
+      0,
+      4,
+      0,
+      [
+        [-54, 9, 8],
+        [-44, 25, 22],
+        [-28, 31, 28],
+        [-6, 32, 29],
+        [18, 33, 30],
+        [38, 30, 27],
+        [52, 20, 18],
+      ],
+      yellow,
+      28,
+      { spec: 0.32 }
+    )
+
+    // Baju kodok denim + saku & logo Gru + tali
+    addLathePart(
+      parts,
+      0,
+      4,
+      0,
+      [
+        [14, 33.8, 30.8],
+        [36, 31.5, 28.5],
+        [50, 22, 20],
+        [56, 13, 12],
+      ],
+      denim,
+      28,
+      { spec: 0.18 }
+    )
+    addLathePart(
+      parts,
+      0,
+      14,
+      3.5,
+      [
+        [-6, 18, 27],
+        [6, 19, 27.5],
+      ],
+      denim,
+      20
+    )
+    addEllipsoid(parts, 0, 28, 30.5, 9, 8, 2.2, denimDark, 8, 12)
+    addEllipsoid(parts, 0, 27, 32.3, 4.2, 4.2, 1.2, black, 8, 10)
+    ;[-1, 1].forEach((side) => {
+      addCapsule(parts, [side * 16, 12, 28], [side * 30, 2, 15], 2.8, 2.8, denimDark, 10)
+      addEllipsoid(parts, side * 16, 12.5, 29.5, 2.2, 2.2, 1.4, black, 6, 8)
+    })
+
+    // Celana & sepatu hitam mengkilap
+    ;[-9.5, 9.5].forEach((lx) => {
+      addCapsule(parts, [lx, 54, 0], [lx, 68, 0], 6.6, 6.0, denimDark, 12)
+      addEllipsoid(parts, lx, 74, 4.5, 7.6, 5.0, 10.8, gloveBlack, 10, 14, { spec: 0.55 })
+    })
+
+    // Tangan kanan bertolak pinggang (sarung tangan hitam)
+    addCapsule(parts, [-30, 18, 2], [-40, 29, 4], 4.8, 4.5, yellow, 12)
+    addCapsule(parts, [-40, 29, 4], [-34, 40, 10], 4.6, 4.6, yellow, 12)
+    addEllipsoid(parts, -32, 42, 12, 6.5, 6.5, 6.5, gloveBlack, 8, 12, { spec: 0.4 })
+
+    // Tangan kiri terangkat tinggi menunjuk satu jari ke atas
+    addCapsule(parts, [29, 14, 2], [38, -2, 4], 4.8, 4.5, yellow, 12)
+    addCapsule(parts, [38, -2, 4], [40, -24, 6], 4.5, 4.5, yellow, 12)
+    addEllipsoid(parts, 40, -28, 6, 6.8, 6.2, 6.2, gloveBlack, 8, 12, { spec: 0.45 })
+    addCapsule(parts, [40, -32, 6], [40, -52, 6], 3.2, 2.6, gloveBlack, 10, { spec: 0.45 })
+
+    // Kacamata tunggal besar di tengah wajah + tali hitam
+    addLathePart(parts, 0, -24, 0, [[-4.8, 32.8, 29.8], [4.8, 32.8, 29.8]], strapDark, 28)
+    addLathePart(parts, 0, -24, 24, [[-4.5, 17, 17], [4.5, 17, 17]], silver, 26, { pitch: Math.PI / 2, spec: 0.72 })
+    addEllipsoid(parts, 0, -24, 26.5, 13.5, 13.5, 5.8, white, 12, 18, { spec: 0.6 })
+    addEllipsoid(parts, 0, -24, 31.2, 6.6, 6.6, 2.4, irisBrown, 10, 14, { spec: 0.65 })
+    addEllipsoid(parts, 0, -24, 33.0, 3.2, 3.2, 1.4, black, 8, 10, { spec: 0.85 })
+    addEllipsoid(parts, -2.4, -26.5, 34.0, 1.6, 1.6, 0.9, white, 5, 8, { spec: 0.9 })
+
+    // Mulut terbuka tertawa + gigi putih & lidah merah
+    addEllipsoid(parts, 0, 2, 27.5, 12.5, 5.8, 4.2, [132, 36, 48], 8, 14)
+    addEllipsoid(parts, 0, 4.5, 29.2, 8, 2.6, 2.2, [212, 76, 86], 6, 10)
+    addCapsule(parts, [-9, -1.5, 30], [9, -1.5, 30], 2.2, 2.2, white, 8)
+    ;[-1, 1].forEach((side) => {
+      addCapsule(parts, [side * 2, -52, 2], [side * 12, -60, 0], 1.0, 0.5, black, 6)
+    })
+  } else if (figureId === 'stitch_boy') {
+    // 8. STITCH BLUE FIGURE (Ceria Merentangkan Tangan)
+    const blue = [72, 138, 216]
+    const blueDeep = [54, 114, 188]
+    const aqua = [142, 212, 218]
+    const noseNavy = [26, 40, 96]
+    const earPink = [234, 132, 158]
+    const mouthRed = [212, 92, 108]
+    const clawDark = [24, 30, 48]
+    const white = [252, 252, 254]
+    const black = [20, 20, 26]
+
+    addLathePart(parts, 0, 82, 0, [[-4, 38, 34], [4, 38, 34]], [238, 244, 250], 24, { spec: 0.35 })
+
+    // Badan Stitch biru + perut oval biru muda
+    addLathePart(
+      parts,
+      0,
+      36,
+      0,
+      [
+        [-24, 16, 14],
+        [-8, 22, 18],
+        [14, 24, 20],
+        [30, 20, 17],
+      ],
+      blue,
+      24,
+      { spec: 0.24 }
+    )
+    addEllipsoid(parts, 0, 38, 12.5, 16.5, 21, 9.5, aqua, 12, 16, { spec: 0.2 })
+
+    // Kaki pendek biru & 4 kuku gelap tiap kaki
+    ;[-12.5, 12.5].forEach((lx) => {
+      addCapsule(parts, [lx, 56, 0], [lx, 71, 2], 9.2, 8.8, blue, 12)
+      addEllipsoid(parts, lx, 73, 5.5, 10.5, 6.2, 11.5, blue, 8, 14)
+      ;[-6, -2, 2, 6].forEach((tx) => {
+        addEllipsoid(parts, lx + tx, 74, 16, 1.8, 2.2, 3.0, clawDark, 6, 8)
+      })
+    })
+
+    // Dua lengan terbuka gembira + cakar gelap
+    ;[-1, 1].forEach((side) => {
+      addCapsule(parts, [side * 19, 18, 2], [side * 38, 6, 6], 7.8, 7.2, blue, 12)
+      addEllipsoid(parts, side * 41, 4, 7, 7.5, 7.2, 6.8, blue, 8, 12)
+      ;[-4, 0, 4].forEach((cyOff, idx) => {
+        addEllipsoid(parts, side * 46, 2 + cyOff, 8 + idx * 0.5, 1.8, 1.8, 1.8, clawDark, 5, 8)
+      })
+    })
+
+    // Kepala bulat besar Stitch + jambul kepala
+    addEllipsoid(parts, 0, -20, 2, 30, 24, 25, blue, 14, 24, { chubby: 0.14, spec: 0.26 })
+    addCapsule(parts, [0, -43, 4], [-3, -51, 5], 2.8, 1.4, blueDeep, 8)
+    addCapsule(parts, [2, -43, 4], [5, -50, 3], 2.4, 1.2, blueDeep, 8)
+
+    // Bercak mata biru muda + mata hitam mengkilap + highlight putih
+    ;[-1, 1].forEach((side) => {
+      addEllipsoid(parts, side * 14, -22, 21.5, 9.8, 11.2, 4.5, aqua, 10, 14, { roll: -side * 0.18 })
+      addEllipsoid(parts, side * 13.5, -22, 24.5, 7.2, 8.6, 3.4, black, 10, 14, { spec: 0.85 })
+      addEllipsoid(parts, side * 12, -25.5, 27.2, 2.4, 2.8, 1.4, white, 6, 8, { spec: 0.9 })
+    })
+
+    // Hidung bulat besar biru tua
+    addEllipsoid(parts, 0, -21, 27.5, 8.2, 6.4, 5.8, noseNavy, 10, 14, { spec: 0.45 })
+
+    // Mulut terbuka tersenyum lebar + lidah merah & gigi putih
+    addEllipsoid(parts, 0, -6, 21.5, 19.5, 9.5, 6.5, [62, 24, 34], 10, 16)
+    addEllipsoid(parts, 0, -4, 24.2, 11.5, 4.2, 4.2, mouthRed, 8, 12)
+    ;[-11, -5.5, 0, 5.5, 11].forEach((gx) => {
+      addEllipsoid(parts, gx, -12, 25.5, 2.2, 2.4, 1.6, white, 6, 8)
+    })
+
+    // Telinga Stitch raksasa lebar mengarah ke atas-luar (bagian luar biru, dalam pink)
+    ;[-1, 1].forEach((side) => {
+      addCurvedPetal(parts, side * 26, -18, 2, 28, 52, 8, 0.15, side * -0.4, side * 0.58, blue, { rows: 6, cols: 5, spec: 0.24 })
+      addCurvedPetal(parts, side * 26, -18, 4.2, 20, 44, 6, 0.15, side * -0.35, side * 0.58, earPink, { rows: 5, cols: 5, spec: 0.22 })
+    })
+  } else if (figureId === 'stitch_girl') {
+    // 9. ANGEL PINK FIGURE (Lilo & Stitch - Antena + Bunga Sepatu Pink)
+    const pink = [238, 128, 172]
+    const pinkLight = [248, 184, 212]
+    const noseLilac = [156, 108, 168]
+    const eyeDark = [34, 26, 56]
+    const clawPink = [184, 42, 92]
+    const hibiscus = [238, 72, 138]
+    const stamenYellow = [252, 214, 46]
+    const white = [254, 254, 255]
+
+    addLathePart(parts, 0, 82, 0, [[-4, 38, 34], [4, 38, 34]], [238, 244, 250], 24, { spec: 0.35 })
+
+    // Badan ramping ceria pink Angel + perut pink muda + tanda V putih di dada
+    addLathePart(
+      parts,
+      0,
+      36,
+      0,
+      [
+        [-22, 13, 12],
+        [-6, 17.5, 15],
+        [14, 20, 17],
+        [30, 17, 15],
+      ],
+      pink,
+      24,
+      { roll: -0.08, spec: 0.26 }
+    )
+    addEllipsoid(parts, 0, 39, 11.2, 13.5, 19, 8.2, pinkLight, 10, 16)
+    addCapsule(parts, [-6, 22, 16.5], [0, 27, 17.5], 2.0, 1.5, white, 8)
+    addCapsule(parts, [6, 22, 16.5], [0, 27, 17.5], 2.0, 1.5, white, 8)
+
+    // Kaki menjejak & kaki satu melangkah ceria
+    addCapsule(parts, [-9, 58, 2], [-10, 72, 3], 7.5, 7.2, pink, 12)
+    addEllipsoid(parts, -10, 74, 6, 8.5, 5.2, 9.5, pink, 8, 12)
+    addCapsule(parts, [11, 56, 0], [18, 66, -4], 7.2, 6.8, pink, 12)
+    addEllipsoid(parts, 20, 67, -2, 8.0, 5.0, 8.8, pink, 8, 12)
+    ;[-4, 0, 4].forEach((tx) => {
+      addEllipsoid(parts, -10 + tx, 75, 14.5, 1.4, 1.6, 2.0, clawPink, 5, 8)
+    })
+
+    // Tangan kanan menyapa di samping kepala, tangan kiri terentang ceria
+    addCapsule(parts, [-14, 18, 2], [-27, 2, 6], 6.5, 6.2, pink, 12)
+    addEllipsoid(parts, -29, -1, 7, 6.5, 6.2, 5.8, pink, 8, 12)
+    addCapsule(parts, [15, 19, 2], [32, 6, 10], 6.5, 6.2, pink, 12)
+    addEllipsoid(parts, 35, 3, 12, 6.5, 6.2, 5.8, pink, 8, 12)
+
+    // Kepala Angel + mata besar berbulu mata + hidung ungu lilac + senyum cerah
+    addEllipsoid(parts, 0, -18, 2, 28, 22, 23, pink, 14, 24, { chubby: 0.14, spec: 0.28 })
+    ;[-1, 1].forEach((side) => {
+      addEllipsoid(parts, side * 13.5, -19, 20, 9.5, 10.5, 4.2, pinkLight, 10, 14, { roll: -side * 0.18 })
+      addEllipsoid(parts, side * 13, -19, 22.8, 7.2, 8.6, 3.2, eyeDark, 10, 14, { spec: 0.85 })
+      addEllipsoid(parts, side * 11.5, -22, 25.4, 2.5, 2.8, 1.4, white, 6, 8, { spec: 0.9 })
+      // Bulu mata lentik Angel
+      addCapsule(parts, [side * 18, -24, 22], [side * 24, -27, 20], 1.1, 0.7, eyeDark, 6)
+    })
+    addEllipsoid(parts, 0, -17, 25.5, 6.8, 5.4, 4.8, noseLilac, 10, 14, { spec: 0.45 })
+    addEllipsoid(parts, 0, -5, 20.5, 13.5, 5.5, 4.8, [186, 62, 92], 8, 14)
+
+    // Telinga lebar pink
+    ;[-1, 1].forEach((side) => {
+      addCurvedPetal(parts, side * 24, -18, 1, 25, 48, 7, 0.15, side * -0.38, side * 0.54, pink, { rows: 5, cols: 5, spec: 0.25 })
+      addCurvedPetal(parts, side * 24, -18, 3.2, 17, 40, 5, 0.15, side * -0.34, side * 0.54, pinkLight, { rows: 5, cols: 5 })
+    })
+
+    // Dua antena panjang melengkung khas Angel
+    ;[-1, 1].forEach((side) => {
+      addCapsule(parts, [side * 10, -38, 0], [side * 24, -46, -6], 2.5, 2.2, pink, 8)
+      addCapsule(parts, [side * 24, -46, -6], [side * 34, -8, -10], 2.2, 2.0, pink, 8)
+      addCapsule(parts, [side * 34, -8, -10], [side * 40, 26, -4], 2.0, 2.5, pink, 8)
+    })
+
+    // Bunga sepatu (Hibiscus) 5 kelopak merah muda cerah + putik kuning di kepala
+    for (let p = 0; p < 5; p++) {
+      const a = (p / 5) * Math.PI * 2
+      addCurvedPetal(
+        parts,
+        -6 + Math.cos(a) * 4,
+        -42 + Math.sin(a) * 3,
+        12,
+        14,
+        16,
+        3.5,
+        -0.45,
+        0,
+        a,
+        hibiscus,
+        { rows: 4, cols: 4, spec: 0.35 }
+      )
+    }
+    addCapsule(parts, [-6, -43, 14], [-3, -55, 22], 1.2, 0.9, stamenYellow, 8)
+    addEllipsoid(parts, -3, -56, 22.5, 2.8, 2.4, 2.4, stamenYellow, 6, 8)
+  } else if (figureId === 'toothless') {
+    // 10. TOOTHLESS NIGHT FURY FIGURE
+    const black = [44, 44, 42]
+    const blackScale = [60, 60, 58]
+    const eyeGreen = [196, 224, 114]
+    const clawCream = [220, 198, 152]
+    const white = [252, 252, 254]
+    const pupilDark = [14, 14, 16]
+
+    addLathePart(parts, 0, 82, 0, [[-4, 44, 34], [4, 44, 34]], [238, 244, 250], 24, { spec: 0.35 })
+
+    // Tubuh naga duduk manis hitam pekat halus
+    addLathePart(
+      parts,
+      0,
+      36,
+      0,
+      [
+        [-22, 16, 15],
+        [-4, 20, 19],
+        [18, 24, 22],
+        [36, 24, 22],
+      ],
+      black,
+      24,
+      { spec: 0.25 }
+    )
+
+    // Empat kaki duduk + cakar krem di tiap jari
+    ;[-12.5, 12.5].forEach((lx) => {
+      addCapsule(parts, [lx * 0.9, 26, 10], [lx, 66, 14], 7.8, 8.2, black, 12)
+      addEllipsoid(parts, lx, 71, 18, 9.2, 6.2, 10.5, black, 8, 12)
+      ;[-4.5, -1.5, 1.5, 4.5].forEach((cx) => {
+        addEllipsoid(parts, lx + cx, 73, 27.5, 1.6, 2.0, 3.0, clawCream, 6, 8)
+      })
+    })
+    ;[-24, 24].forEach((hx) => {
+      addEllipsoid(parts, hx, 54, -2, 10, 16, 13, black, 10, 14)
+      addEllipsoid(parts, hx + Math.sign(hx) * 3, 70, 4, 9, 5.5, 10, black, 8, 12)
+      ;[-3, 0, 3].forEach((cx) => {
+        addEllipsoid(parts, hx + Math.sign(hx) * 3 + cx, 72, 13.5, 1.5, 1.8, 2.6, clawCream, 5, 8)
+      })
+    })
+
+    // Ekor naga hitam melengkung ke kanan + sirip ekor melebar
+    addCapsule(parts, [14, 62, -16], [42, 64, -8], 5.5, 4.2, black, 10)
+    addCapsule(parts, [42, 64, -8], [58, 56, 2], 4.2, 2.8, black, 10)
+    addCurvedPetal(parts, 58, 55, 2, 18, 22, 3, 1.25, -0.6, 0.4, blackScale, { rows: 4, cols: 4 })
+
+    // Sayap kelelawar terbuka ke kiri dan kanan
+    ;[-1, 1].forEach((side) => {
+      addCapsule(parts, [side * 16, 18, -4], [side * 46, 2, -6], 3.8, 2.6, black, 10)
+      addCapsule(parts, [side * 46, 2, -6], [side * 58, 16, -2], 2.5, 1.8, black, 8)
+      addCurvedPetal(parts, side * 38, 28, -4, 42, 38, 5, 0.1, side * 0.15, side * -0.45, black, { rows: 5, cols: 5, spec: 0.22 })
+    })
+
+    // Kepala Toothless lebar & bulat + punuk sisik dahi
+    addEllipsoid(parts, 0, -22, 6, 30, 22, 25, black, 14, 24, { chubby: 0.12, spec: 0.28 })
+    for (let s = 0; s < 3; s++) {
+      addEllipsoid(parts, 0, -40 + s * 3.5, 16 + s * 3.5, 2.8, 2.2, 2.8, blackScale, 6, 8)
+    }
+
+    // Dua mata hijau-kuning besar berkilau + pupil hitam besar + kilau putih
+    ;[-1, 1].forEach((side) => {
+      addEllipsoid(parts, side * 13.5, -22, 24.5, 9.6, 9.2, 4.5, eyeGreen, 10, 16, { yaw: side * 0.25, spec: 0.55 })
+      addEllipsoid(parts, side * 13.0, -22, 27.8, 5.6, 6.2, 2.2, pupilDark, 8, 12, { yaw: side * 0.25, spec: 0.85 })
+      addEllipsoid(parts, side * 11.2, -24.5, 29.5, 1.8, 1.8, 1.0, white, 5, 8, { spec: 0.9 })
+    })
+
+    // Dua telinga tanduk besar di atas kepala + 2 tonjolan dalam + 4 sirip pipi
+    ;[-1, 1].forEach((side) => {
+      addCapsule(parts, [side * 16, -38, 2], [side * 20, -60, -2], 8.5, 4.5, black, 12)
+      addCapsule(parts, [side * 7, -42, 4], [side * 9, -50, 4], 3.5, 2.2, blackScale, 8)
+      addEllipsoid(parts, side * 32, -26, 2, 9.5, 4.8, 4.5, blackScale, 8, 12, { roll: side * 0.35 })
+      addEllipsoid(parts, side * 30, -16, 4, 8.2, 4.5, 4.2, blackScale, 8, 12, { roll: side * 0.15 })
+    })
   }
 
   meshCache[figureId] = parts
@@ -1148,26 +1864,14 @@ onUnmounted(() => {
 
         <!-- Kanan: Tiket, Daftar Hadiah, & Pilihan Tema Spesial -->
         <div class="space-y-5">
-          <!-- Tiket Kamu + Klaim Tiket Tester Sementara -->
+          <!-- Tiket Kamu -->
           <div class="rounded-2xl border border-[#C5E4FA] bg-white p-6 shadow-2xs">
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <p class="text-xs font-medium text-slate-500 sm:text-sm">
-                  Tiket kamu :
-                </p>
-                <p class="mt-1.5 text-3xl font-semibold text-[#0A2540]">
-                  {{ ticketCount }}
-                </p>
-              </div>
-              <button
-                v-if="currentUser"
-                type="button"
-                @click="handleAddTesterTickets"
-                class="rounded-xl border border-purple-200 bg-purple-50 px-3 py-1.5 text-xs font-medium text-purple-700 transition hover:bg-purple-100 cursor-pointer"
-              >
-                + Tambah 20 Tiket Gacha
-              </button>
-            </div>
+            <p class="text-xs font-medium text-slate-500 sm:text-sm">
+              Tiket kamu :
+            </p>
+            <p class="mt-1.5 text-3xl font-semibold text-[#0A2540]">
+              {{ ticketCount }}
+            </p>
           </div>
 
           <!-- Kemungkinan Hadiah -->
@@ -1217,8 +1921,13 @@ onUnmounted(() => {
                   class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-200"
                   :class="theme.previewClass"
                 >
+                  <!-- Mini Apple Icon (Merah Apel Lucu) -->
+                  <svg v-if="theme.id === 'apple'" class="h-4 w-4 text-rose-600" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 6c2-1.2 6-1 6 4 0 5-3 8.5-6 7.5C9 18.5 6 15 6 10c0-5 4-5.2 6-4z" />
+                    <path d="M12 6c.4-2 1.5-3 3-3" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" />
+                  </svg>
                   <!-- Mini Lavender Icon -->
-                  <svg v-if="theme.id === 'purple'" class="h-4 w-4 text-purple-700" viewBox="0 0 24 24" fill="currentColor">
+                  <svg v-else-if="theme.id === 'purple'" class="h-4 w-4 text-purple-700" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 3c1.2 1.2 1.2 2.8 0 4-1.2-1.2-1.2-2.8 0-4zm-3 3.5c1.5.5 2.4 1.8 2 3.2-1.5-.5-2.4-1.8-2-3.2zm6 0c-1.5.5-2.4 1.8-2 3.2 1.5-.5 2.4-1.8 2-3.2zm-3 3c1.3 1.2 1.3 2.8 0 4-1.3-1.2-1.3-2.8 0-4z" />
                     <path d="M12 13v8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
                   </svg>
@@ -1229,6 +1938,14 @@ onUnmounted(() => {
                   <!-- Mini Mint Leaf Icon -->
                   <svg v-else-if="theme.id === 'mint'" class="h-4 w-4 text-emerald-600" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M17 4C11 4 6 8.5 6 15c0 1.4.4 2.7 1 3.8L16 9.8l-7.2 9.8c1 .4 2.1.4 3.2.4 5 0 9-4 9-9V4h-4z" />
+                  </svg>
+                  <!-- Mini Daisy Icon -->
+                  <svg v-else-if="theme.id === 'daisy'" class="h-4 w-4 text-amber-500" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="5.5" r="2.6" fill="#FFFFFF" stroke="#EAB308" stroke-width="1" />
+                    <circle cx="18.5" cy="12" r="2.6" fill="#FFFFFF" stroke="#EAB308" stroke-width="1" />
+                    <circle cx="12" cy="18.5" r="2.6" fill="#FFFFFF" stroke="#EAB308" stroke-width="1" />
+                    <circle cx="5.5" cy="12" r="2.6" fill="#FFFFFF" stroke="#EAB308" stroke-width="1" />
+                    <circle cx="12" cy="12" r="3.4" fill="#FACC15" />
                   </svg>
                   <!-- Classic Star Icon -->
                   <svg v-else class="h-3.5 w-3.5 text-[#2D6BE4]" viewBox="0 0 24 24" fill="currentColor">
@@ -1265,8 +1982,8 @@ onUnmounted(() => {
           </span>
         </div>
 
-        <!-- 3 Rak Etalase Pajangan -->
-        <div class="mt-6 grid gap-5 sm:grid-cols-3">
+        <!-- Rak Etalase Pajangan (10 Figure Koleksi) -->
+        <div class="mt-6 grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
           <button
             v-for="fig in COLLECTIBLE_FIGURES"
             :key="fig.id"
