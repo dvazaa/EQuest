@@ -65,6 +65,9 @@ export function logoutUser() {
   if (typeof document !== 'undefined') {
     document.documentElement.setAttribute('data-equest-theme', 'blue')
   }
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('equest-theme-changed', { detail: 'blue' }))
+  }
 }
 
 // Registered users management
@@ -416,6 +419,7 @@ export const SPECIAL_THEMES = [
   {
     id: 'blue',
     name: 'Biru Klasik',
+    ornamentLabel: 'Standar EQuest',
     bgHex: '#D8EDFB',
     previewClass: 'bg-[#D8EDFB]',
     isDefault: true,
@@ -423,6 +427,7 @@ export const SPECIAL_THEMES = [
   {
     id: 'purple',
     name: 'Ungu Lavender',
+    ornamentLabel: 'Hiasan Bunga Lavender',
     bgHex: '#EDE9FE',
     previewClass: 'bg-[#EDE9FE]',
     isDefault: false,
@@ -430,6 +435,7 @@ export const SPECIAL_THEMES = [
   {
     id: 'pink',
     name: 'Pink Sakura',
+    ornamentLabel: 'Hiasan Bunga Sakura',
     bgHex: '#FCE7F3',
     previewClass: 'bg-[#FCE7F3]',
     isDefault: false,
@@ -437,6 +443,7 @@ export const SPECIAL_THEMES = [
   {
     id: 'mint',
     name: 'Hijau Mint',
+    ornamentLabel: 'Hiasan Daun Mint',
     bgHex: '#D1FAE5',
     previewClass: 'bg-[#D1FAE5]',
     isDefault: false,
@@ -489,6 +496,11 @@ function normalizeAccountCollections(stats) {
     stats.isPremium = computedPremium
     changed = true
   }
+  if (!stats.tempGachaTicketBoostV1) {
+    stats.tickets = (Number(stats.tickets) || 0) + 50
+    stats.tempGachaTicketBoostV1 = true
+    changed = true
+  }
   return changed
 }
 
@@ -496,11 +508,17 @@ export function applySavedTheme(email) {
   if (typeof document === 'undefined') return 'blue'
   if (!email) {
     document.documentElement.setAttribute('data-equest-theme', 'blue')
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('equest-theme-changed', { detail: 'blue' }))
+    }
     return 'blue'
   }
   const saved = readStorage(getStatsKey(email), null)
   const themeId = saved?.activeTheme || 'blue'
   document.documentElement.setAttribute('data-equest-theme', themeId)
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('equest-theme-changed', { detail: themeId }))
+  }
   return themeId
 }
 
@@ -527,16 +545,20 @@ export function unlockThemeForUser(email, themeId) {
 }
 
 export function setActiveThemeForUser(email, themeId) {
+  const chosenTheme = themeId || 'blue'
   if (typeof document !== 'undefined') {
-    document.documentElement.setAttribute('data-equest-theme', themeId || 'blue')
+    document.documentElement.setAttribute('data-equest-theme', chosenTheme)
+  }
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('equest-theme-changed', { detail: chosenTheme }))
   }
   if (!email) return 'blue'
   const stats = getUserStats(email)
   if (!Array.isArray(stats.unlockedThemes)) stats.unlockedThemes = ['blue']
-  if (themeId !== 'blue' && !stats.unlockedThemes.includes(themeId)) {
+  if (chosenTheme !== 'blue' && !stats.unlockedThemes.includes(chosenTheme)) {
     return stats.activeTheme || 'blue'
   }
-  stats.activeTheme = themeId
+  stats.activeTheme = chosenTheme
   saveUserStats(email, stats)
   return stats.activeTheme
 }
@@ -611,7 +633,11 @@ export function getUserStats(email) {
   if (typeof document !== 'undefined') {
     const currentSession = getCurrentUser()
     if (currentSession?.email?.trim().toLowerCase() === email.trim().toLowerCase()) {
-      document.documentElement.setAttribute('data-equest-theme', saved.activeTheme || 'blue')
+      const themeId = saved.activeTheme || 'blue'
+      document.documentElement.setAttribute('data-equest-theme', themeId)
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('equest-theme-changed', { detail: themeId }))
+      }
     }
   }
   return saved

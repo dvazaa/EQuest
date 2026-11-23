@@ -33,6 +33,9 @@ const proofFileName = ref('')
 const hasConfirmedTransfer = ref(false)
 const copiedVa = ref(false)
 const isVerifying = ref(false)
+const isCreatingSnap = ref(false)
+const snapMode = ref('midtrans_sandbox_simulator')
+const snapToken = ref('')
 
 const checkoutResult = ref(null)
 const checkoutError = ref('')
@@ -92,6 +95,7 @@ const plans = [
     id: 'free',
     name: 'Paket Gratis (Basic)',
     price: 'Rp 0',
+    priceAmount: 0,
     period: 'Selamanya',
     badge: 'Dasar',
     isPopular: false,
@@ -111,6 +115,7 @@ const plans = [
     id: 'monthly',
     name: 'Premium Pelajar',
     price: 'Rp 9.000',
+    priceAmount: 9000,
     period: '/ bulan',
     badge: 'Paling Populer',
     isPopular: true,
@@ -130,6 +135,7 @@ const plans = [
     id: 'semester',
     name: 'Premium Semesteran',
     price: 'Rp 54.000',
+    priceAmount: 54000,
     period: '/ 6 bulan',
     badge: 'Paket 6 Bulan',
     isPopular: false,
@@ -188,15 +194,111 @@ function closeCheckoutModal() {
   showCheckoutModal.value = false
 }
 
-function createInvoiceAndProceed() {
+function loadMidtransSnapScript(clientKey, isProduction = false) {
+  return new Promise((resolve, reject) => {
+    if (typeof window === 'undefined') return reject(new Error('Window unavailable'))
+    if (window.snap) return resolve(window.snap)
+
+    const scriptUrl = isProduction
+      ? 'https://app.midtrans.com/snap/snap.js'
+      : 'https://app.sandbox.midtrans.com/snap/snap.js'
+
+    const existing = document.querySelector(`script[src="${scriptUrl}"]`)
+    if (existing) {
+      existing.addEventListener('load', () => resolve(window.snap))
+      existing.addEventListener('error', () => reject(new Error('Gagal memuat Midtrans Snap JS')))
+      return
+    }
+
+    const script = document.createElement('script')
+    script.src = scriptUrl
+    script.setAttribute('data-client-key', clientKey)
+    script.onload = () => resolve(window.snap)
+    script.onerror = () => reject(new Error('Gagal memuat Midtrans Snap JS'))
+    document.head.appendChild(script)
+  })
+}
+
+async function createInvoiceAndProceed() {
   if (!currentUser.value?.email) {
     checkoutError.value = 'Silakan masuk ke akun EQuest terlebih dahulu sebelum membuat tagihan pembayaran.'
     return
   }
+  if (!selectedPlan.value) return
+
   checkoutError.value = ''
   hasConfirmedTransfer.value = false
   copiedVa.value = false
-  invoiceId.value = `INV-EQ-${Math.floor(100000 + Math.random() * 900000)}`
+  isCreatingSnap.value = true
+
+  let tokenResponse = null
+  try {
+    const resp = await fetch('http://localhost:3000/api/payment/midtrans-token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        planId: selectedPlan.value.id,
+        planName: selectedPlan.value.name,
+        priceAmount: selectedPlan.value.priceAmount,
+        paymentChannel: selectedPayment.value,
+        customerName: currentUser.value.name || 'Pelajar EQuest',
+        customerEmail: currentUser.value.email,
+      }),
+    })
+    if (resp.ok) {
+      tokenResponse = await resp.json()
+    }
+  } catch (_) {
+    // Backend sedang offline -> lanjutkan menggunakan simulator Midtrans Snap lokal
+  }
+
+  isCreatingSnap.value = false
+
+  if (tokenResponse?.mode === 'midtrans_live_snap' && tokenResponse?.snapToken && tokenResponse?.clientKey) {
+    invoiceId.value = tokenResponse.orderId
+    snapMode.value = 'midtrans_live_snap'
+    snapToken.value = tokenResponse.snapToken
+    try {
+      const snap = await loadMidtransSnapScript(tokenResponse.clientKey, tokenResponse.isProduction)
+      if (snap?.pay) {
+        snap.pay(tokenResponse.snapToken, {
+          onSuccess: (result) => {
+            const res = activatePremiumPlan(
+              currentUser.value.email,
+              selectedPlan.value.id,
+              `Midtrans (${result?.payment_type || 'Snap'})`,
+              {
+                invoiceId: result?.order_id || tokenResponse.orderId,
+                payerInfo: currentUser.value.email,
+              }
+            )
+            if (res.success) {
+              checkoutResult.value = res
+              userStats.value = getUserStats(currentUser.value.email)
+              window.dispatchEvent(new Event('equest-stats-updated'))
+              checkoutStep.value = 'success'
+            }
+          },
+          onPending: () => {
+            checkoutError.value = 'Pembayaran berstatus pending di Midtrans. Selesaikan pembayaran terlebih dahulu.'
+          },
+          onError: () => {
+            checkoutError.value = 'Terjadi kesalahan saat memproses pembayaran melalui Midtrans.'
+          },
+          onClose: () => {
+            checkoutError.value = 'Popup pembayaran Midtrans ditutup sebelum transaksi selesai.'
+          },
+        })
+        return
+      }
+    } catch (_) {
+      // Fallback ke popup Sandbox Snap internal jika snap.js gagal dimuat
+    }
+  }
+
+  snapMode.value = 'midtrans_sandbox_simulator'
+  invoiceId.value = tokenResponse?.orderId || `EQ-MID-${Math.floor(100000 + Math.random() * 900000)}`
+  snapToken.value = tokenResponse?.snapToken || `SNAP-SIM-${invoiceId.value}`
   checkoutStep.value = 'payment'
   startCountdown()
 }
@@ -660,6 +762,17 @@ function goToBlindBox() {
             </div>
           </div>
 
+          <!-- Info Privasi & Keamanan Midtrans Snap -->
+          <div class="flex items-start gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50/70 px-3.5 py-2.5 text-[11px] text-emerald-900">
+            <svg class="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            <p>
+              <strong>Terhubung ke Midtrans Payment Gateway:</strong> Kredensial rekening, PIN e-wallet, dan Server Key diisolasi aman di sisi server tanpa menyimpan data pembayaran sensitif di aplikasi EQuest.
+            </p>
+          </div>
+
           <div
             v-if="checkoutError"
             class="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs text-rose-700"
@@ -671,10 +784,12 @@ function goToBlindBox() {
             <button
               v-if="currentUser"
               type="button"
+              :disabled="isCreatingSnap"
               @click="createInvoiceAndProceed"
-              class="w-full rounded-xl bg-purple-600 py-2.5 text-xs font-medium text-white shadow-sm transition hover:bg-purple-700 cursor-pointer"
+              class="flex w-full items-center justify-center gap-2 rounded-xl bg-purple-600 py-2.5 text-xs font-medium text-white shadow-sm transition hover:bg-purple-700 disabled:opacity-60 cursor-pointer"
             >
-              Buat Tagihan Pembayaran →
+              <span v-if="isCreatingSnap" class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+              <span>{{ isCreatingSnap ? 'Menghubungkan ke Midtrans Snap...' : 'Buat Tagihan Midtrans Snap →' }}</span>
             </button>
             <RouterLink
               v-else
@@ -695,10 +810,14 @@ function goToBlindBox() {
 
         <!-- STEP 2: INSTRUKSI TAGIHAN, BAYAR & VERIFIKASI -->
         <template v-else-if="checkoutStep === 'payment'">
-          <!-- Header Tagihan & Countdown -->
+          <!-- Header Midtrans Snap Tagihan & Countdown -->
           <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-purple-200 bg-purple-50/70 px-4 py-3">
             <div>
-              <p class="text-[11px] text-slate-500">Nomor Tagihan: <span class="font-semibold text-[#0A2540]">{{ invoiceId }}</span></p>
+              <div class="flex flex-wrap items-center gap-1.5">
+                <span class="rounded bg-[#0A2540] px-1.5 py-0.5 text-[10px] font-medium text-white">Midtrans Snap</span>
+                <span class="rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-medium text-purple-800">Sandbox Mode</span>
+              </div>
+              <p class="mt-1 text-[11px] text-slate-500">Order ID: <span class="font-semibold text-[#0A2540]">{{ invoiceId }}</span></p>
               <p class="text-sm font-semibold text-[#0A2540]">
                 Total Bayar: {{ selectedPlan.price }}
               </p>

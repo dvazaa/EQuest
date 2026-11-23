@@ -1,25 +1,86 @@
 @import "tailwindcss";
 
+@keyframes equestPetalDrift {
+  0% {
+    transform: translateY(-10vh) translateX(0px) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.78;
+  }
+  50% {
+    transform: translateY(45vh) translateX(18px) rotate(18deg);
+  }
+  90% {
+    opacity: 0.65;
+  }
+  100% {
+    transform: translateY(105vh) translateX(-14px) rotate(36deg);
+    opacity: 0;
+  }
+}
+
+@keyframes equestSwaySlow {
+  0%, 100% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(1.8deg) scale(1.015);
+  }
+}
+
+.theme-petal-drift {
+  animation-name: equestPetalDrift;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.theme-sway-slow {
+  animation: equestSwaySlow 7s ease-in-out infinite;
+  transform-origin: center;
+}
+
 html[data-equest-theme="purple"] .min-h-screen {
   background-color: #EDE9FE !important;
+  background-image:
+    radial-gradient(circle at 12% 18%, rgba(167, 139, 250, 0.28), transparent 40%),
+    radial-gradient(circle at 88% 82%, rgba(139, 92, 246, 0.24), transparent 44%) !important;
 }
 html[data-equest-theme="purple"] header {
   background-color: rgba(237, 233, 254, 0.92) !important;
   border-color: #DDD6FE !important;
 }
+html[data-equest-theme="purple"] .min-h-screen > main {
+  position: relative;
+  z-index: 20;
+}
 
 html[data-equest-theme="pink"] .min-h-screen {
   background-color: #FCE7F3 !important;
+  background-image:
+    radial-gradient(circle at 15% 16%, rgba(244, 114, 182, 0.24), transparent 40%),
+    radial-gradient(circle at 86% 84%, rgba(249, 168, 212, 0.30), transparent 45%) !important;
 }
 html[data-equest-theme="pink"] header {
   background-color: rgba(252, 231, 243, 0.92) !important;
   border-color: #FBCFE8 !important;
 }
+html[data-equest-theme="pink"] .min-h-screen > main {
+  position: relative;
+  z-index: 20;
+}
 
 html[data-equest-theme="mint"] .min-h-screen {
   background-color: #D1FAE5 !important;
+  background-image:
+    radial-gradient(circle at 14% 18%, rgba(52, 211, 153, 0.25), transparent 40%),
+    radial-gradient(circle at 86% 84%, rgba(16, 185, 129, 0.22), transparent 44%) !important;
 }
 html[data-equest-theme="mint"] header {
   background-color: rgba(209, 250, 229, 0.92) !important;
   border-color: #A7F3D0 !important;
+}
+html[data-equest-theme="mint"] .min-h-screen > main {
+  position: relative;
+  z-index: 20;
 }

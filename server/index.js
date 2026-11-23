@@ -476,6 +476,84 @@ app.post('/api/account-data', (req, res) => {
   res.json({ success: true })
 })
 
+// 8. Midtrans Payment Gateway (Snap Token Endpoint - Kunci Server Aman di .env)
+app.post('/api/payment/midtrans-token', async (req, res) => {
+  const { planId, planName, priceAmount, paymentChannel, customerName, customerEmail } = req.body || {}
+  const orderId = `EQ-MID-${Date.now()}`
+  const grossAmount = Number(priceAmount) || 9000
+  const serverKey = (process.env.MIDTRANS_SERVER_KEY || '').trim()
+  const clientKey = (process.env.MIDTRANS_CLIENT_KEY || '').trim()
+  const isProduction = process.env.MIDTRANS_IS_PRODUCTION === 'true'
+
+  if (serverKey && !serverKey.includes('your_sandbox_server_key')) {
+    try {
+      const snapEndpoint = isProduction
+        ? 'https://app.midtrans.com/snap/v1/transactions'
+        : 'https://app.sandbox.midtrans.com/snap/v1/transactions'
+      const authHeader = Buffer.from(`${serverKey}:`).toString('base64')
+
+      const midtransResp = await fetch(snapEndpoint, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          Authorization: `Basic ${authHeader}`,
+        },
+        body: JSON.stringify({
+          transaction_details: {
+            order_id: orderId,
+            gross_amount: grossAmount,
+          },
+          item_details: [
+            {
+              id: planId || 'monthly',
+              price: grossAmount,
+              quantity: 1,
+              name: planName || 'EQuest Premium',
+            },
+          ],
+          customer_details: {
+            first_name: customerName || 'Pelajar EQuest',
+            email: customerEmail || 'pelajar@equest.edu',
+          },
+          custom_field1: paymentChannel || 'Midtrans Snap',
+        }),
+      })
+
+      const data = await midtransResp.json()
+      if (midtransResp.ok && data?.token) {
+        return res.json({
+          success: true,
+          mode: 'midtrans_live_snap',
+          snapToken: data.token,
+          redirectUrl: data.redirect_url,
+          clientKey,
+          isProduction,
+          orderId,
+          grossAmount,
+        })
+      }
+      console.warn('Midtrans Snap API fallback ke simulator:', data)
+    } catch (err) {
+      console.warn('Gagal menghubungi Midtrans Snap API:', err.message)
+    }
+  }
+
+  return res.json({
+    success: true,
+    mode: 'midtrans_sandbox_simulator',
+    snapToken: `SNAP-SIM-${orderId}`,
+    orderId,
+    grossAmount,
+    merchantName: 'EQuest Edu Indonesia',
+  })
+})
+
+app.post('/api/payment/midtrans-webhook', (req, res) => {
+  const { order_id: orderId, transaction_status: txStatus } = req.body || {}
+  res.json({ received: true, orderId: orderId || null, status: txStatus || 'ok' })
+})
+
 app.listen(PORT, () => {
   console.log(`Backend EQuest aktif di http://localhost:${PORT} (Model: ${GEMINI_MODEL})`)
 })
